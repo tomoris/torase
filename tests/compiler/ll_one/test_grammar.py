@@ -414,7 +414,6 @@ class TestGrammar(TestCase):
             Grammar(rules=rules, terminals=terminals)
 
     def test_artificial_language(self):
-
         rules = {
             "S": [["subject", "verb_phrase", "object"]],
             "subject": [["noun_phrase"], ["S_preposition", "S"]],

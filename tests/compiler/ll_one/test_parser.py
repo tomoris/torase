@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from compiler.ll_one.grammar import Grammar
 from compiler.lexer import Lexer
-from compiler.ll_one.parser import Parser, AbstractSyntaxTree
+from compiler.ll_one.parser import Parser
 
 
 class TestParser(TestCase):

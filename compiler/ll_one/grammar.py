@@ -1,16 +1,16 @@
 from copy import deepcopy
-from typing import NewType, Literal
 
-TerminalSymbol = NewType("TerminalSymbol", str)
-NonTerminalSymbol = NewType("NonTerminalSymbol", str)
-Symbol = TerminalSymbol | NonTerminalSymbol
-START_SYMBOL = "S"
-Start = Literal["S"]
-EOS_SYMBOL = "$"
-Eos = Literal["$"]  # End of sentence
-EPSILON_SYMBOL = "ε"
-Epsilon = Literal["ε"]
-Production = list[Symbol] | Epsilon
+from compiler.my_ast import (
+    TerminalSymbol,
+    NonTerminalSymbol,
+    Symbol,
+    START_SYMBOL,
+    EOS_SYMBOL,
+    Eos,
+    EPSILON_SYMBOL,
+    Epsilon,
+    Production,
+)
 
 
 class Grammar:
@@ -55,7 +55,7 @@ class Grammar:
         if START_SYMBOL not in self.non_terminals:
             raise ValueError(f"開始記号 {START_SYMBOL} が定義されていません")
         if EPSILON_SYMBOL in self.terminals or EPSILON_SYMBOL in self.non_terminals:
-            raise ValueError(f"ε は終端記号や非終端記号に含まれてはいけません")
+            raise ValueError("ε は終端記号や非終端記号に含まれてはいけません")
         for terminal in self.terminals:
             is_existed = False
             for _, rhs in self.rules.items():
