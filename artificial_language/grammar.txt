@@ -1,5 +1,0 @@
-sentence = subject verb_phrase object
-subject = noun_phrase
-verb_phrase = verb | auxiliary_verb verb
-object = noun_phrase
-noun_phrase = noun noun_phrase | noun
