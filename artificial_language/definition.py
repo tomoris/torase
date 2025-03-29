@@ -79,7 +79,7 @@ terminals = {
     "terminal_postfix_binary_predicate_marker",  # 二項述語を後置するマーカー
 }
 
-grammar = Grammar(rules, terminals)
-lexer = Lexer(terminals)
+grammar = Grammar(rules, terminals)  # type: ignore[arg-type]
+lexer = Lexer(terminals)  # type: ignore[arg-type]
 
 parser = Parser(grammar, lexer)

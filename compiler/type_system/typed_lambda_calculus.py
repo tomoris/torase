@@ -77,6 +77,7 @@ class If(Argument):
 
 
 TypeEnvironment = dict[str, Type]
+Context = dict[str, Argument]
 
 
 class TypedLambdaTypeError(Exception):
@@ -94,6 +95,7 @@ class TypedLambdaCalculator:
             self.type_env: TypeEnvironment = {}
         else:
             self.type_env = type_env
+        self.ctx: Context = {}
 
     def check_type(self, arg: Argument) -> Type:
         match arg:
@@ -143,18 +145,18 @@ class TypedLambdaCalculator:
             case Constant():
                 return arg
             case Variable():
-                if arg.name not in self.type_env:
+                if arg.name not in self.ctx:
                     raise TypedLambdaTypeError(f"Undefined variable: {arg.name}")
-                return self.evaluate(self.type_env[arg.name])
+                return self.evaluate(self.ctx[arg.name])
             case LambdaAbstraction():
                 return arg
             case FunctionApplication():
                 func = self.evaluate(arg.func)
                 if isinstance(func, LambdaAbstraction):
                     new_arg = self.evaluate(arg.arg)
-                    self.type_env[func.param] = new_arg
+                    self.ctx[func.param] = new_arg
                     result = self.evaluate(func.body)
-                    del self.type_env[func.param]
+                    del self.ctx[func.param]
                     return result
                 else:
                     raise TypedLambdaTypeError(f"Cannot apply non-function: {func}")

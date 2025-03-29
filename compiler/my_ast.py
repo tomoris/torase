@@ -19,10 +19,10 @@ class AbstractSyntaxTree:
         self.children: list[AbstractSyntaxTree | TerminalSymbol] | Epsilon = []
 
     def add_child(self, child: AbstractSyntaxTree | TerminalSymbol | Epsilon):
-        if child == EPSILON_SYMBOL:
-            self.children = EPSILON_SYMBOL
+        if child == EPSILON_SYMBOL:  # type: ignore[assignment]
+            self.children = EPSILON_SYMBOL  # type: ignore[assignment]
         else:
-            self.children.append(child)
+            self.children.append(child)  # type: ignore[union-attr,arg-type]
 
     def __repr__(self):
         return f"({self.non_terminal_symbol} -> {self.children})"

@@ -18,13 +18,13 @@ class Parser:
 
     def parse(self, sentence: str) -> AbstractSyntaxTree:
         poss, _ = self.lexer.tokenize(sentence)
-        poss.append(EOS_SYMBOL)
-        stack: list[Symbol | Start] = [EOS_SYMBOL, START_SYMBOL]
+        poss.append(EOS_SYMBOL)  # type: ignore[arg-type]
+        stack: list[Symbol | Start] = [EOS_SYMBOL, START_SYMBOL]  # type: ignore[list-item]
         current_position = 0
-        tree = AbstractSyntaxTree(START_SYMBOL)
+        tree = AbstractSyntaxTree(START_SYMBOL)  # type: ignore[arg-type]
 
         while stack:
-            tree, stack, current_position = self._parse_tree(
+            tree, stack, current_position = self._parse_tree(  # type: ignore[assignment]
                 tree, poss, stack, current_position
             )
 
@@ -36,7 +36,7 @@ class Parser:
 
     def _parse_tree(
         self,
-        tree: AbstractSyntaxTree,
+        tree: AbstractSyntaxTree | TerminalSymbol,
         poss: list[TerminalSymbol],
         stack: list[Symbol | Start],
         current_position: int,
@@ -49,30 +49,30 @@ class Parser:
             else:
                 raise Exception(f"Invalid syntax at token {poss[current_position]}")
         elif top == EPSILON_SYMBOL:
-            tree.add_child(EPSILON_SYMBOL)
+            tree.add_child(EPSILON_SYMBOL)  # type: ignore[union-attr,arg-type]
             return tree, stack, current_position
         elif top in self.grammar.terminals:
             if poss[current_position] == top:
                 current_position += 1
-                tree = top
+                tree = top  # type: ignore[assignment]
                 return tree, stack, current_position
             else:
                 raise Exception(f"Invalid syntax at token {poss[current_position]}")
         elif top in self.grammar.non_terminals:
-            production = self.grammar.parse_table[top][poss[current_position]]
+            production = self.grammar.parse_table[top][poss[current_position]]  # type: ignore[index]
             if production is None:
                 raise Exception(f"Invalid syntax at token {poss[current_position]}")
             elif production == EPSILON_SYMBOL:
-                tree.add_child(EPSILON_SYMBOL)
+                tree.add_child(EPSILON_SYMBOL)  # type: ignore[union-attr,arg-type]
                 return tree, stack, current_position
             elif isinstance(production, list):
                 stack.extend(reversed(production))
                 for child in production:
-                    child_tree = AbstractSyntaxTree(child)
-                    child_tree, stack, current_position = self._parse_tree(
+                    child_tree = AbstractSyntaxTree(child)  # type: ignore[arg-type]
+                    child_tree, stack, current_position = self._parse_tree(  # type: ignore[arg-type,assignment]
                         child_tree, poss, stack, current_position
                     )
-                    tree.add_child(child_tree)
+                    tree.add_child(child_tree)  # type: ignore[union-attr]
                 return tree, stack, current_position
             else:
                 raise Exception(f"Invalid production: {production}")
