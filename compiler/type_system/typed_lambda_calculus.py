@@ -6,6 +6,18 @@ class Type:
 
 
 @dataclass
+class Entity(Type):
+    def __str__(self):
+        return "e"
+
+
+@dataclass
+class TruthValue(Type):
+    def __str__(self):
+        return "t"
+
+
+@dataclass
 class TInt(Type):
     def __str__(self):
         return "Int"

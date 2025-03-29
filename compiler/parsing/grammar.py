@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from compiler.my_ast import (
+from compiler.parsing.my_ast import (
     TerminalSymbol,
     NonTerminalSymbol,
     Symbol,
