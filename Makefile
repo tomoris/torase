@@ -5,4 +5,3 @@ my-pre-commit:
 	uv run ruff check . --fix
 	uv run mypy .
 	uv run python -m unittest discover
-

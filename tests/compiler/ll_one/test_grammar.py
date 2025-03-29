@@ -1,7 +1,7 @@
 import unittest
 from unittest import TestCase
 
-from compiler.ll_one.grammar import Grammar
+from compiler.parsing.grammar import Grammar
 
 
 class TestGrammar(TestCase):

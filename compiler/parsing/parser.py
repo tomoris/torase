@@ -1,4 +1,4 @@
-from compiler.ll_one.grammar import Grammar
+from compiler.parsing.grammar import Grammar
 from compiler.lexer import Lexer
 from compiler.my_ast import (
     AbstractSyntaxTree,
