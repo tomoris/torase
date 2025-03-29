@@ -1,6 +1,6 @@
 from compiler.parsing.grammar import Grammar
 from compiler.lexer import Lexer
-from compiler.my_ast import (
+from compiler.parsing.my_ast import (
     AbstractSyntaxTree,
     EOS_SYMBOL,
     EPSILON_SYMBOL,
