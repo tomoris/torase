@@ -1,15 +1,10 @@
-[tool.poetry]
+[project]
 name = "artificial-language"
 version = "0.1.0"
-description = ""
-authors = ["tomoris"]
+description = "Add your description here"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-torch = "^2.4.0"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires-python = ">=3.13"
+dependencies = [
+    "mypy>=1.15.0",
+    "ruff>=0.11.2",
+]
