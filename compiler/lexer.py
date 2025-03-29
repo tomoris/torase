@@ -20,4 +20,4 @@ class Lexer:
             poss.append(pos)
             stems.append(stem)
 
-        return poss, stems
+        return poss, stems  # type: ignore[return-value]

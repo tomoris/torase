@@ -1,7 +1,7 @@
 import unittest
 from unittest import TestCase
 
-from artificial_language.grammar import parser
+from artificial_language.definition import parser
 
 
 class Test平叙文Parser(TestCase):

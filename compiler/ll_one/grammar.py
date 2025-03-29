@@ -93,20 +93,20 @@ class Grammar:
                 raise ValueError(f"FIRST set for {non_terminal} is empty")
 
     def first(self, symbols: list[Symbol]) -> set[Symbol | Epsilon]:
-        first_set = set()
+        first_set: set[Symbol | Epsilon] = set()
         for symbol in symbols:
             if symbol in self.terminals:
                 first_set.add(symbol)
                 return first_set
             elif symbol in self.non_terminals:
-                first_set.update(self.first_sets[symbol])
-                if EPSILON_SYMBOL not in self.first_sets[symbol]:
+                first_set.update(self.first_sets[symbol])  # type: ignore[index]
+                if EPSILON_SYMBOL not in self.first_sets[symbol]:  # type: ignore[index]
                     return first_set
                 else:
-                    first_set.remove(EPSILON_SYMBOL)
+                    first_set.remove(EPSILON_SYMBOL)  # type: ignore[arg-type]
             else:
                 raise ValueError(f"Invalid symbol {symbol}")
-        first_set.add(EPSILON_SYMBOL)
+        first_set.add(EPSILON_SYMBOL)  # type: ignore[arg-type]
         return first_set
 
     def compute_follow_sets(self):
@@ -154,12 +154,12 @@ class Grammar:
             self.parse_table[non_terminal] = {}
             for terminal in self.terminals:
                 self.parse_table[non_terminal][terminal] = None
-            self.parse_table[non_terminal][EOS_SYMBOL] = None
+            self.parse_table[non_terminal][EOS_SYMBOL] = None  # type: ignore[index]
         for lhs, rhs in self.rules.items():
             for production in rhs:
                 if production == EPSILON_SYMBOL:
                     follow_set = self.follow(lhs)
-                    for terminal in follow_set:
+                    for terminal in follow_set:  # type: ignore[assignment]
                         if self.parse_table[lhs][terminal] is not None:
                             raise ValueError(
                                 f"Conflict in parse table for {lhs} and {terminal}. {self.parse_table[lhs][terminal]} and {production} cannot be in the same cell"
@@ -167,7 +167,7 @@ class Grammar:
                         self.parse_table[lhs][terminal] = production
                 elif isinstance(production, list):
                     first_set = self.first(production)
-                    for terminal in first_set:
+                    for terminal in first_set:  # type: ignore[assignment]
                         if terminal != EPSILON_SYMBOL:
                             if self.parse_table[lhs][terminal] is not None:
                                 raise ValueError(
@@ -176,7 +176,7 @@ class Grammar:
                             self.parse_table[lhs][terminal] = production
                     if EPSILON_SYMBOL in first_set:
                         follow_set = self.follow(lhs)
-                        for terminal in follow_set:
+                        for terminal in follow_set:  # type: ignore[assignment]
                             if self.parse_table[lhs][terminal] is not None:
                                 raise ValueError(
                                     f"Conflict in parse table for {lhs} and {terminal}. {self.parse_table[lhs][terminal]} and {production} cannot be in the same cell"

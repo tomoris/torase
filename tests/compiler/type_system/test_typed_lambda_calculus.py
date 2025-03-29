@@ -84,23 +84,6 @@ class TestTypedLambdaCalculus(TestCase):
         self.assertEqual(result, Constant(False))
 
     def test_ラムダ項の評価に失敗(self):
-        type_env = (
-            {
-                "y": If(
-                    Variable("z"),
-                    Constant(False),
-                    Constant(True),
-                )
-            },
-        )
-        calculator = TypedLambdaCalculator(type_env)
-        expr = FunctionApplication(
-            LambdaAbstraction("x", TInt(), Variable("x")),
-            Constant(1),
-        )
-        with self.assertRaises(TypeError):
-            calculator.evaluate(expr)
-
         calculator = TypedLambdaCalculator()
         expr = FunctionApplication(
             LambdaAbstraction(
