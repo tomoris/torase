@@ -8,6 +8,7 @@ from compiler.type_system.typed_lambda_calculus import (
     Argument,
     FunctionApplication,
 )
+from compiler.parsing.grammar import Grammar
 
 
 ApplicationPriorities = dict[tuple, tuple]
@@ -27,9 +28,38 @@ class LambdaExpressionConverter:
         self,
         app_priorities: ApplicationPriorities,
         arg_definitions: dict[Symbol | Epsilon, Argument],
+        grammar: Grammar,
     ):
         self.app_priorities = app_priorities
         self.arg_definitions = arg_definitions
+        self.grammar = grammar
+
+        self._validate()
+
+    def _validate(self) -> None:
+        for lhs, rhs in self.grammar.rules.items():
+            if lhs not in self.arg_definitions:
+                raise UnknownSymbolError(
+                    f"Invalid arg_definitions: {lhs} is not defined in the arg_definitions"
+                )
+            if isinstance(rhs, list):
+                for production in rhs:
+                    if production == EPSILON_SYMBOL:
+                        if EPSILON_SYMBOL not in self.arg_definitions:
+                            raise UnknownSymbolError(
+                                f"Invalid arg_definitions: {EPSILON_SYMBOL} is not defined"
+                            )
+                    elif isinstance(production, list):
+                        production_tuple = tuple(production)
+                        if production_tuple not in self.app_priorities:
+                            raise UnknownSymbolError(
+                                f"Invalid application priority: {production_tuple} is not defined"
+                            )
+                        for symbol in production:
+                            if symbol not in self.arg_definitions:
+                                raise UnknownSymbolError(
+                                    f"Invalid arg_definitions: {symbol} is not defined"
+                                )
 
     def _get_arg_def(self, s: Symbol | Epsilon) -> Argument:
         if s not in self.arg_definitions:

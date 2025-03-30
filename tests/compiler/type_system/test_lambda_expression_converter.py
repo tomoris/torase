@@ -32,8 +32,8 @@ class TestLambdaExpressionConverter(TestCase):
 
         app_priorities = {
             ("a", "A", "B", "b"): (0, (1, (2, 3))),
-            ("c"): (0),
-            ("d"): (0),
+            ("c",): (0),
+            ("d",): (0),
         }
         arg_definitions = {
             "a": Variable("a"),
@@ -45,7 +45,7 @@ class TestLambdaExpressionConverter(TestCase):
             "B": Variable("B"),
             "S": Variable("S"),
         }
-        converter = LambdaExpressionConverter(app_priorities, arg_definitions)
+        converter = LambdaExpressionConverter(app_priorities, arg_definitions, grammar)
         expr = converter.convert(ast)
         self.assertEqual(
             str(expr),
@@ -66,7 +66,7 @@ class TestLambdaExpressionConverter(TestCase):
 
         app_priorities = {
             ("subject", "V", "object"): ((1, 2), 0),
-            ("love"): (0),
+            ("love",): (0),
         }
         arg_definitions = {
             "subject": Variable("john"),
@@ -86,15 +86,12 @@ class TestLambdaExpressionConverter(TestCase):
             "V": Variable("V"),
             "S": Variable("S"),
         }
-        converter = LambdaExpressionConverter(app_priorities, arg_definitions)
+        converter = LambdaExpressionConverter(app_priorities, arg_definitions, grammar)
         expr = converter.convert(ast)
         self.assertEqual(
             str(expr),
             "(S (((V (λy:(e → (e → t)).(λx:(e → t).like(x, y)))) mary) john))",
         )
-
-    def test_ラムダ式の変換に失敗(self):
-        pass
 
 
 if __name__ == "__main__":
