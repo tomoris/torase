@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import NewType, Literal
+
+from typing import Literal, NewType
 
 TerminalSymbol = NewType("TerminalSymbol", str)
 NonTerminalSymbol = NewType("NonTerminalSymbol", str)

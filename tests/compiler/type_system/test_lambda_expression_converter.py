@@ -1,18 +1,18 @@
 import unittest
 from unittest import TestCase
 
-from compiler.parsing.grammar import Grammar
 from compiler.lexer import Lexer
+from compiler.parsing.grammar import Grammar
 from compiler.parsing.parser import Parser
 from compiler.type_system.lambda_expression_converter import (
     LambdaExpressionConverter,
 )
 from compiler.type_system.typed_lambda_calculus import (
-    Variable,
-    LambdaAbstraction,
     Arrow,
     Entity,
+    LambdaAbstraction,
     TruthValue,
+    Variable,
 )
 
 

@@ -1,15 +1,15 @@
 from copy import deepcopy
 
 from compiler.parsing.my_ast import (
-    TerminalSymbol,
-    NonTerminalSymbol,
-    Symbol,
-    START_SYMBOL,
     EOS_SYMBOL,
-    Eos,
     EPSILON_SYMBOL,
+    START_SYMBOL,
+    Eos,
     Epsilon,
+    NonTerminalSymbol,
     Production,
+    Symbol,
+    TerminalSymbol,
 )
 
 
