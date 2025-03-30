@@ -8,3 +8,14 @@ dependencies = [
     "mypy>=1.15.0",
     "ruff>=0.11.2",
 ]
+
+[tool.ruff.lint]
+ignore = [
+  "E501", # Line too long
+]
+
+select = [
+  "E",   # pycodestyle
+  "F",   # pyflakes
+  "I",   # isort
+]

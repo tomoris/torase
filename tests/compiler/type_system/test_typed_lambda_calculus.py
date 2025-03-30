@@ -2,16 +2,16 @@ import unittest
 from unittest import TestCase
 
 from compiler.type_system.typed_lambda_calculus import (
-    TInt,
-    TBool,
     Arrow,
     Constant,
-    If,
-    Variable,
-    LambdaAbstraction,
     FunctionApplication,
+    If,
+    LambdaAbstraction,
+    TBool,
+    TInt,
     TypedLambdaCalculator,
     TypedLambdaTypeError,
+    Variable,
 )
 
 

@@ -1,6 +1,7 @@
+from compiler.parsing.grammar import Grammar
 from compiler.parsing.my_ast import (
-    AbstractSyntaxTree,
     EPSILON_SYMBOL,
+    AbstractSyntaxTree,
     Epsilon,
     Symbol,
 )
@@ -8,8 +9,6 @@ from compiler.type_system.typed_lambda_calculus import (
     Argument,
     FunctionApplication,
 )
-from compiler.parsing.grammar import Grammar
-
 
 ApplicationPriorities = dict[tuple, tuple]
 

@@ -2,7 +2,6 @@ from typing import NewType
 
 from compiler.parsing.grammar import TerminalSymbol
 
-
 Stem = NewType("Stem", str)
 
 

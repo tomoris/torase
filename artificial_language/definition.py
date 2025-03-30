@@ -1,5 +1,5 @@
-from compiler.parsing.grammar import Grammar
 from compiler.lexer import Lexer
+from compiler.parsing.grammar import Grammar
 from compiler.parsing.parser import Parser
 
 rules = {
