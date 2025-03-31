@@ -100,9 +100,29 @@ class Test疑問文Parser(TestCase):
 
 class Test平叙文TypeChecker(TestCase):
     def test_平叙文を型検査が成功する(self):
+        # calculator = TypedLambdaCalculator()
+        # ast = parser.parse(
+        #     "terminal_tense_marker:_ terminal_aspect_marker:_ terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+        # )
+        # expr = converter.convert(ast)
+        # self.assertEqual(
+        #     calculator.check_type(expr),
+        #     TruthValue(),
+        # )
+
+        # calculator = TypedLambdaCalculator()
+        # ast = parser.parse(
+        #     "terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+        # )
+        # expr = converter.convert(ast)
+        # self.assertEqual(
+        #     calculator.check_type(expr),
+        #     TruthValue(),
+        # )
+
         calculator = TypedLambdaCalculator()
         ast = parser.parse(
-            "terminal_tense_marker:_ terminal_aspect_marker:_ terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retrieval:_ terminal_binary_predicate:flower"
         )
         expr = converter.convert(ast)
         self.assertEqual(
