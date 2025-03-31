@@ -72,7 +72,7 @@ class FunctionApplication(Argument):
 
 @dataclass
 class Constant(Argument):
-    value: int | bool
+    value: int | bool | str | Entity | TruthValue | Arrow
 
     def __str__(self):
         return str(self.value)
@@ -109,10 +109,30 @@ class TypedLambdaCalculator:
             self.type_env = type_env
         self.ctx: Context = {}
 
+    def _check_constant_type(self, arg: Constant) -> Type:
+        match arg.value:
+            case bool():
+                return TBool()
+            case int():
+                return TInt()
+            case str():
+                raise TypedLambdaTypeError(
+                    f"String constants are not supported: {arg.value}"
+                )
+            case Entity():
+                return Entity()
+            case TruthValue():
+                return TruthValue()
+            # case Arrow():
+            #     return Arrow(Entity(), Entity())  # 一時的
+            case _:
+                raise TypedLambdaTypeError(f"Unknown constant type: {type(arg.value)}")
+
     def check_type(self, arg: Argument) -> Type:
+        print(f"Checking type of: {arg}, type: {type(arg)}")
         match arg:
             case Constant():
-                return TBool() if isinstance(arg.value, bool) else TInt()
+                return self._check_constant_type(arg)
             case Variable():
                 if arg.name not in self.type_env:
                     raise TypedLambdaTypeError(f"Undefined variable: {arg.name}")
@@ -129,10 +149,15 @@ class TypedLambdaCalculator:
                     if func_type.left == arg_type:
                         return func_type.right
                     else:
+                        print()
+                        print(arg)
+                        print(func_type)
+                        print(arg_type)
                         raise TypedLambdaTypeError(
-                            f"Type mismatch: {func_type} and {arg_type}"
+                            f"Type mismatch: {func_type.left} and {arg_type}"
                         )
                 else:
+                    print("aaaaaaaa", arg.func, func_type, type(arg.func), arg)
                     raise TypedLambdaTypeError(
                         f"Cannot apply non-function: {func_type}"
                     )

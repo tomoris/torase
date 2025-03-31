@@ -1,7 +1,11 @@
 import unittest
 from unittest import TestCase
 
-from artificial_language.definition import parser
+from artificial_language.definition import converter, parser
+from compiler.type_system.typed_lambda_calculus import (
+    TruthValue,
+    TypedLambdaCalculator,
+)
 
 
 class Test平叙文Parser(TestCase):
@@ -91,6 +95,19 @@ class Test疑問文Parser(TestCase):
         )
         parser.parse(
             "terminal_interrogative_marker:which terminal_binary_predicate_operator:or terminal_binary_predicate:love terminal_binary_predicate:like terminal_argument:John terminal_argument_operator:or terminal_argument:Smith terminal_argument:Wilson"
+        )
+
+
+class Test平叙文TypeChecker(TestCase):
+    def test_平叙文を型検査が成功する(self):
+        calculator = TypedLambdaCalculator()
+        ast = parser.parse(
+            "terminal_tense_marker:_ terminal_aspect_marker:_ terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+        )
+        expr = converter.convert(ast)
+        self.assertEqual(
+            calculator.check_type(expr),
+            TruthValue(),
         )
 
 

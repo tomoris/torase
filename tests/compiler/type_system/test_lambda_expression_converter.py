@@ -32,8 +32,6 @@ class TestLambdaExpressionConverter(TestCase):
 
         app_priorities = {
             ("a", "A", "B", "b"): (0, (1, (2, 3))),
-            ("c",): (0),
-            ("d",): (0),
         }
         arg_definitions = {
             "a": Variable("a"),
@@ -65,8 +63,7 @@ class TestLambdaExpressionConverter(TestCase):
         ast = parser.parse("subject:john love:愛 object:mary")
 
         app_priorities = {
-            ("subject", "V", "object"): ((1, 2), 0),
-            ("love",): (0),
+            ("subject", "V", "object"): ((1, 2), 0),  # ((V object) subject)
         }
         arg_definitions = {
             "subject": Variable("john"),

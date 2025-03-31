@@ -49,16 +49,17 @@ class LambdaExpressionConverter:
                                 f"Invalid arg_definitions: {EPSILON_SYMBOL} is not defined"
                             )
                     elif isinstance(production, list):
-                        production_tuple = tuple(production)
-                        if production_tuple not in self.app_priorities:
-                            raise UnknownSymbolError(
-                                f"Invalid application priority: {production_tuple} is not defined"
-                            )
-                        for symbol in production:
-                            if symbol not in self.arg_definitions:
+                        if len(production) >= 2:
+                            production_tuple = tuple(production)
+                            if production_tuple not in self.app_priorities:
                                 raise UnknownSymbolError(
-                                    f"Invalid arg_definitions: {symbol} is not defined"
+                                    f"Invalid application priority: {production_tuple} is not defined"
                                 )
+                            for symbol in production:
+                                if symbol not in self.arg_definitions:
+                                    raise UnknownSymbolError(
+                                        f"Invalid arg_definitions: {symbol} is not defined"
+                                    )
 
     def _get_arg_def(self, s: Symbol | Epsilon) -> Argument:
         if s not in self.arg_definitions:
