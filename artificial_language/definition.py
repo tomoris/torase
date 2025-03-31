@@ -52,7 +52,7 @@ rules = {
         "ε",
     ],  # 項
     "argument_not_ε": [
-        ["determiner", "retrieved_argument"],
+        ["article", "quantifier", "retrieved_argument"],
         ["terminal_argument"],
         ["terminal_argument_operator", "argument_not_ε", "argument_not_ε"],
     ],  # 項
@@ -63,7 +63,6 @@ rules = {
             "binary_predicate",
         ],
     ],  # 項抽出
-    "determiner": [["article", "quantifier"]],  # 限定詞
     "article": [["terminal_article"], "ε"],  # 冠詞
     "quantifier": [["terminal_quantifier"], "ε"],  # 量詞
 }
@@ -106,13 +105,12 @@ app_priorities = {
     ): (0, ((3, 1), 2)),
     ("terminal_argument_transposition", "binary_predicate"): (0, 1),
     ("terminal_binary_predicate_operator", "binary_predicate", "binary_predicate"): (
-        0,
-        (1, 2),
+        (0, 1),
+        2,
     ),
     ("terminal_argument_operator", "argument_not_ε", "argument_not_ε"): ((0, 1), 2),
-    ("determiner", "retrieved_argument"): (0, 1),
+    ("article", "quantifier", "retrieved_argument"): (0, (1, 2)),
     ("terminal_argument_retrieval", "argument", "binary_predicate"): ((0, 2), 1),
-    ("article", "quantifier"): (0, 1),
 }
 arg_definitions = {
     "S": LambdaAbstraction("S__x", TruthValue(), Variable("S__x")),
@@ -154,9 +152,7 @@ arg_definitions = {
             Variable("aspect_marker__y"),
         ),
     ),
-    "event": LambdaAbstraction(
-        "event__x", Arrow(Entity(), Entity()), Constant(Entity())
-    ),
+    "event": LambdaAbstraction("event__x", Entity(), Constant(Entity())),
     "binary_predicate": LambdaAbstraction(
         "binary_predicate__x",
         Arrow(Entity(), Arrow(Entity(), Entity())),
@@ -166,11 +162,7 @@ arg_definitions = {
             LambdaAbstraction(
                 "binary_predicate__z",
                 Entity(),
-                LambdaAbstraction(
-                    "binary_predicate__w",
-                    Entity(),
-                    Variable("binary_predicate__w"),
-                ),
+                Variable("binary_predicate__z"),
             ),
         ),
     ),
@@ -184,10 +176,29 @@ arg_definitions = {
         Entity(),
         Variable("argument__x"),
     ),
-    "determiner": Constant("?"),
-    "retrieved_argument": Constant("?"),
-    "article": Constant("?"),
-    "quantifier": Constant("?"),
+    "retrieved_argument": LambdaAbstraction(
+        "retrieved_argument__x",
+        Entity(),
+        Variable("retrieved_argument__x"),
+    ),
+    "article": LambdaAbstraction(
+        "article__x",
+        Entity(),
+        LambdaAbstraction(
+            "article__y",
+            Entity(),
+            Variable("article__y"),
+        ),
+    ),
+    "quantifier": LambdaAbstraction(
+        "quantifier__x",
+        Entity(),
+        LambdaAbstraction(
+            "quantifier__y",
+            Entity(),
+            Variable("quantifier__y"),
+        ),
+    ),
     # terminal
     "terminal_declarative_marker": Constant("?"),
     "terminal_interrogative_marker": Constant("?"),
@@ -224,11 +235,11 @@ arg_definitions = {
     ),
     "terminal_argument_retrieval": LambdaAbstraction(
         "terminal_argument_retrieval__x",
-        Arrow(Arrow(Entity(), Arrow(Entity(), Entity())), Arrow(Entity(), Entity())),
+        Arrow(Entity(), Arrow(Entity(), Entity())),
         LambdaAbstraction(
             "terminal_argument_retrieval__y",
-            Arrow(Entity(), Entity()),
-            Constant("?"),
+            Entity(),
+            Variable("terminal_argument_retrieval__y"),
         ),
     ),
     "terminal_article": Constant("?"),
