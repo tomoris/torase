@@ -1,6 +1,17 @@
 from compiler.lexer import Lexer
 from compiler.parsing.grammar import Grammar
 from compiler.parsing.parser import Parser
+from compiler.type_system.lambda_expression_converter import (
+    LambdaExpressionConverter,
+)
+from compiler.type_system.typed_lambda_calculus import (
+    Arrow,
+    Constant,
+    Entity,
+    LambdaAbstraction,
+    TruthValue,
+    Variable,
+)
 
 rules = {
     "S": [
@@ -79,7 +90,165 @@ terminals = {
     "terminal_postfix_binary_predicate_marker",  # 二項述語を後置するマーカー
 }
 
+app_priorities = {
+    ("declarative_marker", "tense_marker", "aspect_marker", "event"): (0, (1, (2, 3))),
+    ("terminal_interrogative_marker", "tense_marker", "aspect_marker", "event"): (
+        0,
+        (1, (2, 3)),
+    ),
+    ("terminal_imperative_marker", "event"): (0, 1),
+    ("binary_predicate", "argument_not_ε", "argument"): ((0, 1), 2),
+    (
+        "terminal_postfix_binary_predicate_marker",
+        "argument_not_ε",
+        "argument",
+        "binary_predicate",
+    ): (0, ((3, 1), 2)),
+    ("terminal_argument_transposition", "binary_predicate"): (0, 1),
+    ("terminal_binary_predicate_operator", "binary_predicate", "binary_predicate"): (
+        0,
+        (1, 2),
+    ),
+    ("terminal_argument_operator", "argument_not_ε", "argument_not_ε"): ((0, 1), 2),
+    ("determiner", "retrieved_argument"): (0, 1),
+    ("terminal_argument_retrieval", "argument", "binary_predicate"): ((0, 2), 1),
+    ("article", "quantifier"): (0, 1),
+}
+arg_definitions = {
+    "S": LambdaAbstraction("S__x", TruthValue(), Variable("S__x")),
+    "declarative_sentence": LambdaAbstraction(
+        "declarative_sentence__x",
+        Entity(),
+        Constant(TruthValue()),
+    ),
+    "interrogative_sentence": LambdaAbstraction(
+        "interrogative_sentence__x",
+        Entity(),
+        Constant(TruthValue()),
+    ),
+    "imperative_sentence": Variable("?"),
+    "declarative_marker": LambdaAbstraction(
+        "declarative_marker__x",
+        Entity(),
+        LambdaAbstraction(
+            "declarative_marker__y",
+            Entity(),
+            Variable("declarative_marker__y"),
+        ),
+    ),
+    "tense_marker": LambdaAbstraction(
+        "tense_marker__x",
+        Entity(),
+        LambdaAbstraction(
+            "tense_marker__y",
+            Entity(),
+            Variable("tense_marker__y"),
+        ),
+    ),
+    "aspect_marker": LambdaAbstraction(
+        "aspect_marker__x",
+        Entity(),
+        LambdaAbstraction(
+            "aspect_marker__y",
+            Entity(),
+            Variable("aspect_marker__y"),
+        ),
+    ),
+    "event": LambdaAbstraction(
+        "event__x", Arrow(Entity(), Entity()), Constant(Entity())
+    ),
+    "binary_predicate": LambdaAbstraction(
+        "binary_predicate__x",
+        Arrow(Entity(), Arrow(Entity(), Entity())),
+        LambdaAbstraction(
+            "binary_predicate__y",
+            Entity(),
+            LambdaAbstraction(
+                "binary_predicate__z",
+                Entity(),
+                LambdaAbstraction(
+                    "binary_predicate__w",
+                    Entity(),
+                    Variable("binary_predicate__w"),
+                ),
+            ),
+        ),
+    ),
+    "argument_not_ε": LambdaAbstraction(
+        "argument_not_ε__x",
+        Entity(),
+        Variable("argument_not_ε__x"),
+    ),
+    "argument": LambdaAbstraction(
+        "argument__x",
+        Entity(),
+        Variable("argument__x"),
+    ),
+    "determiner": Constant("?"),
+    "retrieved_argument": Constant("?"),
+    "article": Constant("?"),
+    "quantifier": Constant("?"),
+    # terminal
+    "terminal_declarative_marker": Constant("?"),
+    "terminal_interrogative_marker": Constant("?"),
+    "terminal_imperative_marker": Constant("?"),
+    "terminal_tense_marker": Constant(Entity()),
+    "terminal_aspect_marker": Constant(Entity()),
+    # "terminal_binary_predicate": LambdaAbstraction(
+    #     "x",
+    #     Arrow(
+    #         Arrow(Entity(), Arrow(Entity(), Entity())),
+    #         Arrow(Entity(), Arrow(Entity(), Entity())),
+    #     ),
+    #     Variable("x"),
+    # ),
+    "terminal_binary_predicate": LambdaAbstraction(
+        "terminal_binary_predicate__x",
+        Entity(),
+        LambdaAbstraction(
+            "terminal_binary_predicate__y",
+            Entity(),
+            Variable("terminal_binary_predicate__y"),
+        ),
+    ),
+    # "terminal_argument": LambdaAbstraction(
+    #     "x",
+    #     Arrow(Entity(), Entity()),
+    #     Variable("x"),
+    # ),
+    "terminal_argument": Constant(Entity()),
+    "terminal_argument_transposition": LambdaAbstraction(
+        "terminal_argument_transposition__x",
+        Arrow(Entity(), Arrow(Entity(), Entity())),
+        Constant(Arrow(Entity(), Arrow(Entity(), Entity()))),
+    ),
+    "terminal_argument_retrieval": LambdaAbstraction(
+        "terminal_argument_retrieval__x",
+        Arrow(Arrow(Entity(), Arrow(Entity(), Entity())), Arrow(Entity(), Entity())),
+        LambdaAbstraction(
+            "terminal_argument_retrieval__y",
+            Arrow(Entity(), Entity()),
+            Constant("?"),
+        ),
+    ),
+    "terminal_article": Constant("?"),
+    "terminal_quantifier": Constant("?"),
+    "terminal_argument_operator": LambdaAbstraction(
+        "terminal_argument_operator__x",
+        Entity(),
+        LambdaAbstraction(
+            "terminal_argument_operator__y",
+            Entity(),
+            Constant(Arrow(Entity(), Entity())),
+        ),
+    ),
+    "terminal_binary_predicate_operator": Constant("?"),
+    "terminal_postfix_binary_predicate_marker": Constant("?"),
+    "ε": Constant(Entity()),  # Constant("ε"),
+}
+
 grammar = Grammar(rules, terminals)  # type: ignore[arg-type]
 lexer = Lexer(terminals)  # type: ignore[arg-type]
 
 parser = Parser(grammar, lexer)
+converter = LambdaExpressionConverter(app_priorities, arg_definitions, grammar)  # type: ignore[arg-type]
