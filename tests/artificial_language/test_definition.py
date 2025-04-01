@@ -21,15 +21,15 @@ class Test平叙文Parser(TestCase):
 
     def test_項抽出平叙文を受理する(self):
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retrieval:_ terminal_binary_predicate:flower"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower"
         )
 
     def test_限定詞平叙文を受理する(self):
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_article:the terminal_argument_retrieval:_ terminal_binary_predicate:flower"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_article:the terminal_binary_predicate:flower"
         )
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_quantifier:all terminal_argument_retrieval:_ terminal_binary_predicate:flower"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_quantifier:all terminal_binary_predicate:flower"
         )
 
     def test_受動態平叙文を受理する(self):
@@ -73,7 +73,7 @@ class Test疑問文Parser(TestCase):
 
         # what
         parser.parse(
-            "terminal_interrogative_marker:what terminal_binary_predicate:love terminal_argument:John terminal_argument_retrieval:_ terminal_binary_predicate:?"
+            "terminal_interrogative_marker:what terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:?"
         )
 
         # when, where, why, how
@@ -122,7 +122,7 @@ class Test平叙文TypeChecker(TestCase):
 
         calculator = TypedLambdaCalculator()
         ast = parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retrieval:_ terminal_binary_predicate:flower"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower"
         )
         expr = converter.convert(ast)
         self.assertEqual(

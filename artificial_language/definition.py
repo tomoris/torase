@@ -52,17 +52,28 @@ rules = {
         "ε",
     ],  # 項
     "argument_not_ε": [
-        ["article", "quantifier", "retrieved_argument"],
+        ["argument_retriever", "binary_predicate"],  # 項抽出
         ["terminal_argument"],
         ["terminal_argument_operator", "argument_not_ε", "argument_not_ε"],
     ],  # 項
-    "retrieved_argument": [
+    "argument_retriever_with_quantifier": [
         [
-            "terminal_argument_retrieval",
-            "argument",
-            "binary_predicate",
+            "terminal_argument_retriever",
+            "quantifier",
         ],
-    ],  # 項抽出
+    ],
+    "argument_retriever_with_quantifier_and_article": [
+        [
+            "argument_retriever_with_quantifier",
+            "article",
+        ]
+    ],
+    "argument_retriever": [
+        [
+            "argument_retriever_with_quantifier_and_article",
+            "argument",
+        ]
+    ],
     "article": [["terminal_article"], "ε"],  # 冠詞
     "quantifier": [["terminal_quantifier"], "ε"],  # 量詞
 }
@@ -78,7 +89,7 @@ terminals = {
     "terminal_binary_predicate",  # 二項述語
     "terminal_argument",  # 項
     "terminal_argument_transposition",  # 項転置
-    "terminal_argument_retrieval",  # 項抽出
+    "terminal_argument_retriever",  # 項抽出
     #
     "terminal_article",  # 冠詞
     "terminal_quantifier",  # 量詞
@@ -109,8 +120,10 @@ app_priorities = {
         2,
     ),
     ("terminal_argument_operator", "argument_not_ε", "argument_not_ε"): ((0, 1), 2),
-    ("article", "quantifier", "retrieved_argument"): (0, (1, 2)),
-    ("terminal_argument_retrieval", "argument", "binary_predicate"): ((0, 2), 1),
+    ("argument_retriever", "binary_predicate"): (0, 1),
+    ("argument_retriever_with_quantifier_and_article", "argument"): (0, 1),
+    ("argument_retriever_with_quantifier", "article"): (0, 1),
+    ("terminal_argument_retriever", "quantifier"): (0, 1),
 }
 arg_definitions = {
     "S": LambdaAbstraction("S__x", TruthValue(), Variable("S__x")),
@@ -184,20 +197,12 @@ arg_definitions = {
     "article": LambdaAbstraction(
         "article__x",
         Entity(),
-        LambdaAbstraction(
-            "article__y",
-            Entity(),
-            Variable("article__y"),
-        ),
+        Variable("article__x"),
     ),
     "quantifier": LambdaAbstraction(
         "quantifier__x",
         Entity(),
-        LambdaAbstraction(
-            "quantifier__y",
-            Entity(),
-            Variable("quantifier__y"),
-        ),
+        Variable("quantifier__x"),
     ),
     # terminal
     "terminal_declarative_marker": Constant("?"),
@@ -233,14 +238,46 @@ arg_definitions = {
         Arrow(Entity(), Arrow(Entity(), Entity())),
         Constant(Arrow(Entity(), Arrow(Entity(), Entity()))),
     ),
-    "terminal_argument_retrieval": LambdaAbstraction(
-        "terminal_argument_retrieval__x",
-        Arrow(Entity(), Arrow(Entity(), Entity())),
+    # "terminal_argument_retriever": LambdaAbstraction(
+    #     "terminal_argument_retriever__x",
+    #     Arrow(Entity(), Arrow(Entity(), Entity())),
+    #     LambdaAbstraction(
+    #         "terminal_argument_retriever__y",
+    #         Entity(),
+    #         Variable("terminal_argument_retriever__y"),
+    #     ),
+    # ),
+    "argument_retriever": LambdaAbstraction(
+        "argument_retriever__x",
+        Entity(),
         LambdaAbstraction(
-            "terminal_argument_retrieval__y",
-            Entity(),
-            Variable("terminal_argument_retrieval__y"),
+            "argument_retriever__y",
+            Arrow(Entity(), Arrow(Entity(), Entity())),
+            Constant(Entity()),
         ),
+    ),
+    "argument_retriever_with_quantifier_and_article": LambdaAbstraction(
+        "terminal_argument_retriever_with_quantifier_and_article__x",
+        Entity(),
+        LambdaAbstraction(
+            "terminal_argument_retriever_with_quantifier_and_article__y",
+            Entity(),
+            Variable("terminal_argument_retriever_with_quantifier_and_article__y"),
+        ),
+    ),
+    "argument_retriever_with_quantifier": LambdaAbstraction(
+        "terminal_argument_retriever_with_quantifier__x",
+        Entity(),
+        LambdaAbstraction(
+            "terminal_argument_retriever_with_quantifier__y",
+            Entity(),
+            Variable("terminal_argument_retriever_with_quantifier__y"),
+        ),
+    ),
+    "terminal_argument_retriever": LambdaAbstraction(
+        "terminal_argument_retriever__x",
+        Entity(),
+        Variable("terminal_argument_retriever__x"),
     ),
     "terminal_article": Constant("?"),
     "terminal_quantifier": Constant("?"),
