@@ -34,19 +34,37 @@ rules = {
     "aspect_marker": [["terminal_aspect_marker"], "ε"],
     #
     "event": [
-        ["binary_predicate", "argument_not_ε", "argument"],
+        ["app_binary_predicate", "argument"],
         [
             "terminal_postfix_binary_predicate_marker",
-            "argument_not_ε",
-            "argument",
-            "binary_predicate",
+            "postfix_event",
         ],
     ],
+    "postfix_binary_predicate": [["empty_argument_transposition", "binary_predicate"]],
+    "app_postfix_binary_predicate": [
+        [
+            "argument",
+            "postfix_binary_predicate",
+        ],
+    ],
+    "postfix_event": [
+        [
+            "argument_not_ε",
+            "app_postfix_binary_predicate",
+        ],
+    ],
+    "app_binary_predicate": [["binary_predicate", "argument_not_ε"]],
     "binary_predicate": [
         ["terminal_binary_predicate"],
         ["terminal_argument_transposition", "binary_predicate"],  # 項転置
-        ["terminal_binary_predicate_operator", "binary_predicate", "binary_predicate"],
+        ["binary_predicate_operator", "binary_predicate"],
     ],  # 二項述語
+    "binary_predicate_operator": [
+        ["terminal_binary_predicate_operator", "binary_predicate"]
+    ],
+    "empty_argument_transposition": [
+        "ε",
+    ],
     "argument": [
         ["argument_not_ε"],
         "ε",
@@ -54,8 +72,9 @@ rules = {
     "argument_not_ε": [
         ["argument_retriever", "binary_predicate"],  # 項抽出
         ["terminal_argument"],
-        ["terminal_argument_operator", "argument_not_ε", "argument_not_ε"],
+        ["argument_operator", "argument_not_ε"],
     ],  # 項
+    "argument_operator": [["terminal_argument_operator", "argument_not_ε"]],
     "argument_retriever_with_quantifier": [
         [
             "terminal_argument_retriever",
@@ -107,19 +126,17 @@ app_priorities = {
         (1, (2, 3)),
     ),
     ("terminal_imperative_marker", "event"): (0, 1),
-    ("binary_predicate", "argument_not_ε", "argument"): ((0, 1), 2),
-    (
-        "terminal_postfix_binary_predicate_marker",
-        "argument_not_ε",
-        "argument",
-        "binary_predicate",
-    ): (0, ((3, 1), 2)),
+    ("app_binary_predicate", "argument"): (0, 1),
+    ("binary_predicate", "argument_not_ε"): (0, 1),
+    ("terminal_postfix_binary_predicate_marker", "postfix_event"): (0, 1),
+    ("empty_argument_transposition", "binary_predicate"): (0, 1),
+    ("argument_not_ε", "app_postfix_binary_predicate"): (1, 0),
+    ("argument", "postfix_binary_predicate"): (1, 0),
     ("terminal_argument_transposition", "binary_predicate"): (0, 1),
-    ("terminal_binary_predicate_operator", "binary_predicate", "binary_predicate"): (
-        (0, 1),
-        2,
-    ),
-    ("terminal_argument_operator", "argument_not_ε", "argument_not_ε"): ((0, 1), 2),
+    ("binary_predicate_operator", "binary_predicate"): (0, 1),
+    ("terminal_binary_predicate_operator", "binary_predicate"): (0, 1),
+    ("argument_operator", "argument_not_ε"): (0, 1),
+    ("terminal_argument_operator", "argument_not_ε"): (0, 1),
     ("argument_retriever", "binary_predicate"): (0, 1),
     ("argument_retriever_with_quantifier_and_article", "argument"): (0, 1),
     ("argument_retriever_with_quantifier", "article"): (0, 1),
@@ -166,17 +183,26 @@ arg_definitions = {
         ),
     ),
     "event": LambdaAbstraction("event__x", Entity(), Constant(Entity())),
+    "postfix_event": Constant(Entity()),
+    "postfix_binary_predicate": Constant(Entity()),
+    "app_postfix_binary_predicate": Constant(Entity()),
+    "empty_argument_transposition": Constant(Entity()),
+    "app_binary_predicate": LambdaAbstraction(
+        "app_binary_predicate__x",
+        Arrow(Entity(), Entity()),
+        LambdaAbstraction(
+            "app_binary_predicate__y",
+            Entity(),
+            Variable("app_binary_predicate__y"),
+        ),
+    ),
     "binary_predicate": LambdaAbstraction(
         "binary_predicate__x",
         Arrow(Entity(), Arrow(Entity(), Entity())),
         LambdaAbstraction(
             "binary_predicate__y",
             Entity(),
-            LambdaAbstraction(
-                "binary_predicate__z",
-                Entity(),
-                Variable("binary_predicate__z"),
-            ),
+            Variable("binary_predicate__y"),
         ),
     ),
     "argument_not_ε": LambdaAbstraction(
@@ -281,6 +307,24 @@ arg_definitions = {
     ),
     "terminal_article": Constant("?"),
     "terminal_quantifier": Constant("?"),
+    "argument_operator": LambdaAbstraction(
+        "argument_operator__x",
+        Entity(),
+        LambdaAbstraction(
+            "argument_operator__y",
+            Entity(),
+            Constant(Arrow(Entity(), Entity())),
+        ),
+    ),
+    "binary_predicate_operator": LambdaAbstraction(
+        "binary_predicate_operator__x",
+        Entity(),
+        LambdaAbstraction(
+            "binary_predicate_operator__y",
+            Entity(),
+            Constant(Arrow(Entity(), Entity())),
+        ),
+    ),
     "terminal_argument_operator": LambdaAbstraction(
         "terminal_argument_operator__x",
         Entity(),
