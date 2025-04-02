@@ -15,23 +15,28 @@ from compiler.type_system.typed_lambda_calculus import (
 
 rules = {
     "S": [
-        ["declarative_sentence"],
-        ["interrogative_sentence"],
-        ["imperative_sentence"],
+        ["declarative_marker", "tense_aspect_event"],  # 平叙文
+        ["terminal_interrogative_marker", "tense_aspect_event"],  # 疑問文
+        ["terminal_imperative_marker", "event"],  # 命令文
     ],
-    #
-    "declarative_sentence": [
-        ["declarative_marker", "tense_marker", "aspect_marker", "event"]
-    ],  # 平叙文
-    "interrogative_sentence": [
-        ["terminal_interrogative_marker", "tense_marker", "aspect_marker", "event"]
-    ],  # 疑問文
-    "imperative_sentence": [["terminal_imperative_marker", "event"]],  # 命令文
     #
     "declarative_marker": [["terminal_declarative_marker"], "ε"],
     #
     "tense_marker": [["terminal_tense_marker"], "ε"],
     "aspect_marker": [["terminal_aspect_marker"], "ε"],
+    #
+    "tense_aspect_event": [
+        [
+            "aspect_marker",
+            "tense_event",
+        ],
+    ],
+    "tense_event": [
+        [
+            "tense_marker",
+            "event",
+        ],
+    ],
     #
     "event": [
         ["app_binary_predicate", "argument"],
@@ -120,12 +125,11 @@ terminals = {
 }
 
 app_priorities = {
-    ("declarative_marker", "tense_marker", "aspect_marker", "event"): (0, (1, (2, 3))),
-    ("terminal_interrogative_marker", "tense_marker", "aspect_marker", "event"): (
-        0,
-        (1, (2, 3)),
-    ),
+    ("declarative_marker", "tense_aspect_event"): (0, 1),
+    ("terminal_interrogative_marker", "tense_aspect_event"): (0, 1),
     ("terminal_imperative_marker", "event"): (0, 1),
+    ("aspect_marker", "tense_event"): (0, 1),
+    ("tense_marker", "event"): (0, 1),
     ("app_binary_predicate", "argument"): (0, 1),
     ("binary_predicate", "argument_not_ε"): (0, 1),
     ("terminal_postfix_binary_predicate_marker", "postfix_event"): (0, 1),
@@ -144,17 +148,6 @@ app_priorities = {
 }
 arg_definitions = {
     "S": LambdaAbstraction("S__x", TruthValue(), Variable("S__x")),
-    "declarative_sentence": LambdaAbstraction(
-        "declarative_sentence__x",
-        Entity(),
-        Constant(TruthValue()),
-    ),
-    "interrogative_sentence": LambdaAbstraction(
-        "interrogative_sentence__x",
-        Entity(),
-        Constant(TruthValue()),
-    ),
-    "imperative_sentence": Variable("?"),
     "declarative_marker": LambdaAbstraction(
         "declarative_marker__x",
         Entity(),
@@ -164,6 +157,8 @@ arg_definitions = {
             Variable("declarative_marker__y"),
         ),
     ),
+    "tense_aspect_event": Constant(Entity()),
+    "tense_event": Constant(Entity()),
     "tense_marker": LambdaAbstraction(
         "tense_marker__x",
         Entity(),
