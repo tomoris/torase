@@ -8,7 +8,7 @@ from compiler.type_system.lambda_expression_converter import (
     LambdaExpressionConverter,
 )
 from compiler.type_system.typed_lambda_calculus import (
-    Arrow,
+    Constant,
     Entity,
     LambdaAbstraction,
     TruthValue,
@@ -38,19 +38,48 @@ class TestLambdaExpressionConverter(TestCase):
             "b": Variable("b"),
             "c": Variable("c"),
             "d": Variable("d"),
-            "ε": Variable("ε"),
             "A": Variable("A"),
             "B": Variable("B"),
-            "S": Variable("S"),
         }
         converter = LambdaExpressionConverter(app_priorities, arg_definitions, grammar)
         expr = converter.convert(ast)
         self.assertEqual(
             str(expr),
-            "(S (a ((A ε) ((B d) b))))",
+            "(a (A (d b)))",
         )
 
     def test_ラムダ式の変換に成功2(self):
+        rules = {
+            "S": [["a", "A", "B", "b"]],
+            "A": [["c"], "ε"],
+            "B": [["d"], "ε"],
+        }
+        terminals = {"a", "b", "c", "d"}
+        grammar = Grammar(rules, terminals)
+        lexer = Lexer(terminals)
+
+        parser = Parser(grammar, lexer)
+        ast = parser.parse("a:aa d:dd b:bb")
+
+        app_priorities = {
+            ("a", "A", "B", "b"): (0, (1, (3, 2))),
+        }
+        arg_definitions = {
+            "a": Variable("a"),
+            "b": Variable("b"),
+            "c": Variable("c"),
+            "d": Variable("d"),
+            "A": Variable("A"),
+            "B": Variable("B"),
+        }
+        converter = LambdaExpressionConverter(app_priorities, arg_definitions, grammar)
+        expr = converter.convert(ast)
+        self.assertEqual(
+            str(expr),
+            "(a (A (b d)))",
+        )
+
+    def test_ラムダ式の変換に成功3(self):
         rules = {
             "S": [["subject", "V", "object"]],
             "V": [["love"], "ε"],
@@ -66,28 +95,32 @@ class TestLambdaExpressionConverter(TestCase):
             ("subject", "V", "object"): ((1, 2), 0),  # ((V object) subject)
         }
         arg_definitions = {
-            "subject": Variable("john"),
-            "object": Variable("mary"),
+            "subject": Constant(Entity()),
+            "object": Constant(Entity()),
             "love": LambdaAbstraction(
                 "y",
-                Arrow(Entity(), Arrow(Entity(), TruthValue())),
+                Entity(),
                 LambdaAbstraction(
                     "x",
-                    Arrow(Entity(), TruthValue()),
-                    Variable("like(x, y)"),
+                    Entity(),
+                    Constant(TruthValue()),
                 ),
             ),
-            "john": Variable("john"),
-            "mary": Variable("mary"),
-            "ε": Variable("ε"),
-            "V": Variable("V"),
-            "S": Variable("S"),
+            "V": LambdaAbstraction(
+                "y",
+                Entity(),
+                LambdaAbstraction(
+                    "x",
+                    Entity(),
+                    Constant(TruthValue()),
+                ),
+            ),
         }
         converter = LambdaExpressionConverter(app_priorities, arg_definitions, grammar)
         expr = converter.convert(ast)
         self.assertEqual(
             str(expr),
-            "(S (((V (λy:(e → (e → t)).(λx:(e → t).like(x, y)))) mary) john))",
+            "(((λy:e.(λx:e.t)) e) e)",
         )
 
 

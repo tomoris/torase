@@ -37,29 +37,24 @@ class LambdaExpressionConverter:
 
     def _validate(self) -> None:
         for lhs, rhs in self.grammar.rules.items():
-            if lhs not in self.arg_definitions:
+            if EPSILON_SYMBOL in rhs and lhs not in self.arg_definitions:
                 raise UnknownSymbolError(
                     f"Invalid arg_definitions: {lhs} is not defined in the arg_definitions"
                 )
             if isinstance(rhs, list):
                 for production in rhs:
-                    if production == EPSILON_SYMBOL:
-                        if EPSILON_SYMBOL not in self.arg_definitions:
-                            raise UnknownSymbolError(
-                                f"Invalid arg_definitions: {EPSILON_SYMBOL} is not defined"
-                            )
-                    elif isinstance(production, list):
+                    if isinstance(production, list):
                         if len(production) >= 2:
                             production_tuple = tuple(production)
                             if production_tuple not in self.app_priorities:
                                 raise UnknownSymbolError(
                                     f"Invalid application priority: {production_tuple} is not defined"
                                 )
-                            for symbol in production:
-                                if symbol not in self.arg_definitions:
-                                    raise UnknownSymbolError(
-                                        f"Invalid arg_definitions: {symbol} is not defined"
-                                    )
+            for terminal_symbol in self.grammar.terminals:
+                if terminal_symbol not in self.arg_definitions:
+                    raise UnknownSymbolError(
+                        f"Invalid arg_definitions: {terminal_symbol} is not defined"
+                    )
 
     def _get_arg_def(self, s: Symbol | Epsilon) -> Argument:
         if s not in self.arg_definitions:
@@ -68,10 +63,7 @@ class LambdaExpressionConverter:
 
     def convert(self, ast: AbstractSyntaxTree) -> Argument:
         if ast.children == EPSILON_SYMBOL:
-            return FunctionApplication(
-                self._get_arg_def(ast.non_terminal_symbol),
-                self._get_arg_def(EPSILON_SYMBOL),  # type: ignore[arg-type]
-            )
+            return self._get_arg_def(ast.non_terminal_symbol)
 
         # 子がlistの場合
         child_args = []
@@ -81,10 +73,7 @@ class LambdaExpressionConverter:
             else:  # TerminalSymbol
                 child_args.append(self._get_arg_def(child))  # type: ignore[arg-type]
         if len(child_args) == 1:
-            return FunctionApplication(
-                self._get_arg_def(ast.non_terminal_symbol),
-                child_args[0],
-            )
+            return child_args[0]
 
         # 子がlistで2つ以上の場合
         production_tuple = tuple(
@@ -95,10 +84,7 @@ class LambdaExpressionConverter:
         )
         prior = self.app_priorities[production_tuple]
 
-        return FunctionApplication(
-            self._get_arg_def(ast.non_terminal_symbol),
-            self._app(prior, child_args),
-        )
+        return self._app(prior, child_args)
 
     def _app(self, prior: tuple, child_args: list[Argument]) -> FunctionApplication:
         assert len(prior) == 2
