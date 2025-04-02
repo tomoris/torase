@@ -129,7 +129,6 @@ class TypedLambdaCalculator:
                 raise TypedLambdaTypeError(f"Unknown constant type: {type(arg.value)}")
 
     def check_type(self, arg: Argument) -> Type:
-        print(f"Checking type of: {arg}, type: {type(arg)}")
         match arg:
             case Constant():
                 return self._check_constant_type(arg)
@@ -149,15 +148,10 @@ class TypedLambdaCalculator:
                     if func_type.left == arg_type:
                         return func_type.right
                     else:
-                        print()
-                        print(arg)
-                        print(func_type)
-                        print(arg_type)
                         raise TypedLambdaTypeError(
                             f"Type mismatch: {func_type.left} and {arg_type}"
                         )
                 else:
-                    print("aaaaaaaa", arg.func, func_type, type(arg.func), arg)
                     raise TypedLambdaTypeError(
                         f"Cannot apply non-function: {func_type}"
                     )
