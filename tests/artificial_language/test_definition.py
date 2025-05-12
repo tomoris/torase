@@ -1,7 +1,10 @@
 import unittest
 from unittest import TestCase
 
-from artificial_language.definition import parser
+from artificial_language.definition import TruthValue, converter, parser
+from compiler.type_system.typed_lambda_calculus import (
+    TypedLambdaCalculator,
+)
 
 
 class Test平叙文Parser(TestCase):
@@ -17,15 +20,15 @@ class Test平叙文Parser(TestCase):
 
     def test_項抽出平叙文を受理する(self):
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower terminal_argument_retriever_end:_"
         )
 
     def test_限定詞平叙文を受理する(self):
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_article:the terminal_binary_predicate:flower"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_article:the terminal_binary_predicate:flower terminal_argument_retriever_end:_"
         )
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_quantifier:all terminal_binary_predicate:flower"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_quantifier:all terminal_binary_predicate:flower terminal_argument_retriever_end:_"
         )
 
     def test_受動態平叙文を受理する(self):
@@ -69,7 +72,7 @@ class Test疑問文Parser(TestCase):
 
         # what
         parser.parse(
-            "terminal_interrogative_marker:what terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:?"
+            "terminal_interrogative_marker:what terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:? terminal_argument_retriever_end:_"
         )
 
         # when, where, why, how
@@ -96,36 +99,35 @@ class Test疑問文Parser(TestCase):
 
 class Test平叙文TypeChecker(TestCase):
     def test_平叙文を型検査が成功する(self):
-        # calculator = TypedLambdaCalculator()
-        # ast = parser.parse(
-        #     "terminal_tense_marker:_ terminal_aspect_marker:_ terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
-        # )
-        # expr = converter.convert(ast)
-        # self.assertEqual(
-        #     calculator.check_type(expr),
-        #     TruthValue(),
-        # )
+        calculator = TypedLambdaCalculator()
+        ast = parser.parse(
+            "terminal_tense_marker:_ terminal_aspect_marker:_ terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+        )
+        expr = converter.convert(ast)
+        self.assertEqual(
+            type(calculator.check_type(expr)),
+            type(TruthValue()),
+        )
 
-        # calculator = TypedLambdaCalculator()
-        # ast = parser.parse(
-        #     "terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
-        # )
-        # expr = converter.convert(ast)
-        # self.assertEqual(
-        #     calculator.check_type(expr),
-        #     TruthValue(),
-        # )
+        calculator = TypedLambdaCalculator()
+        ast = parser.parse(
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+        )
+        expr = converter.convert(ast)
+        self.assertEqual(
+            type(calculator.check_type(expr)),
+            type(TruthValue()),
+        )
 
-        # calculator = TypedLambdaCalculator()
-        # ast = parser.parse(
-        #     "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower"
-        # )
-        # expr = converter.convert(ast)
-        # self.assertEqual(
-        #     calculator.check_type(expr),
-        #     TruthValue(),
-        # )
-        pass
+        calculator = TypedLambdaCalculator()
+        ast = parser.parse(
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower terminal_argument_retriever_end:_"
+        )
+        expr = converter.convert(ast)
+        self.assertEqual(
+            type(calculator.check_type(expr)),
+            type(TruthValue()),
+        )
 
 
 if __name__ == "__main__":
