@@ -5,6 +5,10 @@ class Type:
     pass
 
 
+class MyType(Type):
+    pass
+
+
 @dataclass
 class Entity(Type):
     def __str__(self):
@@ -38,9 +42,13 @@ class Arrow(Type):
         return f"({self.left} → {self.right})"
 
 
-@dataclass
 class Argument:
     pass
+
+
+class MyArgument(Argument):
+    def calc_type(self) -> MyType:
+        raise NotImplementedError("Subclasses must implement calc_type() method")
 
 
 @dataclass
@@ -123,8 +131,6 @@ class TypedLambdaCalculator:
                 return Entity()
             case TruthValue():
                 return TruthValue()
-            # case Arrow():
-            #     return Arrow(Entity(), Entity())  # 一時的
             case _:
                 raise TypedLambdaTypeError(f"Unknown constant type: {type(arg.value)}")
 
@@ -168,6 +174,8 @@ class TypedLambdaCalculator:
                         f"Branches must have the same type: {then_type} and {else_type}"
                     )
                 return then_type
+            case MyArgument():
+                return arg.calc_type()
             case _:
                 raise TypedLambdaTypeError(f"Unknown argument type: {type(arg)}")
 
