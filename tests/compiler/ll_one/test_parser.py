@@ -22,7 +22,7 @@ class TestParser(TestCase):
         ast = parser.parse("a:aa d:dd b:bb")
         self.assertEqual(
             str(ast),
-            "(S -> ['a', (A -> ε), (B -> ['d']), 'b'])",
+            "(S -> [(a -> aa), (A -> ε), (B -> [(d -> dd)]), (b -> bb)])",
         )
 
     def test_与えられたll1文法で受理できる文の場合に受理される2(self):
@@ -39,7 +39,7 @@ class TestParser(TestCase):
         ast = parser.parse("a:aa c:cc b:bb")
         self.assertEqual(
             str(ast),
-            "(S -> ['a', (A -> ['c']), (B -> ε), 'b'])",
+            "(S -> [(a -> aa), (A -> [(c -> cc)]), (B -> ε), (b -> bb)])",
         )
 
     def test_与えられたll1文法で受理できる文の場合に受理される3(self):
@@ -56,7 +56,7 @@ class TestParser(TestCase):
         ast = parser.parse("a:aa c:cc d:dd b:bb")
         self.assertEqual(
             str(ast),
-            "(S -> ['a', (A -> ['c']), (B -> ['d']), 'b'])",
+            "(S -> [(a -> aa), (A -> [(c -> cc)]), (B -> [(d -> dd)]), (b -> bb)])",
         )
 
     def test_与えられたll1文法で受理できる文の場合に受理される4(self):
@@ -75,7 +75,7 @@ class TestParser(TestCase):
         ast = parser.parse("ID:id PLUS:plus ID:id TIMES:times ID:id")
         self.assertEqual(
             str(ast),
-            "(S -> [(T -> [(F -> ['ID']), (T_prime -> ε)]), (E_prime -> ['PLUS', (T -> [(F -> ['ID']), (T_prime -> ['TIMES', (F -> ['ID']), (T_prime -> ε)])]), (E_prime -> ε)])])",
+            "(S -> [(T -> [(F -> [(ID -> id)]), (T_prime -> ε)]), (E_prime -> [(PLUS -> plus), (T -> [(F -> [(ID -> id)]), (T_prime -> [(TIMES -> times), (F -> [(ID -> id)]), (T_prime -> ε)])]), (E_prime -> ε)])])",
         )
 
     def test_与えられたll1文法で受理できない文の場合に例外が投げられる1(self):

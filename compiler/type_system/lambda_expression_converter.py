@@ -4,6 +4,7 @@ from compiler.parsing.my_ast import (
     AbstractSyntaxTree,
     Epsilon,
     Symbol,
+    Token,
 )
 from compiler.type_system.typed_lambda_calculus import (
     Argument,
@@ -70,15 +71,17 @@ class LambdaExpressionConverter:
         for child in ast.children:
             if isinstance(child, AbstractSyntaxTree):
                 child_args.append(self.convert(child))
-            else:  # TerminalSymbol
-                child_args.append(self._get_arg_def(child))  # type: ignore[arg-type]
+            elif isinstance(child, Token):
+                child_args.append(self._get_arg_def(child.pos))
+            else:
+                raise UnknownSymbolError(f"Unknown symbol: {child}")
         if len(child_args) == 1:
             return child_args[0]
 
         # 子がlistで2つ以上の場合
         production_tuple = tuple(
             [
-                c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c.pos  # type: ignore[union-attr]
                 for c in ast.children
             ]
         )
