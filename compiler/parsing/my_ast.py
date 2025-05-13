@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal, NewType
 
 TerminalSymbol = NewType("TerminalSymbol", str)
@@ -14,12 +15,21 @@ Epsilon = Literal["ε"]
 Production = list[Symbol] | Epsilon
 
 
+@dataclass
+class Token:
+    pos: TerminalSymbol
+    string: str
+
+    def __repr__(self):
+        return f"({self.pos} -> {self.string})"
+
+
 class AbstractSyntaxTree:
     def __init__(self, non_terminal_symbol: NonTerminalSymbol):
         self.non_terminal_symbol = non_terminal_symbol
-        self.children: list[AbstractSyntaxTree | TerminalSymbol] | Epsilon = []
+        self.children: list[AbstractSyntaxTree | Token] | Epsilon = []
 
-    def add_child(self, child: AbstractSyntaxTree | TerminalSymbol | Epsilon):
+    def add_child(self, child: AbstractSyntaxTree | Token | Epsilon):
         if child == EPSILON_SYMBOL:  # type: ignore[assignment]
             self.children = EPSILON_SYMBOL  # type: ignore[assignment]
         else:

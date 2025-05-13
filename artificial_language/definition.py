@@ -201,7 +201,11 @@ class MyLambdaExpressionConverter:
         if isinstance(children, list):
             production_tuple = tuple(
                 [
-                    c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                    (
+                        c.non_terminal_symbol
+                        if isinstance(c, AbstractSyntaxTree)
+                        else c.pos
+                    )
                     for c in children
                 ]
             )
@@ -225,7 +229,11 @@ class MyLambdaExpressionConverter:
         if isinstance(children, list):
             production_tuple = tuple(
                 [
-                    c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                    (
+                        c.non_terminal_symbol
+                        if isinstance(c, AbstractSyntaxTree)
+                        else c.pos
+                    )
                     for c in children
                 ]
             )
@@ -246,7 +254,11 @@ class MyLambdaExpressionConverter:
         if isinstance(children, list):
             production_tuple = tuple(
                 [
-                    c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                    (
+                        c.non_terminal_symbol
+                        if isinstance(c, AbstractSyntaxTree)
+                        else c.pos
+                    )
                     for c in children
                 ]
             )
@@ -267,7 +279,11 @@ class MyLambdaExpressionConverter:
         if isinstance(children, list):
             production_tuple = tuple(
                 [
-                    c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                    (
+                        c.non_terminal_symbol
+                        if isinstance(c, AbstractSyntaxTree)
+                        else c.pos
+                    )
                     for c in children
                 ]
             )
@@ -302,7 +318,11 @@ class MyLambdaExpressionConverter:
         if isinstance(children, list):
             production_tuple = tuple(
                 [
-                    c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                    (
+                        c.non_terminal_symbol
+                        if isinstance(c, AbstractSyntaxTree)
+                        else c.pos
+                    )
                     for c in children
                 ]
             )
@@ -332,7 +352,11 @@ class MyLambdaExpressionConverter:
         if isinstance(children, list):
             production_tuple = tuple(
                 [
-                    c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                    (
+                        c.non_terminal_symbol
+                        if isinstance(c, AbstractSyntaxTree)
+                        else c.pos
+                    )
                     for c in children
                 ]
             )
@@ -351,7 +375,11 @@ class MyLambdaExpressionConverter:
         if isinstance(children, list):
             production_tuple = tuple(
                 [
-                    c.non_terminal_symbol if isinstance(c, AbstractSyntaxTree) else c
+                    (
+                        c.non_terminal_symbol
+                        if isinstance(c, AbstractSyntaxTree)
+                        else c.pos
+                    )
                     for c in children
                 ]
             )
