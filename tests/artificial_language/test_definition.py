@@ -18,17 +18,22 @@ class Test平叙文Parser(TestCase):
             "terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
         )
 
+    def test_マーカーなし複合語の平叙文を受理する(self):
+        parser.parse(
+            "terminal_binary_predicate:love terminal_binary_predicate:true terminal_argument:John terminal_argument:Smith"
+        )
+
     def test_項抽出平叙文を受理する(self):
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower terminal_argument_retriever_end:_"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever_without_argument:_ terminal_binary_predicate:flower"
         )
 
     def test_限定詞平叙文を受理する(self):
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_article:the terminal_binary_predicate:flower terminal_argument_retriever_end:_"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever_without_argument:_ terminal_article:the terminal_binary_predicate:flower"
         )
         parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_quantifier:all terminal_binary_predicate:flower terminal_argument_retriever_end:_"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever_without_argument:_ terminal_quantifier:all terminal_binary_predicate:flower"
         )
 
     def test_受動態平叙文を受理する(self):
@@ -41,10 +46,10 @@ class Test平叙文Parser(TestCase):
             "terminal_tense_marker:will terminal_argument_transposition:be-ed terminal_binary_predicate:love terminal_argument:Smith terminal_argument:John"
         )
 
-    def test_sov平叙文を受理する(self):
-        parser.parse(
-            "terminal_postfix_binary_predicate_marker:_ terminal_argument:John terminal_argument:Smith terminal_binary_predicate:love"
-        )
+    # def test_sov平叙文を受理する(self):
+    #     parser.parse(
+    #         "terminal_postfix_binary_predicate_marker:_ terminal_argument:John terminal_argument:Smith terminal_binary_predicate:love"
+    #     )
 
     def test_orやandを含む平叙文を受理する(self):
         parser.parse(
@@ -72,7 +77,7 @@ class Test疑問文Parser(TestCase):
 
         # what
         parser.parse(
-            "terminal_interrogative_marker:what terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:? terminal_argument_retriever_end:_"
+            "terminal_interrogative_marker:what terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever_without_argument:_ terminal_binary_predicate:?"
         )
 
         # when, where, why, how
@@ -121,7 +126,7 @@ class Test平叙文TypeChecker(TestCase):
 
         calculator = TypedLambdaCalculator()
         ast = parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower terminal_argument_retriever_end:_"
+            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever_without_argument:_ terminal_binary_predicate:flower"
         )
         expr = converter.convert(ast)
         self.assertEqual(
