@@ -22,55 +22,89 @@ rules = {
     "declarative_marker": [["terminal_declarative_marker"], "ε"],
     #
     "tam_event": [
-        ["tense_marker", "aspect_marker", "modality_marker", "event"],
+        [
+            "tense_marker",
+            "aspect_marker",
+            "modality_marker",
+            "event",
+            "tam_event_post_modifier",
+        ],
+        ["terminal_tam_event_operator", "tam_event", "tam_event"],
     ],  # 時制・相・様相
+    "tam_event_post_modifier": [
+        ["terminal_tam_event_post_modifier", "tam_event"],
+        "ε",
+    ],  # タグ
     "tense_marker": [["terminal_tense_marker"], "ε"],
     "aspect_marker": [["terminal_aspect_marker"], "ε"],
     "modality_marker": [["terminal_modality_marker"], "ε"],
     #
     "event": [
-        ["compound_binary_predicate", "argument_not_ε", "argument"],
-        # [
-        #     "terminal_postfix_binary_predicate_marker",
-        #     "argument_not_ε",
-        #     "argument",
-        #     "binary_predicate",
-        # ],
+        [
+            "post_modified_binary_predicate",
+            "argument_not_ε",
+            "argument",
+        ],
     ],
-    "compound_binary_predicate": [
-        ["binary_predicate", "modifier_binary_predicate"],
-    ],
-    "modifier_binary_predicate": [
+    "post_modified_binary_predicate": [
         [
             "binary_predicate",
-            "modifier_binary_predicate",
+            "binary_predicate_post_modifier",
         ],
-        "ε",
-    ],
+    ],  # 後置修飾された二項述語
     "binary_predicate": [
         ["terminal_binary_predicate"],
-        ["terminal_argument_transposition", "binary_predicate"],  # 項転置
-        ["terminal_binary_predicate_operator", "binary_predicate", "binary_predicate"],
+        [
+            "terminal_argument_transposition",
+            "binary_predicate",
+        ],  # 項転置
+        [
+            "terminal_binary_predicate_operator",
+            "binary_predicate",
+            "binary_predicate",
+        ],
     ],  # 二項述語
+    "binary_predicate_post_modifier": [
+        ["terminal_binary_predicate_post_modifier", "binary_predicate"],
+        "ε",
+    ],  # タグ
     "argument": [
         ["argument_not_ε"],
         "ε",
     ],  # 項
     "argument_not_ε": [
+        # [
+        #     "terminal_argument_retriever_without_argument",
+        #     "determiner",
+        #     "binary_predicate",
+        # ],  # 項抽出
+        # [
+        #     "terminal_argument_retriever_with_argument",
+        #     "determiner",
+        #     "binary_predicate",
+        #     "argument_not_ε",
+        # ],  # 項抽出
         [
-            "terminal_argument_retriever_without_argument",
+            "terminal_argument_retriever",
             "determiner",
             "binary_predicate",
-        ],  # 項抽出
-        [
-            "terminal_argument_retriever_with_argument",
-            "determiner",
-            "binary_predicate",
-            "argument_not_ε",
+            "post_modified_argument_retriever",
         ],  # 項抽出
         ["terminal_argument"],
         ["terminal_argument_operator", "argument_not_ε", "argument_not_ε"],
+        [
+            "terminal_tam_event_to_argument_converter",
+            "tam_event",
+            "terminal_tam_event_to_argument_converter_end",
+        ],
     ],  # 項
+    "post_modified_argument_retriever": [
+        [
+            "terminal_post_modified_argument_retriever",
+            "argument_not_ε",
+        ],
+        "ε",
+    ],
     "determiner": [
         ["quantifier", "article"],
     ],  # 限定詞
@@ -82,6 +116,9 @@ terminals = {
     "terminal_declarative_marker",  # 平叙文を示すマーカー
     "terminal_interrogative_marker",  # 疑問文を示すマーカー
     #
+    "terminal_tam_event_operator",  # eventの接続詞を示す演算子
+    "terminal_tam_event_post_modifier",  # eventの後置修飾子
+    #
     "terminal_tense_marker",  # 時制を示すマーカー
     "terminal_aspect_marker",  # 相を示すマーカー
     "terminal_modality_marker",  # 様相を示すマーカー
@@ -89,16 +126,17 @@ terminals = {
     "terminal_binary_predicate",  # 二項述語
     "terminal_argument",  # 項
     "terminal_argument_transposition",  # 項転置
-    "terminal_argument_retriever_without_argument",  # 項抽出
-    "terminal_argument_retriever_with_argument",  # 項抽出
+    "terminal_tam_event_to_argument_converter",  # eventを項に変換
+    "terminal_tam_event_to_argument_converter_end",  # eventを項に変換
     #
     "terminal_article",  # 冠詞
     "terminal_quantifier",  # 量詞
     #
     "terminal_argument_operator",  # 項演算子
     "terminal_binary_predicate_operator",  # 述語演算子
-    #
-    # "terminal_postfix_binary_predicate_marker",  # 二項述語を後置するマーカー
+    "terminal_binary_predicate_post_modifier",  # 二項述語の後置修飾子
+    "terminal_argument_retriever",  # 項抽出
+    "terminal_post_modified_argument_retriever",
 }
 
 
@@ -134,42 +172,22 @@ class BinaryPredicate(MyArgument):
 
 
 @dataclass
-class ModifierBinaryPredicate(MyArgument):
-    type1: MyType
-    type2: MyType
-
-    def calc_type(self):
-        raise ValueError("ModifierBinaryPredicate should not be used directly")
-
-
-@dataclass
-class CompoundBinaryPredicate(MyArgument):
-    type1: MyType
-    type2: MyType
-
-    def calc_type(self):
-        raise ValueError("BinaryPredicate should not be used directly")
-
-
-@dataclass
 class Event(MyArgument):
-    compound_binary_predicate: CompoundBinaryPredicate
+    binary_predicate: BinaryPredicate
     argument_1: Arg
     argument_2: Arg
 
     def calc_type(self):
-        if not include_type(
-            self.compound_binary_predicate.type1, self.argument_1.calc_type()
-        ):
+        if not include_type(self.binary_predicate.type1, self.argument_1.calc_type()):
             raise ValueError(
-                f"Type mismatch: {self.compound_binary_predicate.type1} and {self.argument_1.calc_type()}"
+                f"Type mismatch: {self.binary_predicate.type1} and {self.argument_1.calc_type()}"
             )
-        if isinstance(self.compound_binary_predicate.type2, Bottom):
+        if isinstance(self.binary_predicate.type2, Bottom):
             if not include_type(
-                self.compound_binary_predicate.type2, self.argument_2.calc_type()
+                self.binary_predicate.type2, self.argument_2.calc_type()
             ):
                 raise ValueError(
-                    f"Type mismatch: {self.compound_binary_predicate.type2} and {self.argument_2.calc_type()}"
+                    f"Type mismatch: {self.binary_predicate.type2} and {self.argument_2.calc_type()}"
                 )
 
         return TruthValue()
@@ -297,13 +315,33 @@ class MyLambdaExpressionConverter:
                 ]
             )
             match production_tuple:
-                case ("tense_marker", "aspect_marker", "modality_marker", "event"):
+                case (
+                    "tense_marker",
+                    "aspect_marker",
+                    "modality_marker",
+                    "event",
+                    "tam_event_post_modifier",
+                ):
                     return TamEvent(
                         tense=None,
                         aspect=None,
                         modality=None,
                         event=self.convert_event(children[3].children),
                     )
+                case ("terminal_tam_event_operator", "tam_event", "tam_event"):
+                    e0 = TamEvent(
+                        tense=None,
+                        aspect=None,
+                        modality=None,
+                        event=self.convert_event(children[0].children),
+                    )
+                    _e1 = TamEvent(
+                        tense=None,
+                        aspect=None,
+                        modality=None,
+                        event=self.convert_event(children[0].children),
+                    )
+                    return e0
                 case _:
                     raise ValueError(f"Invalid children for tam_event: {children}")
         else:
@@ -322,13 +360,18 @@ class MyLambdaExpressionConverter:
                 ]
             )
             match production_tuple:
-                case ("compound_binary_predicate", "argument_not_ε", "argument"):
+                case (
+                    "binary_predicate",
+                    "binary_predicate_post_modifier",
+                    "argument_not_ε",
+                    "argument",
+                ):
                     return Event(
-                        compound_binary_predicate=self.convert_compound_binary_predicate(
+                        binary_predicate=self.convert_binary_predicate(
                             children[0].children
                         ),
-                        argument_1=self.convert_argument_not_ε(children[1].children),
-                        argument_2=self.convert_argument(children[2].children),
+                        argument_1=self.convert_argument_not_ε(children[2].children),
+                        argument_2=self.convert_argument(children[3].children),
                     )
                 # case (
                 #     "terminal_postfix_binary_predicate_marker",
@@ -347,67 +390,6 @@ class MyLambdaExpressionConverter:
                     raise ValueError(f"Invalid children for event: {children}")
         else:
             raise ValueError(f"Invalid children for event: {children}")
-
-    def convert_compound_binary_predicate(self, children) -> CompoundBinaryPredicate:
-        if isinstance(children, list):
-            production_tuple = tuple(
-                [
-                    (
-                        c.non_terminal_symbol
-                        if isinstance(c, AbstractSyntaxTree)
-                        else c.pos
-                    )
-                    for c in children
-                ]
-            )
-            match production_tuple:
-                case ("binary_predicate", "modifier_binary_predicate"):
-                    bp = self.convert_binary_predicate(children[0].children)
-                    _mbp = self.convert_modifier_binary_predicate(children[1].children)
-                    return CompoundBinaryPredicate(
-                        type1=bp.type2,
-                        type2=bp.type1,
-                    )
-                case _:
-                    raise ValueError(
-                        f"Invalid children for compound_binary_predicate: {children}"
-                    )
-        else:
-            raise ValueError(
-                f"Invalid children for compound_binary_predicate: {children}"
-            )
-
-    def convert_modifier_binary_predicate(self, children) -> ModifierBinaryPredicate:
-        if isinstance(children, list):
-            production_tuple = tuple(
-                [
-                    (
-                        c.non_terminal_symbol
-                        if isinstance(c, AbstractSyntaxTree)
-                        else c.pos
-                    )
-                    for c in children
-                ]
-            )
-            match production_tuple:
-                case ("binary_predicate", "modifier_binary_predicate"):
-                    bp = self.convert_binary_predicate(children[0].children)
-                    _mbp = self.convert_modifier_binary_predicate(children[1].children)
-                    return ModifierBinaryPredicate(
-                        type1=bp.type2,
-                        type2=bp.type1,
-                    )
-                case _:
-                    raise ValueError(
-                        f"Invalid children for modifier_binary_predicate: {children}"
-                    )
-        else:
-            if children == EPSILON_SYMBOL:
-                return ModifierBinaryPredicate(type1=Bottom(), type2=Bottom())
-            else:
-                raise ValueError(
-                    f"Invalid children for modifier_binary_predicate: {children}"
-                )
 
     def convert_binary_predicate(self, children) -> BinaryPredicate:
         if isinstance(children, list):
