@@ -29,7 +29,8 @@ rules = {
             "event",
             "tam_event_post_modifier",
         ],
-        ["terminal_tam_event_operator", "tam_event", "tam_event"],
+        ["terminal_tam_event_binary_operator", "tam_event", "tam_event"],
+        ["terminal_tam_event_unary_operator", "tam_event"],
     ],  # 時制・相・様相
     "tam_event_post_modifier": [
         ["terminal_tam_event_post_modifier", "tam_event"],
@@ -37,19 +38,30 @@ rules = {
     ],  # タグ
     "tense_marker": [["terminal_tense_marker"], "ε"],
     "aspect_marker": [["terminal_aspect_marker"], "ε"],
-    "modality_marker": [["terminal_modality_marker"], "ε"],
+    "modality_marker": [
+        ["terminal_modality_marker", "modality_agent"],
+        "ε",
+    ],
+    "modality_agent": [
+        ["argument"],
+        "ε",
+    ],  # 様相の主語
     #
     "event": [
         [
             "post_modified_binary_predicate",
-            "argument_not_ε",
+            "argument",
+            "argument",
+        ],
+        [
+            "post_modified_unary_predicate",
             "argument",
         ],
     ],
     "post_modified_binary_predicate": [
         [
             "binary_predicate",
-            "binary_predicate_post_modifier",
+            "predicate_post_modifier",
         ],
     ],  # 後置修飾された二項述語
     "binary_predicate": [
@@ -64,34 +76,36 @@ rules = {
             "binary_predicate",
         ],
     ],  # 二項述語
-    "binary_predicate_post_modifier": [
-        ["terminal_binary_predicate_post_modifier", "binary_predicate"],
+    "predicate_post_modifier": [
+        ["terminal_predicate_post_modifier", "unary_or_binary_predicate"],
         "ε",
-    ],  # タグ
+    ],  # 修飾
+    "post_modified_unary_predicate": [
+        [
+            "unary_predicate",
+            "predicate_post_modifier",
+        ],
+    ],
+    "unary_predicate": [
+        ["terminal_unary_predicate"],
+    ],
+    "post_modified_unary_or_binary_predicate": [
+        ["post_modified_unary_predicate"],
+        ["post_modified_binary_predicate"],
+    ],
+    "unary_or_binary_predicate": [
+        ["binary_predicate"],
+        ["unary_predicate"],
+    ],  # 単項述語または二項述語
     "argument": [
-        ["argument_not_ε"],
-        "ε",
-    ],  # 項
-    "argument_not_ε": [
-        # [
-        #     "terminal_argument_retriever_without_argument",
-        #     "determiner",
-        #     "binary_predicate",
-        # ],  # 項抽出
-        # [
-        #     "terminal_argument_retriever_with_argument",
-        #     "determiner",
-        #     "binary_predicate",
-        #     "argument_not_ε",
-        # ],  # 項抽出
         [
             "terminal_argument_retriever",
             "determiner",
-            "binary_predicate",
+            "post_modified_unary_or_binary_predicate",
             "post_modified_argument_retriever",
         ],  # 項抽出
         ["terminal_argument"],
-        ["terminal_argument_operator", "argument_not_ε", "argument_not_ε"],
+        ["terminal_argument_operator", "argument", "argument"],
         [
             "terminal_tam_event_to_argument_converter",
             "tam_event",
@@ -101,7 +115,7 @@ rules = {
     "post_modified_argument_retriever": [
         [
             "terminal_post_modified_argument_retriever",
-            "argument_not_ε",
+            "argument",
         ],
         "ε",
     ],
@@ -116,14 +130,18 @@ terminals = {
     "terminal_declarative_marker",  # 平叙文を示すマーカー
     "terminal_interrogative_marker",  # 疑問文を示すマーカー
     #
-    "terminal_tam_event_operator",  # eventの接続詞を示す演算子
+    "terminal_tam_event_binary_operator",  # eventの接続詞を示す２項演算子
+    "terminal_tam_event_unary_operator",  # eventの接続詞を示す単項演算子
     "terminal_tam_event_post_modifier",  # eventの後置修飾子
     #
     "terminal_tense_marker",  # 時制を示すマーカー
     "terminal_aspect_marker",  # 相を示すマーカー
     "terminal_modality_marker",  # 様相を示すマーカー
     #
+    "terminal_predicate_operator",  # 述語の演算子
+    #
     "terminal_binary_predicate",  # 二項述語
+    "terminal_unary_predicate",  # 単項述語
     "terminal_argument",  # 項
     "terminal_argument_transposition",  # 項転置
     "terminal_tam_event_to_argument_converter",  # eventを項に変換
@@ -134,7 +152,7 @@ terminals = {
     #
     "terminal_argument_operator",  # 項演算子
     "terminal_binary_predicate_operator",  # 述語演算子
-    "terminal_binary_predicate_post_modifier",  # 二項述語の後置修飾子
+    "terminal_predicate_post_modifier",  # 述語の後置修飾子
     "terminal_argument_retriever",  # 項抽出
     "terminal_post_modified_argument_retriever",
 }

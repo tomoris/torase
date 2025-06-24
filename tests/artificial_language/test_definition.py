@@ -166,61 +166,61 @@ class Testりんご文Parser(TestCase):
 
         # 私の妻はりんごを食べたことがある．
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:experience terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tense_marker:ed terminal_binary_predicate:experience terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:eat terminal_argument:it terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_to_argument_converter_end:_"
         )
 
         # 私の妻はりんごを毎日食べる．
         parser.parse(
-            "terminal_binary_predicate:ある命題がarg2のときに成立する terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_to_argument_converter_end:_ terminal_argument_retriever:_ terminal_quantifier:every terminal_binary_predicate:day"
+            "terminal_binary_predicate:ある命題がarg2のときに成立する terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_to_argument_converter_end:_ terminal_argument_retriever:_ terminal_quantifier:every terminal_binary_predicate:day"
         )
         parser.parse(
-            "terminal_binary_predicate_operator:_ terminal_binary_predicate:eat terminal_binary_predicate:everyday terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_binary_predicate:eat terminal_predicate_post_modifier:_ terminal_binary_predicate:everyday terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple"
         )
 
         # 私と私の妻は昨日りんごを食べた．
         parser.parse(
-            "terminal_tam_event_operator:and terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate_operator:_ terminal_binary_predicate:day terminal_binary_predicate:1"
+            "terminal_tam_event_binary_operator:and terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate_operator:_ terminal_binary_predicate:day terminal_binary_predicate:1"
         )
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate_operator:_ terminal_binary_predicate:day terminal_binary_predicate:1"
+            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate:day terminal_predicate_post_modifier:_ terminal_binary_predicate:1"
         )
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:day terminal_binary_predicate_post_modifier:_ terminal_binary_predicate:1"
+            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate:day terminal_post_modified_argument_retriever:_ terminal_argument:1"
         )
 
         # 彼らは明日りんごを食べる．
         parser.parse(
-            "terminal_tense_marker:will terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple when terminal_binary_predicate:in terminal_argument_retriever:_ terminal_quantifier:1 terminal_binary_predicate:day"
+            "terminal_tense_marker:will terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:in terminal_argument:that_event terminal_argument_retriever:_ terminal_quantifier:1 terminal_binary_predicate:day"
         )
 
         # 彼らは6日後にりんごを食べる．
         parser.parse(
-            "terminal_tense_marker:will terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple when terminal_binary_predicate:in terminal_argument_retriever:_ terminal_quantifier:6 terminal_binary_predicate:day"
+            "terminal_tense_marker:will terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:in terminal_argument:that_event terminal_argument_retriever:_ terminal_quantifier:6 terminal_binary_predicate:day"
         )
 
         # 彼女らは3日間りんごを食べている．（食事としてりんごだけを食べている）
         parser.parse(
-            "terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple when terminal_binary_predicate:during terminal_argument_retriever:_ terminal_quantifier:3 terminal_binary_predicate:day"
+            "terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:during terminal_argument:that_event terminal_argument_retriever:_ terminal_quantifier:3 terminal_binary_predicate:day"
         )
 
         # 彼女らはりんごを5分間食べ続けている．（りんごを食べる所要時間に5分かかっている）
         parser.parse(
-            "terminal_aspect_marker:ca'o terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple when terminal_binary_predicate:during terminal_argument_retriever:_ terminal_quantifier:5 terminal_binary_predicate:minute"
+            "terminal_aspect_marker:ca'o terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:during terminal_argument:that_event terminal_argument_retriever:_ terminal_quantifier:5 terminal_binary_predicate:minute"
         )
 
         # 彼は常にりんごを食べている．（四六時中ずっとりんごを食べている）
         parser.parse(
-            "terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple when terminal_binary_predicate:during terminal_argument_retriever:_ terminal_quantifier:every terminal_binary_predicate:time"
+            "terminal_binary_predicate:eat terminal_argument:they terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:during terminal_argument:that_event terminal_argument_retriever:_ terminal_quantifier:every terminal_binary_predicate:time"
         )
 
         # りんごが3つある．
         parser.parse(
-            "terminal_binary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:3 terminal_binary_predicate:apple"
+            "terminal_unary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:3 terminal_binary_predicate:apple"
         )
 
         # りんご達がテーブルの上にある．
         parser.parse(
-            "terminal_binary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:multi terminal_binary_predicate:apple where terminal_binary_predicate:on terminal_argument_retriever:_ terminal_binary_predicate:table"
+            "terminal_unary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:multi terminal_binary_predicate:apple terminal_tam_event_post_modifier:where terminal_binary_predicate:on terminal_argument:that_event terminal_argument_retriever:_ terminal_binary_predicate:table"
         )
 
         # 誰かがあのりんごを食べてしまった．（その結果，あのりんごは今はない）
@@ -235,37 +235,40 @@ class Testりんご文Parser(TestCase):
 
         # 誰かがこのりんご，そのりんご，あのりんごを食べたそうだ．（伝聞）
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:hear terminal_argument:I terminal_aspect_marker:ba'o terminal_binary_predicate:eat terminal_argument:someone terminal_argument_operator:and terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument:this terminal_argument_operator:and terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument:it terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument:that"
+            "terminal_tense_marker:ed terminal_binary_predicate:hear terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_aspect_marker:ba'o terminal_binary_predicate:eat terminal_argument:someone terminal_argument_operator:and terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_post_modified_argument_retriever:_ terminal_argument:this terminal_argument_operator:and terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_post_modified_argument_retriever:_ terminal_argument:it terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_post_modified_argument_retriever:_ terminal_argument:that terminal_tam_event_to_argument_converter_end:_"
         )
 
         # りんごがひとつもない．
         parser.parse(
-            "terminal_binary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:0 terminal_binary_predicate:apple"
+            "terminal_unary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:0 terminal_binary_predicate:apple"
+        )
+        parser.parse(
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:exist terminal_argument_retriever:_ terminal_binary_predicate:apple"
         )
 
         # 私はりんごを食べない．
         parser.parse(
-            "tam_event_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tam_event_unary_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple"
         )
 
         # 私はりんごを食べられない．（りんごがないので状況的に食べられない）
         parser.parse(
-            "tam_event_operator:not terminal_modality_marker:can terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tam_event_unary_operator:not terminal_modality_marker:can terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple"
         )
 
         # 私はりんごを床に落とした．
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:drop terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple where terminal_binary_predicate:on terminal_argument_retriever:_ terminal_binary_predicate:floor"
+            "terminal_tense_marker:ed terminal_binary_predicate:drop terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:where terminal_binary_predicate:on terminal_argument:that_event terminal_argument_retriever:_ terminal_binary_predicate:floor"
         )
 
         # りんごが床に落ちた．
         parser.parse(
-            "terminal_tense_marker:ed terminal_argument_transposition:_ terminal_binary_predicate:drop terminal_argument_retriever:_ terminal_binary_predicate:apple where terminal_binary_predicate:on terminal_argument_retriever:_ terminal_binary_predicate:floor"
+            "terminal_tense_marker:ed terminal_argument_transposition:_ terminal_binary_predicate:drop terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument:null terminal_tam_event_post_modifier:where terminal_binary_predicate:on terminal_argument:that_event terminal_argument_retriever:_ terminal_binary_predicate:floor"
         )
 
         # りんごは食べられない．（りんごの性質として，可食でなくなった）
         parser.parse(
-            "tam_event_operator:not terminal_modality_marker:can terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tam_event_unary_operator:not terminal_modality_marker:can terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument:null"
         )
 
         # 私はりんごを食べたい．
@@ -285,154 +288,172 @@ class Testりんご文Parser(TestCase):
 
         # このりんごは綺麗ではない．
         parser.parse(
-            "tam_event_operator:not terminal_argument_transposition:_ terminal_binary_predicate:beautiful terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument:this"
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:beautiful terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_unary_predicate:this"
         )
 
         # あのりんごは食べられそうだ．
         # モダリティの主語はどうしよう？
         parser.parse(
-            "terminal_modality_marker:may terminal_modality_marker:can terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_modality_marker:may_can terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_argument:null"
         )
 
         # あれはりんごではない．
         parser.parse(
-            "tam_event_operator:not terminal_binary_predicate:apple terminal_argument:that"
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_argument:that"
         )
 
         # これはりんごではなくみかんだ．
         parser.parse(
-            "tam_event_operator:not terminal_binary_predicate:apple terminal_argument:that but terminal_binary_predicate:orange terminal_argument:that"
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_argument:that terminal_tam_event_post_modifier:but terminal_unary_predicate:orange terminal_argument:that"
         )
 
         # あなたはみかんを食べるか？
         parser.parse(
-            "terminal_interrogative_marker:? terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_interrogative_marker:? terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:orange"
         )
 
         # はい，私はみかんを食べます．
-        parser.parse("go'i")
+        # parser.parse("go'i")
 
         # あなたはみかんを食べないのですか？
         parser.parse(
-            "terminal_interrogative_marker:? tam_event_operator:not terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_interrogative_marker:? terminal_tam_event_unary_operator:not terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:orange"
         )
 
         # ええ，私はみかんを食べません．
-        parser.parse("go'i")
+        # parser.parse("go'i")
 
         # あなたはみかんを食べたかった．ですよね？
         parser.parse(
-            "terminal_interrogative_marker:? terminal_tense_marker:ed terminal_modality_marker:want terminal_argument:you terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_interrogative_marker:? terminal_tense_marker:ed terminal_modality_marker:want terminal_argument:you terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:orange"
         )
 
         # いいえ，私はみかんを食べたくはありません．
-        parser.parse("tam_event_operator:not go'i")
+        # parser.parse("tam_event_operator:not go'i")
 
         # あなたはりんごもみかんも食べないのですか？
         parser.parse(
-            "terminal_interrogative_marker:? tam_event_operator:not terminal_binary_predicate:eat terminal_argument:you terminal_argument_operator:and terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_interrogative_marker:? terminal_tam_event_unary_operator:not terminal_binary_predicate:eat terminal_argument:you terminal_argument_operator:and terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_argument_retriever:_ terminal_unary_predicate:orange"
         )
 
         # いや，私はりんごを食べます．
-        parser.parse(
-            "tam_event_operator:not go'i .i terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple"
-        )
+        # parser.parse(
+        #     "tam_event_operator:not go'i .i terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple"
+        # )
 
         # 私はみかんを食べない．だから，みかんは食べられない．（受け身の否定）
+        # parser.parse(
+        #     "terminal_tam_event_unary_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:orange .i 接続詞:ri'a terminal_tam_event_unary_operator:not terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:orange terminal_argument:I"
+        # )
         parser.parse(
-            "tam_event_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:orange .i 接続詞:ri'a tam_event_operator:not terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_tam_event_unary_operator:not terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:orange terminal_argument:I"
         )
 
         # りんごは食べることができない．なぜなら，りんごは綺麗ではないから．
+        # parser.parse(
+        #     "terminal_tam_event_unary_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:apple .i 接続詞:ri'a terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_binary_predicate:clean"
+        # )
         parser.parse(
-            "tam_event_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple .i 接続詞:ri'a tam_event_operator:not terminal_argument_transposition:_ terminal_binary_predicate:clean terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_binary_predicate:clean terminal_argument:that"
         )
 
         # りんごは汚い．一方で，みかんは綺麗だ．
-        parser.parse(
-            "tam_event_operator:not terminal_binary_predicate:clean terminal_argument_retriever:_ terminal_binary_predicate:apple .i 接続詞:ku'i terminal_argument_transposition:_ terminal_binary_predicate:clean terminal_argument_retriever:_ terminal_binary_predicate:orange"
-        )
+        # parser.parse(
+        #     "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_binary_predicate:clean terminal_argument:that .i 接続詞:ku'i terminal_unary_predicate:orange terminal_predicate_post_modifier:_ terminal_binary_predicate:clean terminal_argument:null"
+        # )
 
         # みかんを食べましょうよ？（勧誘）
         parser.parse(
-            "terminal_modality_marker:勧誘 terminal_binary_predicate:eat terminal_argument_retriever:you terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_modality_marker:勧誘 terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:orange"
         )
 
         # いいえ，お断りします．
 
         # あそこでみかんを食べろ．りんごは食べるな．
         parser.parse(
-            "terminal_modality_marker:命令 terminal_binary_predicate:eat terminal_argument_retriever:you terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_modality_marker:命令 terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:orange terminal_tam_event_post_modifier:where terminal_binary_predicate:at terminal_argument:that_event terminal_argument:that_place"
+        )
+        parser.parse(
+            "terminal_tam_event_unary_operator:not terminal_modality_marker:命令 terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:apple"
         )
 
         # りんごを頂いても宜しいですか？みかんは差し上げます．
+        # parser.parse(
+        #     "terminal_interrogative_marker:? terminal_modality_marker:許可 terminal_binary_predicate:貰う terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:apple .i terminal_tam_event_operator:and terminal_binary_predicate:give_to terminal_argument:I terminal_argument:you terminal_binary_predicate:give terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:orange"
+        # )
         parser.parse(
-            "terminal_interrogative_marker:? terminal_modality_marker:許可 terminal_binary_predicate:貰う terminal_argument_retriever:I terminal_argument_retriever:_ terminal_binary_predicate:apple .i terminal_tam_event_operator:and terminal_binary_predicate:give_to terminal_argument:I terminal_argument:you terminal_binary_predicate:give terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_interrogative_marker:? terminal_modality_marker:許可 terminal_binary_predicate:貰う terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:apple"
+        )
+        parser.parse(
+            "terminal_tam_event_binary_operator:and terminal_binary_predicate:give_to terminal_argument:I terminal_argument:you terminal_binary_predicate:give terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:orange"
         )
 
         # 私は「りんごは食べるな，みかんを食べろ」と言った．
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_tam_event_operator:and terminal_modality_marker:命令 event_operator:not terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_modality_marker:命令 terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_tam_event_binary_operator:and terminal_tam_event_unary_operator:not terminal_modality_marker:命令 terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_argument:null terminal_modality_marker:命令 terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:orange terminal_argument:null terminal_tam_event_to_argument_converter_end:_"
         )
 
         # あなたはりんごを食べろと言うのですか？
         parser.parse(
-            "terminal_interrogative_marker:? terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:命令 terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_interrogative_marker:? terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:命令 terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_argument:null terminal_tam_event_to_argument_converter_end:_"
         )
 
         # 貴様はりんごを食べたいと言った．
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_argument:null terminal_tam_event_to_argument_converter_end:_"
         )
 
         # 私はりんごを食べたいと言った覚えがない．
         parser.parse(
-            "tam_event_operator:not terminal_binary_predicate:remember terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tam_event_unary_operator:not terminal_binary_predicate:remember terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_argument:null terminal_tam_event_to_argument_converter_end:_ terminal_tam_event_to_argument_converter_end:_"
         )
 
         # あなたは確か「私はりんごを食べたい」と言ったはずだ．
         parser.parse(
-            "terminal_modality_marker:事実性高い terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tense_marker:ed terminal_modality_marker:事実性高い terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_argument:null terminal_tam_event_to_argument_converter_end:_ terminal_tam_event_to_argument_converter_end:_"
         )
 
         # 私はもしかしたらそう言ったかもしれない．
         parser.parse(
-            "terminal_modality_marker:事実性低い terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_argument:you terminal_argument:that"
+            "terminal_tense_marker:ed terminal_modality_marker:事実性低い terminal_binary_predicate:say terminal_argument:you terminal_argument:that"
         )
 
         # あなたは絶対に私に対して「りんごを食べたい」と言った．
         parser.parse(
-            "terminal_tam_event_operator:and terminal_modality_marker:事実性確信 terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_modality_marker:事実性確信 terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say_to terminal_argument:you terminal_argument:I"
+            "terminal_tense_marker:ed terminal_modality_marker:事実性確信 terminal_binary_predicate:say terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_tam_event_post_modifier:who terminal_binary_predicate:to terminal_argument:that_event terminal_argument:me terminal_tam_event_to_argument_converter_end:_"
         )
 
         # 彼は私にりんごを食べさせる．
         parser.parse(
-            "terminal_binary_predicate:使役(させる) terminal_argument:He terminal_tam_event_to_argument_converter:_ terminal_argument_retriever:_ terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_binary_predicate:使役(させる) terminal_argument:He terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_tam_event_to_argument_converter_end:_"
         )
 
         # みかんは私に食べられていない．
         parser.parse(
-            "tam_event_operator:not terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:orange terminal_argument:I"
+            "terminal_tam_event_unary_operator:not terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_unary_predicate:orange terminal_argument:I"
         )
 
         # りんごは彼によって私に食べさせられた．
         parser.parse(
-            "terminal_tense_marker:ed terminal_argument_transposition:_ terminal_binary_predicate:使役(させる) terminal_tam_event_to_argument_converter:_ terminal_argument_retriever:_ terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_argument:He"
+            "terminal_tense_marker:ed terminal_argument_transposition:_ terminal_binary_predicate:使役(させる) terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_tam_event_to_argument_converter_end:_ terminal_argument:He"
         )
 
         # ここには何もない．
         parser.parse(
-            "terminal_binary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:0 terminal_binary_predicate:thing"
+            "terminal_unary_predicate:exist terminal_argument_retriever:_ terminal_quantifier:0 terminal_binary_predicate:thing"
+        )
+        parser.parse(
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:exist terminal_argument_retriever:_ terminal_binary_predicate:thing"
         )
 
         # あなたはりんごを食べないだろう
         parser.parse(
-            "terminal_modality_marker:推量 terminal_tam_event_operator:not terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_tam_event_unary_operator:not terminal_modality_marker:推量 terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:apple"
         )
 
-        # あなたは彼はりんごを食べないだろうと思ってる
+        # あなたは「彼はりんごを食べないだろう」と思ってる
         parser.parse(
-            "terminal_binary_predicate:think terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:推量する terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_tam_event_operator:not terminal_binary_predicate:eat terminal_argument:He terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_binary_predicate:think terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:推量 terminal_argument:you terminal_predicate_operator:not terminal_binary_predicate:eat terminal_argument:He terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_tam_event_to_argument_converter_end:_"
         )
 
 
