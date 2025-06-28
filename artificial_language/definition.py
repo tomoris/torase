@@ -49,26 +49,10 @@ rules = {
     #
     "event": [
         [
-            "unary_predicate_with_operator",
-            "argument",
-        ],
-    ],
-    "unary_predicate_with_operator": [["predicate_operator", "final_unary_predicate"]],
-    "predicate_operator": [
-        ["terminal_predicate_operator"],
-        "ε",
-    ],  # 述語の演算子
-    "final_unary_predicate": [
-        [
-            "post_modified_unary_predicate",
-        ],
-        ["curried_binary_predicate"],
-    ],  # 最終的な単項述語
-    "curried_binary_predicate": [
-        [
             "post_modified_binary_predicate",
             "argument",
-        ],  # 二項述語のカリー化
+            "argument_or_ε",
+        ],
     ],
     "post_modified_binary_predicate": [
         [
@@ -93,31 +77,18 @@ rules = {
         ],  # 否定
     ],  # 二項述語
     "predicate_post_modifier": [
-        ["terminal_post_modifier", "unary_or_binary_predicate"],
+        ["terminal_post_modifier", "binary_predicate"],
         "ε",
     ],  # 修飾
-    "post_modified_unary_predicate": [
-        [
-            "unary_predicate",
-            "predicate_post_modifier",
-        ],
-    ],
-    "unary_predicate": [
-        ["terminal_unary_predicate"],
-    ],
-    "post_modified_unary_or_binary_predicate": [
-        ["post_modified_unary_predicate"],
-        ["post_modified_binary_predicate"],
-    ],
-    "unary_or_binary_predicate": [
-        ["binary_predicate"],
-        ["unary_predicate"],
-    ],  # 単項述語または二項述語
+    "argument_or_ε": [
+        ["terminal_argument_separator", "argument"],
+        "ε",
+    ],  # 項またはε
     "argument": [
         [
             "terminal_argument_retriever",
             "determiner",
-            "post_modified_unary_or_binary_predicate",
+            "post_modified_binary_predicate",
             "post_modified_argument_retriever",
         ],  # 項抽出
         ["terminal_argument"],
@@ -155,11 +126,9 @@ terminals = {
     "terminal_aspect_marker",  # 相を示すマーカー
     "terminal_modality_marker",  # 様相を示すマーカー
     #
-    "terminal_predicate_operator",  # 述語の演算子
-    #
     "terminal_binary_predicate",  # 二項述語
-    "terminal_unary_predicate",  # 単項述語
     "terminal_argument",  # 項
+    "terminal_argument_separator",  # 項の区切り
     "terminal_argument_transposition",  # 項転置
     "terminal_tam_event_to_argument_converter",  # eventを項に変換
     "terminal_tam_event_to_argument_converter_end",  # eventを項に変換
