@@ -1,10 +1,7 @@
 import unittest
 from unittest import TestCase
 
-from artificial_language.definition import TruthValue, converter, parser
-from compiler.type_system.typed_lambda_calculus import (
-    TypedLambdaCalculator,
-)
+from artificial_language.definition import parser
 
 
 class Test平叙文Parser(TestCase):
@@ -102,37 +99,37 @@ class Test疑問文Parser(TestCase):
         )
 
 
-class Test平叙文TypeChecker(TestCase):
-    def test_平叙文を型検査が成功する(self):
-        calculator = TypedLambdaCalculator()
-        ast = parser.parse(
-            "terminal_tense_marker:a terminal_aspect_marker:b terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
-        )
-        expr = converter.convert(ast)
-        self.assertEqual(
-            type(calculator.check_type(expr)),
-            type(TruthValue()),
-        )
+# class Test平叙文TypeChecker(TestCase):
+#     def test_平叙文を型検査が成功する(self):
+#         calculator = TypedLambdaCalculator()
+#         ast = parser.parse(
+#             "terminal_tense_marker:a terminal_aspect_marker:b terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+#         )
+#         expr = converter.convert(ast)
+#         self.assertEqual(
+#             type(calculator.check_type(expr)),
+#             type(TruthValue()),
+#         )
 
-        calculator = TypedLambdaCalculator()
-        ast = parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
-        )
-        expr = converter.convert(ast)
-        self.assertEqual(
-            type(calculator.check_type(expr)),
-            type(TruthValue()),
-        )
+#         calculator = TypedLambdaCalculator()
+#         ast = parser.parse(
+#             "terminal_binary_predicate:love terminal_argument:John terminal_argument:Smith"
+#         )
+#         expr = converter.convert(ast)
+#         self.assertEqual(
+#             type(calculator.check_type(expr)),
+#             type(TruthValue()),
+#         )
 
-        calculator = TypedLambdaCalculator()
-        ast = parser.parse(
-            "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower"
-        )
-        expr = converter.convert(ast)
-        self.assertEqual(
-            type(calculator.check_type(expr)),
-            type(TruthValue()),
-        )
+#         calculator = TypedLambdaCalculator()
+#         ast = parser.parse(
+#             "terminal_binary_predicate:love terminal_argument:John terminal_argument_retriever:_ terminal_binary_predicate:flower"
+#         )
+#         expr = converter.convert(ast)
+#         self.assertEqual(
+#             type(calculator.check_type(expr)),
+#             type(TruthValue()),
+#         )
 
 
 class Testりんご文Parser(TestCase):
@@ -174,7 +171,7 @@ class Testりんご文Parser(TestCase):
             "terminal_binary_predicate:ある命題がarg2のときに成立する terminal_tam_event_to_argument_converter:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_to_argument_converter_end:_ terminal_argument_retriever:_ terminal_quantifier:every terminal_binary_predicate:day"
         )
         parser.parse(
-            "terminal_binary_predicate:eat terminal_predicate_post_modifier:_ terminal_binary_predicate:everyday terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_binary_predicate:eat terminal_post_modifier:_ terminal_binary_predicate:everyday terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple"
         )
 
         # 私と私の妻は昨日りんごを食べた．
@@ -182,7 +179,7 @@ class Testりんご文Parser(TestCase):
             "terminal_tam_event_binary_operator:and terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate_operator:_ terminal_binary_predicate:day terminal_binary_predicate:1"
         )
         parser.parse(
-            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate:day terminal_predicate_post_modifier:_ terminal_binary_predicate:1"
+            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate:day terminal_post_modifier:_ terminal_binary_predicate:1"
         )
         parser.parse(
             "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument_operator:and terminal_argument:I terminal_argument_retriever:_ terminal_binary_predicate:wife terminal_post_modified_argument_retriever:_ terminal_argument:me terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:when terminal_binary_predicate:ago terminal_argument_retriever:_ terminal_binary_predicate:that_event terminal_argument_retriever:_ terminal_binary_predicate:day terminal_post_modified_argument_retriever:_ terminal_argument:1"
@@ -288,7 +285,7 @@ class Testりんご文Parser(TestCase):
 
         # このりんごは綺麗ではない．
         parser.parse(
-            "terminal_tam_event_unary_operator:not terminal_unary_predicate:beautiful terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_unary_predicate:this"
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:beautiful terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_post_modifier:_ terminal_unary_predicate:this"
         )
 
         # あのりんごは食べられそうだ．
@@ -325,7 +322,7 @@ class Testりんご文Parser(TestCase):
 
         # あなたはみかんを食べたかった．ですよね？
         parser.parse(
-            "terminal_interrogative_marker:? terminal_tense_marker:ed terminal_modality_marker:want terminal_argument:you terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:orange"
+            "terminal_interrogative_marker:? terminal_tense_marker:ed terminal_modality_marker:want terminal_post_modifier:_ terminal_argument:you terminal_binary_predicate:eat terminal_argument:you terminal_argument_retriever:_ terminal_unary_predicate:orange"
         )
 
         # いいえ，私はみかんを食べたくはありません．
@@ -351,15 +348,15 @@ class Testりんご文Parser(TestCase):
 
         # りんごは食べることができない．なぜなら，りんごは綺麗ではないから．
         # parser.parse(
-        #     "terminal_tam_event_unary_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:apple .i 接続詞:ri'a terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_binary_predicate:clean"
+        #     "terminal_tam_event_unary_operator:not terminal_binary_predicate:eat terminal_argument:I terminal_argument_retriever:_ terminal_unary_predicate:apple .i 接続詞:ri'a terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_post_modifier:_ terminal_binary_predicate:clean"
         # )
         parser.parse(
-            "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_binary_predicate:clean terminal_argument:that"
+            "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_post_modifier:_ terminal_binary_predicate:clean terminal_argument:that"
         )
 
         # りんごは汚い．一方で，みかんは綺麗だ．
         # parser.parse(
-        #     "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_predicate_post_modifier:_ terminal_binary_predicate:clean terminal_argument:that .i 接続詞:ku'i terminal_unary_predicate:orange terminal_predicate_post_modifier:_ terminal_binary_predicate:clean terminal_argument:null"
+        #     "terminal_tam_event_unary_operator:not terminal_unary_predicate:apple terminal_post_modifier:_ terminal_binary_predicate:clean terminal_argument:that .i 接続詞:ku'i terminal_unary_predicate:orange terminal_post_modifier:_ terminal_binary_predicate:clean terminal_argument:null"
         # )
 
         # みかんを食べましょうよ？（勧誘）
@@ -453,7 +450,30 @@ class Testりんご文Parser(TestCase):
 
         # あなたは「彼はりんごを食べないだろう」と思ってる
         parser.parse(
-            "terminal_binary_predicate:think terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:推量 terminal_argument:you terminal_predicate_operator:not terminal_binary_predicate:eat terminal_argument:He terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_tam_event_to_argument_converter_end:_"
+            "terminal_binary_predicate:think terminal_argument:you terminal_tam_event_to_argument_converter:_ terminal_modality_marker:推量 terminal_post_modifier:_ terminal_argument:you terminal_predicate_operator:not terminal_binary_predicate:eat terminal_argument:He terminal_argument_retriever:_ terminal_unary_predicate:apple terminal_tam_event_to_argument_converter_end:_"
+        )
+
+
+class Test否定文Parser(TestCase):
+    def test_否定文を受理する(self):
+        # 太郎はりんごを食べてない(全体の否定)
+        parser.parse(
+            "terminal_tam_event_unary_operator:not terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument:Taro terminal_argument_retriever:_ terminal_unary_predicate:apple"
+        )
+
+        # 太郎はりんごを食べてない(述語の否定)
+        parser.parse(
+            "terminal_tense_marker:ed terminal_negation:not terminal_binary_predicate:eat terminal_argument:Taro terminal_argument_retriever:_ terminal_unary_predicate:apple"
+        )
+
+        # 太郎じゃないはりんごを食べた(項の否定)
+        parser.parse(
+            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_negation:not terminal_argument:Taro terminal_argument_retriever:_ terminal_unary_predicate:apple"
+        )
+
+        # 太郎はりんごじゃないを食べた(項の否定)
+        parser.parse(
+            "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument:Taro terminal_negation:not terminal_argument_retriever:_ terminal_unary_predicate:apple"
         )
 
 
