@@ -43,20 +43,32 @@ rules = {
         "ε",
     ],
     "modality_agent": [
-        ["argument"],
+        ["terminal_post_modifier", "argument"],
         "ε",
     ],  # 様相の主語
     #
     "event": [
         [
-            "post_modified_binary_predicate",
-            "argument",
+            "unary_predicate_with_operator",
             "argument",
         ],
+    ],
+    "unary_predicate_with_operator": [["predicate_operator", "final_unary_predicate"]],
+    "predicate_operator": [
+        ["terminal_predicate_operator"],
+        "ε",
+    ],  # 述語の演算子
+    "final_unary_predicate": [
         [
             "post_modified_unary_predicate",
-            "argument",
         ],
+        ["curried_binary_predicate"],
+    ],  # 最終的な単項述語
+    "curried_binary_predicate": [
+        [
+            "post_modified_binary_predicate",
+            "argument",
+        ],  # 二項述語のカリー化
     ],
     "post_modified_binary_predicate": [
         [
@@ -75,9 +87,13 @@ rules = {
             "binary_predicate",
             "binary_predicate",
         ],
+        [
+            "terminal_negation",
+            "binary_predicate",
+        ],  # 否定
     ],  # 二項述語
     "predicate_post_modifier": [
-        ["terminal_predicate_post_modifier", "unary_or_binary_predicate"],
+        ["terminal_post_modifier", "unary_or_binary_predicate"],
         "ε",
     ],  # 修飾
     "post_modified_unary_predicate": [
@@ -111,6 +127,7 @@ rules = {
             "tam_event",
             "terminal_tam_event_to_argument_converter_end",
         ],
+        ["terminal_negation", "argument"],  # 否定
     ],  # 項
     "post_modified_argument_retriever": [
         [
@@ -152,9 +169,11 @@ terminals = {
     #
     "terminal_argument_operator",  # 項演算子
     "terminal_binary_predicate_operator",  # 述語演算子
-    "terminal_predicate_post_modifier",  # 述語の後置修飾子
+    "terminal_post_modifier",  # 述語の後置修飾子
     "terminal_argument_retriever",  # 項抽出
     "terminal_post_modified_argument_retriever",
+    #
+    "terminal_negation",  # 否定マーカー
 }
 
 
