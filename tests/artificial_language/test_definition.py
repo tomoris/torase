@@ -471,6 +471,21 @@ class Test否定文Parser(TestCase):
             "terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument:Taro terminal_argument_separator:, terminal_negation:not terminal_argument_retriever:_ terminal_binary_predicate:apple"
         )
 
+        # 太郎はりんごを食べただろうでない(modality)
+        parser.parse(
+            "terminal_modality_negation_begin:_ terminal_negation:not terminal_modality_marker:may terminal_binary_predicate:eat terminal_argument:Taro terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:apple"
+        )
+
+        # 太郎はりんごを食べてない(tenseの否定)
+        parser.parse(
+            "terminal_tense_negation_begin:_ terminal_negation:not terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument:Taro terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:apple"
+        )
+
+        # 太郎はりんごを過去に食べてつづけてない(aspectの否定)
+        parser.parse(
+            "terminal_tense_marker:ed terminal_aspect_negation_begin:_ terminal_negation:not terminal_aspect_marker:ing terminal_binary_predicate:eat terminal_argument:Taro terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:apple"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
