@@ -222,7 +222,7 @@ class Testりんご文Parser(TestCase):
 
         # 誰かがこのりんごを食べそうだ．（推量）
         parser.parse(
-            "terminal_aspect_marker:pu'o terminal_modality_marker:may terminal_binary_predicate:eat terminal_argument:someone terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:apple"
+            "terminal_modality_marker:may terminal_aspect_marker:pu'o terminal_binary_predicate:eat terminal_argument:someone terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:apple"
         )
 
         # 誰かがこのりんご，そのりんご，あのりんごを食べたそうだ．（伝聞）
@@ -317,7 +317,7 @@ class Testりんご文Parser(TestCase):
 
         # あなたはみかんを食べたかった．ですよね？
         parser.parse(
-            "terminal_interrogative_marker:? terminal_tense_marker:ed terminal_modality_marker:want terminal_post_modifier:_ terminal_argument:you terminal_binary_predicate:eat terminal_argument:you terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:orange"
+            "terminal_interrogative_marker:? terminal_modality_marker:want terminal_post_modifier:_ terminal_argument:you terminal_tense_marker:ed terminal_binary_predicate:eat terminal_argument:you terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:orange"
         )
 
         # いいえ，私はみかんを食べたくはありません．
@@ -402,17 +402,17 @@ class Testりんご文Parser(TestCase):
 
         # あなたは確か「私はりんごを食べたい」と言ったはずだ．
         parser.parse(
-            "terminal_tense_marker:ed terminal_modality_marker:事実性高い terminal_binary_predicate:say terminal_argument:you terminal_argument_separator:, terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_argument_separator:, terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_to_argument_converter_end:_ terminal_tam_event_to_argument_converter_end:_"
+            "terminal_modality_marker:事実性高い terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_argument_separator:, terminal_tam_event_to_argument_converter:_ terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:I terminal_argument_separator:, terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_argument_transposition:_ terminal_binary_predicate:eat terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_to_argument_converter_end:_ terminal_tam_event_to_argument_converter_end:_"
         )
 
         # 私はもしかしたらそう言ったかもしれない．
         parser.parse(
-            "terminal_tense_marker:ed terminal_modality_marker:事実性低い terminal_binary_predicate:say terminal_argument:you terminal_argument_separator:, terminal_argument:that"
+            "terminal_modality_marker:事実性低い terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_argument_separator:, terminal_argument:that"
         )
 
         # あなたは絶対に私に対して「りんごを食べたい」と言った．
         parser.parse(
-            "terminal_tense_marker:ed terminal_modality_marker:事実性確信 terminal_binary_predicate:say terminal_argument:you terminal_argument_separator:, terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_binary_predicate:eat terminal_argument:you terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:who terminal_binary_predicate:to terminal_argument:that_event terminal_argument_separator:, terminal_argument:me terminal_tam_event_to_argument_converter_end:_"
+            "terminal_modality_marker:事実性確信 terminal_tense_marker:ed terminal_binary_predicate:say terminal_argument:you terminal_argument_separator:, terminal_tam_event_to_argument_converter:_ terminal_modality_marker:want terminal_binary_predicate:eat terminal_argument:you terminal_argument_separator:, terminal_argument_retriever:_ terminal_binary_predicate:apple terminal_tam_event_post_modifier:who terminal_binary_predicate:to terminal_argument:that_event terminal_argument_separator:, terminal_argument:me terminal_tam_event_to_argument_converter_end:_"
         )
 
         # 彼は私にりんごを食べさせる．
