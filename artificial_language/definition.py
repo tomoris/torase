@@ -23,24 +23,55 @@ rules = {
     #
     "tam_event": [
         [
-            "tense_marker",
-            "aspect_marker",
-            "modality_marker",
-            "event",
+            "mta_event",
             "tam_event_post_modifier",
         ],
         ["terminal_tam_event_binary_operator", "tam_event", "tam_event"],
         ["terminal_tam_event_unary_operator", "tam_event"],
     ],  # 時制・相・様相
+    "mta_event": [
+        ["modality_expr", "ta_event"],
+    ],
+    "ta_event": [
+        ["tense_expr", "a_event"],
+    ],
+    "a_event": [
+        ["aspect_expr", "event"],
+    ],
     "tam_event_post_modifier": [
         ["terminal_tam_event_post_modifier", "tam_event"],
         "ε",
     ],  # タグ
-    "tense_marker": [["terminal_tense_marker"], "ε"],
-    "aspect_marker": [["terminal_aspect_marker"], "ε"],
-    "modality_marker": [
-        ["terminal_modality_marker", "modality_agent"],
+    "tense_expr": [
+        ["tense_marker"],
         "ε",
+    ],
+    "tense_marker": [
+        ["terminal_tense_marker"],
+        ["terminal_tense_negation_begin", "terminal_negation", "tense_marker"],
+    ],
+    "aspect_expr": [
+        ["aspect_marker"],
+        "ε",
+    ],
+    "aspect_marker": [
+        ["terminal_aspect_marker"],
+        ["terminal_aspect_negation_begin", "terminal_negation", "aspect_marker"],
+    ],
+    "modality_expr": [
+        ["modality_marker_with_agent"],
+        "ε",
+    ],
+    "modality_marker_with_agent": [
+        ["modality_marker", "modality_agent"],
+    ],
+    "modality_marker": [
+        ["terminal_modality_marker"],
+        [
+            "terminal_modality_negation_begin",
+            "terminal_negation",
+            "modality_marker",
+        ],
     ],
     "modality_agent": [
         ["terminal_post_modifier", "argument"],
@@ -143,6 +174,9 @@ terminals = {
     "terminal_post_modified_argument_retriever",
     #
     "terminal_negation",  # 否定マーカー
+    "terminal_tense_negation_begin",
+    "terminal_aspect_negation_begin",
+    "terminal_modality_negation_begin",
 }
 
 
