@@ -531,8 +531,189 @@ class MyLambdaExpressionConverter:
             raise ValueError(f"Invalid children for argument_not_ε: {children}")
 
 
+rules = {
+    "S": [
+        ["declarative_sentence"],
+        ["interrogative_sentence"],
+    ],
+    "declarative_sentence": [["post_modified_mta_event"]],
+    "interrogative_sentence": [["interrogative_marker", "post_modified_mta_event"]],
+    "post_modified_mta_event": [
+        ["mta_event", "post_mta_event_expression"],
+    ],
+    "post_mta_event_expression": [
+        ["post_mta_event_modifier", "mta_event"],
+        "ε",
+    ],
+    "modality_expression": [
+        ["modality_with_agent"],
+        "ε",
+    ],
+    "modality_with_agent": [
+        ["modified_modality", "modality_agent"],
+    ],
+    "modified_modality": [
+        ["modality"],
+        [
+            "modality_negation_begin",
+            "negation",
+            "modified_modality",
+        ],
+    ],
+    "modality_agent": [
+        ["post_argument_phrase_modifier", "argument_phrase"],
+        "ε",
+    ],
+    "tense_expression": [
+        ["modified_tense"],
+        "ε",
+    ],
+    "modified_tense": [
+        ["tense"],
+        [
+            "tense_negation_begin",
+            "negation",
+            "modified_tense",
+        ],
+    ],
+    "aspect_expression": [
+        ["modified_aspect"],
+        "ε",
+    ],
+    "modified_aspect": [
+        ["aspect"],
+        [
+            "aspect_negation_begin",
+            "negation",
+            "modified_aspect",
+        ],
+    ],
+    "mta_event": [
+        ["modality_expression", "ta_event"],
+    ],
+    "ta_event": [
+        ["tense_expression", "a_event"],
+    ],
+    "a_event": [
+        ["aspect_expression", "event"],
+    ],
+    "event": [
+        [
+            "post_modified_binary_predicate_phrase",
+            "argument_phrase",
+            "argument_phrase_or_ε",
+        ],
+    ],
+    "post_modified_binary_predicate_phrase": [
+        ["binary_predicate_phrase", "post_binary_predicate_phrase_expression"],
+    ],
+    "post_binary_predicate_phrase_expression": [
+        ["post_binary_predicate_phrase_modifier", "binary_predicate_phrase"],
+        "ε",
+    ],
+    "binary_predicate_phrase": [
+        ["binary_predicate"],
+        ["argument_phrase_transposer", "binary_predicate_phrase"],
+        [
+            "binary_operator",
+            "binary_predicate_phrase",
+            "binary_predicate_phrase",
+        ],
+        ["negation", "binary_predicate_phrase"],
+    ],
+    "argument_phrase": [
+        ["argument"],
+        [
+            "argument_retriever",
+            "determined_argument_retrieval_binary_predicate",
+        ],
+        [
+            "binary_operator",
+            "argument_phrase",
+            "argument_phrase",
+        ],
+        ["negation", "argument_phrase"],
+        [
+            "mta_event_to_argument_phrase_converter",
+            "mta_event",
+            "mta_event_to_argument_phrase_converter_end",
+        ],
+    ],
+    "argument_phrase_or_ε": [
+        ["argument_phrase_separator", "argument_phrase"],
+        "ε",
+    ],
+    "determined_argument_retrieval_binary_predicate": [
+        [
+            "quantification",
+            "articlized_argument_retrieval_binary_predicate",
+        ],
+    ],
+    "articlized_argument_retrieval_binary_predicate": [
+        [
+            "article",
+            "argument_retrieval_binary_predicate",
+        ]
+    ],
+    "argument_retrieval_binary_predicate": [
+        [
+            "post_modified_binary_predicate_phrase",
+            "argument_retrieval_with_argument_phrase",
+        ]
+    ],
+    "argument_retrieval_with_argument_phrase": [
+        ["post_argument_phrase_modifier", "argument_phrase"],
+        "ε",
+    ],
+    "quantification": [
+        ["quantifier"],
+        "ε",
+    ],
+    "article": [["articlizer"], "ε"],
+}
+terminals = {
+    "interrogative_marker",
+    "modality",
+    "tense",
+    "aspect",
+    "modality_negation_begin",
+    "tense_negation_begin",
+    "aspect_negation_begin",
+    "negation",
+    "binary_predicate",
+    "argument",
+    "argument_phrase_separator",
+    "argument_phrase_transposer",
+    "binary_operator",
+    "argument_retriever",
+    "quantifier",
+    "articlizer",
+    "mta_event_to_argument_phrase_converter",
+    "mta_event_to_argument_phrase_converter_end",
+    "post_mta_event_modifier",
+    "post_binary_predicate_phrase_modifier",
+    "post_argument_phrase_modifier",
+}
+
+# rules = {
+#     "S": [["A"]],
+#     "A": [
+#         ["A", "a"],
+#         ["b"],
+#     ],
+# }
+
+# terminals = {
+#     "a",
+#     "b",
+# }
+
 grammar = Grammar(rules, terminals)  # type: ignore[arg-type]
 lexer = Lexer(terminals)  # type: ignore[arg-type]
 
 parser = Parser(grammar, lexer)
 converter = MyLambdaExpressionConverter()
+
+import pprint
+
+pprint.pprint(grammar.parse_table)

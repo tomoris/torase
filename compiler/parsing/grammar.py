@@ -68,6 +68,8 @@ class Grammar:
 
         self.compute_first_sets()
         self.compute_follow_sets()
+        print("FIRST sets:", self.first_sets)
+        print("FOLLOW sets:", self.follow_sets)
         self.build_parse_table()
 
     def compute_first_sets(self):
