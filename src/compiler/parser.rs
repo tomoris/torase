@@ -4,10 +4,106 @@ pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
 
-#[derive(Debug)]
-pub enum Symbol {
-    TerminalType(TerminalType),
-    NonTerminalType(NonTerminalType),
+pub fn parse(tokens: Vec<Box<dyn Terminal>>) -> Result<Ast, IncompleteAst> {
+    let mut stack: Vec<SymbolType> = vec![SymbolType::Terminal(TerminalType::Eos), SymbolType::NonTerminal(NonTerminalType::S)];
+    let mut current_token_index = 0;
+
+    while !stack.is_empty() {
+        parse_node(&mut stack, &tokens, &mut current_token_index)?;
+    }
+    todo!()
+}
+
+fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<Box<dyn Terminal>>, current_token_index: &mut usize) -> Result<Box<dyn Symbol>, IncompleteAst> {
+    let current_token = tokens.get(*current_token_index).unwrap();
+    let top_symbol = stack.pop().unwrap();
+
+    match top_symbol {
+        SymbolType::Terminal(terminal) => {
+            match terminal {
+                TerminalType::Eos => {
+                    if true { // Eos == current_token {
+                        return Ok(current_token.clone_box());
+                    } else {
+                        return Err(IncompleteAst {});
+                    }
+                }
+                _ => {
+                    if true { // terminal_type == current_token.terminal_type() {
+                        return Ok(current_token.clone_box());
+                    } else {
+                        return Err(IncompleteAst {});
+                    }
+                }
+            }
+        }
+        SymbolType::NonTerminal(non_terminal) => {
+            let rhs = parse_table(non_terminal.clone(), current_token.terminal_type())?;
+            match rhs {
+                Rhs::Sequence(symbols) => {
+                    for symbol in symbols.iter().rev() {
+                        stack.push(*symbol);
+                    }
+                    let mut child_nodes = Vec::new();
+                    for symbol in symbols.iter().rev() {
+                        match parse_node(stack, tokens, current_token_index) {
+                            Ok(child_node) => {
+                                child_nodes.push(child_node);
+                            }
+                            Err(e) => {
+                                return Err(e);
+                            }
+                        }
+
+                    }
+                    return Ok(new_non_terminal(non_terminal, &child_nodes)?);
+                }
+                Rhs::Epsilon => {
+                    *current_token_index += 1;
+                    return parse_node(stack, tokens, current_token_index);
+                }
+            }
+        }
+    }
+}
+
+fn new_non_terminal(non_terminal: NonTerminalType, children: &Vec<Box<dyn Symbol>>) -> Result<Box<dyn NonTerminal>, IncompleteAst> {
+    match non_terminal {
+        NonTerminalType::S => Ok(Box::new(S::try_new(children)?)),
+        NonTerminalType::DeclarativeSentence => Ok(Box::new(DeclarativeSentence::try_new(children)?)),
+        NonTerminalType::InterrogativeSentence => Ok(Box::new(InterrogativeSentence::try_new(children)?)),
+        NonTerminalType::PostModifiedMtaEvent => Ok(Box::new(PostModifiedMtaEvent::try_new(children)?)),
+        NonTerminalType::PostMtaEventExpression => Ok(Box::new(PostMtaEventExpression::try_new(children)?)),
+        NonTerminalType::ModalityExpression => Ok(Box::new(ModalityExpression::try_new(children)?)),
+        NonTerminalType::ModalityWithAgent => Ok(Box::new(ModalityWithAgent::try_new(children)?)),
+        NonTerminalType::ModifiedModality => Ok(Box::new(ModifiedModality::try_new(children)?)),
+        NonTerminalType::ModalityAgent => Ok(Box::new(ModalityAgent::try_new(children)?)),
+        NonTerminalType::TenseExpression => Ok(Box::new(TenseExpression::try_new(children)?)),
+        NonTerminalType::ModifiedTense => Ok(Box::new(ModifiedTense::try_new(children)?)),
+        NonTerminalType::AspectExpression => Ok(Box::new(AspectExpression::try_new(children)?)),
+        NonTerminalType::ModifiedAspect => Ok(Box::new(ModifiedAspect::try_new(children)?)),
+        NonTerminalType::MtaEvent => Ok(Box::new(MtaEvent::try_new(children)?)),
+        NonTerminalType::TaEvent => Ok(Box::new(TaEvent::try_new(children)?)),
+        NonTerminalType::AEvent => Ok(Box::new(AEvent::try_new(children)?)),
+        NonTerminalType::Event => Ok(Box::new(Event::try_new(children)?)),
+        NonTerminalType::PostModifiedBinaryPredicatePhrase => Ok(Box::new(PostModifiedBinaryPredicatePhrase::try_new(children)?)),
+        NonTerminalType::PostBinaryPredicatePhraseExpression => Ok(Box::new(PostBinaryPredicatePhraseExpression::try_new(children)?)),
+        NonTerminalType::BinaryPredicatePhrase => Ok(Box::new(BinaryPredicatePhrase::try_new(children)?)),
+        NonTerminalType::ArgumentPhrase => Ok(Box::new(ArgumentPhrase::try_new(children)?)),
+        NonTerminalType::ArgumentPhraseOrEpsilon => Ok(Box::new(ArgumentPhraseOrEpsilon::try_new(children)?)),
+        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => Ok(Box::new(DeterminedArgumentRetrievalBinaryPredicate::try_new(children)?)),
+        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => Ok(Box::new(ArticlizedArgumentRetrievalBinaryPredicate::try_new(children)?)),
+        NonTerminalType::ArgumentRetrievalBinaryPredicate => Ok(Box::new(ArgumentRetrievalBinaryPredicate::try_new(children)?)),
+        NonTerminalType::ArgumentRetrievalWithArgumentPhrase => Ok(Box::new(ArgumentRetrievalWithArgumentPhrase::try_new(children)?)),
+        NonTerminalType::Quantification => Ok(Box::new(Quantification::try_new(children)?)),
+        NonTerminalType::Article => Ok(Box::new(Article::try_new(children)?)),
+        _ => Err(IncompleteAst {}),
+    }
+}
+
+
+fn parse_table(nt: NonTerminalType, t: TerminalType) -> Result<Rhs, IncompleteAst> {
+    todo!()
 }
 
 #[derive(Debug)]
@@ -26,17 +122,22 @@ pub struct IncompleteAst {
     // Define the structure of the ErrorAST here
 }
 
-trait NonTerminal {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>;
+trait Symbol {
+    // Define the methods that all symbols (terminals and non-terminals) should implement
 }
 
-#[derive(Debug)]
+trait NonTerminal:  Symbol {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized;
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized;
+}
+
+#[derive(Clone, Copy, Debug)]
 enum SymbolType {
     Terminal(TerminalType),
     NonTerminal(NonTerminalType),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 enum NonTerminalType {
     S,
     DeclarativeSentence,
@@ -68,7 +169,7 @@ enum NonTerminalType {
     Article,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 enum TerminalType {
     InterrogativeMarker,
     Modality,
@@ -94,7 +195,11 @@ enum TerminalType {
     Eos,
 }
 
-trait Terminal {}
+
+trait Terminal: Symbol {
+    fn terminal_type(&self) -> TerminalType;
+    fn clone_box(&self) -> Box<dyn Terminal>;
+}
 
 // non-terminal types
 
@@ -198,8 +303,9 @@ struct PostBinaryPredicatePhraseModifier;
 
 struct PostArgumentPhraseModifier;
 
+impl Symbol for S {}
 impl NonTerminal for S {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::InterrogativeMarker => {
                 Ok(Rhs::Sequence(vec![
@@ -261,10 +367,14 @@ impl NonTerminal for S {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        todo!()
+    }
 }
 
+impl Symbol for DeclarativeSentence {}
 impl NonTerminal for DeclarativeSentence {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Modality => {
                 Ok(Rhs::Sequence(vec![
@@ -321,10 +431,14 @@ impl NonTerminal for DeclarativeSentence {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        todo!()
+    }
 }
 
+impl Symbol for InterrogativeSentence {}
 impl NonTerminal for InterrogativeSentence {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::InterrogativeMarker => {
                 Ok(Rhs::Sequence(vec![
@@ -337,10 +451,14 @@ impl NonTerminal for InterrogativeSentence {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        todo!()
+    }
 }
 
+impl Symbol for PostModifiedMtaEvent {}
 impl NonTerminal for PostModifiedMtaEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Modality => {
                 Ok(Rhs::Sequence(vec![
@@ -407,10 +525,15 @@ impl NonTerminal for PostModifiedMtaEvent {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new PostModifiedMtaEvent from children
+        todo!()
+    }
 }
 
+impl Symbol for PostMtaEventExpression {}
 impl NonTerminal for PostMtaEventExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::PostMtaEventModifier => {
                 Ok(Rhs::Sequence(vec![
@@ -426,10 +549,15 @@ impl NonTerminal for PostMtaEventExpression {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new PostMtaEventExpression from children
+        todo!()
+    }
 }
 
+impl Symbol for ModalityExpression {}
 impl NonTerminal for ModalityExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Modality => {
                 Ok(Rhs::Sequence(vec![
@@ -470,10 +598,15 @@ impl NonTerminal for ModalityExpression {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ModalityExpression from children
+        todo!()
+    }
 }
 
+impl Symbol for ModalityWithAgent {}
 impl NonTerminal for ModalityWithAgent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Modality => {
                 Ok(Rhs::Sequence(vec![
@@ -492,10 +625,15 @@ impl NonTerminal for ModalityWithAgent {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ModalityWithAgent from children
+        todo!()
+    }
 }
 
+impl Symbol for ModifiedModality {}
 impl NonTerminal for ModifiedModality {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Modality => {
                 Ok(Rhs::Sequence(vec![
@@ -514,10 +652,15 @@ impl NonTerminal for ModifiedModality {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ModifiedModality from children
+        todo!()
+    }
 }
 
+impl Symbol for ModalityAgent {}
 impl NonTerminal for ModalityAgent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Tense => {
                 Ok(Rhs::Epsilon)
@@ -554,10 +697,15 @@ impl NonTerminal for ModalityAgent {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ModalityAgent from children
+        todo!()
+    }
 }
 
+impl Symbol for TenseExpression {}
 impl NonTerminal for TenseExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Tense => {
                 Ok(Rhs::Sequence(vec![
@@ -592,10 +740,15 @@ impl NonTerminal for TenseExpression {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new TenseExpression from children
+        todo!()
+    }
 }
 
+impl Symbol for ModifiedTense {}
 impl NonTerminal for ModifiedTense {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Tense => {
                 Ok(Rhs::Sequence(vec![
@@ -614,10 +767,15 @@ impl NonTerminal for ModifiedTense {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ModifiedTense from children
+        todo!()
+    }
 }
 
+impl Symbol for AspectExpression {}
 impl NonTerminal for AspectExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Aspect => {
                 Ok(Rhs::Sequence(vec![
@@ -646,10 +804,15 @@ impl NonTerminal for AspectExpression {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new AspectExpression from children
+        todo!()
+    }
 }
 
+impl Symbol for ModifiedAspect {}
 impl NonTerminal for ModifiedAspect {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Aspect => {
                 Ok(Rhs::Sequence(vec![
@@ -668,10 +831,15 @@ impl NonTerminal for ModifiedAspect {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ModifiedAspect from children
+        todo!()
+    }
 }
 
+impl Symbol for MtaEvent {}
 impl NonTerminal for MtaEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Modality => {
                 Ok(Rhs::Sequence(vec![
@@ -738,10 +906,15 @@ impl NonTerminal for MtaEvent {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new MtaEvent from children
+        todo!()   
+    }
 }
 
+impl Symbol for TaEvent {}
 impl NonTerminal for TaEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Tense => {
                 Ok(Rhs::Sequence(vec![
@@ -796,10 +969,15 @@ impl NonTerminal for TaEvent {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new TaEvent from children
+        todo!()
+    }
 }
 
+impl Symbol for AEvent {}
 impl NonTerminal for AEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Aspect => {
                 Ok(Rhs::Sequence(vec![
@@ -842,10 +1020,15 @@ impl NonTerminal for AEvent {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new AEvent from children
+        todo!()
+    }
 }
 
+impl Symbol for Event {}
 impl NonTerminal for Event {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Sequence(vec![
@@ -880,10 +1063,15 @@ impl NonTerminal for Event {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new Event from children
+        todo!()
+    }
 }
 
+impl Symbol for PostModifiedBinaryPredicatePhrase {}
 impl NonTerminal for PostModifiedBinaryPredicatePhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Sequence(vec![
@@ -914,10 +1102,15 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new PostModifiedBinaryPredicatePhrase from children
+        todo!()
+    }
 }
 
+impl Symbol for PostBinaryPredicatePhraseExpression {}
 impl NonTerminal for PostBinaryPredicatePhraseExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Tense => {
                 Ok(Rhs::Epsilon)
@@ -978,10 +1171,15 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new PostBinaryPredicatePhraseExpression from children
+        todo!()
+    }
 }
 
+impl Symbol for BinaryPredicatePhrase {}
 impl NonTerminal for BinaryPredicatePhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Sequence(vec![
@@ -1012,10 +1210,15 @@ impl NonTerminal for BinaryPredicatePhrase {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new BinaryPredicatePhrase from children
+        todo!()
+    }
 }
 
+impl Symbol for ArgumentPhrase {}
 impl NonTerminal for ArgumentPhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Sequence(vec![
@@ -1053,10 +1256,15 @@ impl NonTerminal for ArgumentPhrase {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ArgumentPhrase from children
+        todo!()
+    }
 }
 
+impl Symbol for ArgumentPhraseOrEpsilon {}
 impl NonTerminal for ArgumentPhraseOrEpsilon {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::ArgumentPhraseSeparator => {
                 Ok(Rhs::Sequence(vec![
@@ -1078,10 +1286,15 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ArgumentPhraseOrEpsilon from children
+        todo!()
+    }
 }
 
+impl Symbol for DeterminedArgumentRetrievalBinaryPredicate {}
 impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Sequence(vec![
@@ -1124,11 +1337,15 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
             }
         }
     }
-    
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new DeterminedArgumentRetrievalBinaryPredicate from children
+        todo!()
+    }   
 }
 
+impl Symbol for ArticlizedArgumentRetrievalBinaryPredicate {}
 impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Sequence(vec![
@@ -1165,10 +1382,15 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ArticlizedArgumentRetrievalBinaryPredicate from children
+        todo!()
+    }
 }
 
+impl Symbol for ArgumentRetrievalBinaryPredicate {}
 impl NonTerminal for ArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Sequence(vec![
@@ -1199,10 +1421,15 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ArgumentRetrievalBinaryPredicate from children
+        todo!()
+    }
 }
 
+impl Symbol for ArgumentRetrievalWithArgumentPhrase {}
 impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Tense => {
                 Ok(Rhs::Epsilon)
@@ -1260,10 +1487,15 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new ArgumentRetrievalWithArgumentPhrase from children
+        todo!()
+    }
 }
 
+impl Symbol for Quantification {}
 impl NonTerminal for Quantification {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Epsilon)
@@ -1290,10 +1522,15 @@ impl NonTerminal for Quantification {
             }
         }
     }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new Quantification from children
+        todo!()
+    }
 }
 
+impl Symbol for Article {}
 impl NonTerminal for Article {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> {
+    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
             TerminalType::Negation => {
                 Ok(Rhs::Epsilon)
@@ -1316,6 +1553,10 @@ impl NonTerminal for Article {
                 Err(IncompleteAst {})
             }
         }
+    }
+    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+        // Implement the logic to create a new Article from children
+        todo!()
     }
 }
 
