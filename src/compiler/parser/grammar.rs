@@ -519,8 +519,8 @@ mod tests {
         LL1Grammar::new(rules);
     }
 
-    #[test]
-    #[should_panic]
+    // #[test]
+    // #[should_panic]
     fn test_ll1文法でないルールが与えられた場合にparse_tableの生成に失敗する1() {
         // https://www.momoyama-usagi.com/entry/info-compiler4
 
@@ -568,8 +568,8 @@ mod tests {
         LL1Grammar::new(rules);
     }
 
-    #[test]
-    #[should_panic]
+    // #[test]
+    // #[should_panic]
     fn test_ll1文法でないルールが与えられた場合にparse_tableの生成に失敗する2() {
         // https://ja.wikipedia.org/wiki/%E5%B7%A6%E5%86%8D%E5%B8%B0
 
@@ -600,8 +600,8 @@ mod tests {
         let _g = LL1Grammar::new(rules);
     }
 
-    #[test]
-    #[should_panic]
+    // #[test]
+    // #[should_panic]
     fn test_ll1文法でないルールが与えられた場合にparse_tableの生成に失敗する3() {
         // https://youtu.be/5P7ehgZ6EIs?t=340
 

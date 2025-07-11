@@ -22,14 +22,14 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<Box<dyn Terminal>>, curr
         SymbolType::Terminal(terminal) => {
             match terminal {
                 TerminalType::Eos => {
-                    if true { // Eos == current_token {
+                    if TerminalType::Eos == current_token.terminal_type() {
                         return Ok(current_token.clone_box());
                     } else {
                         return Err(IncompleteAst {});
                     }
                 }
                 _ => {
-                    if true { // terminal_type == current_token.terminal_type() {
+                    if terminal == current_token.terminal_type() {
                         return Ok(current_token.clone_box());
                     } else {
                         return Err(IncompleteAst {});
@@ -38,14 +38,14 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<Box<dyn Terminal>>, curr
             }
         }
         SymbolType::NonTerminal(non_terminal) => {
-            let rhs = parse_table(non_terminal.clone(), current_token.terminal_type())?;
+            let rhs = parse_table(non_terminal, current_token.terminal_type())?;
             match rhs {
-                Rhs::Sequence(symbols) => {
+                Rhs::Sequence(ref symbols) => {
                     for symbol in symbols.iter().rev() {
                         stack.push(*symbol);
                     }
                     let mut child_nodes = Vec::new();
-                    for symbol in symbols.iter().rev() {
+                    for _ in symbols.iter() {
                         match parse_node(stack, tokens, current_token_index) {
                             Ok(child_node) => {
                                 child_nodes.push(child_node);
@@ -56,10 +56,9 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<Box<dyn Terminal>>, curr
                         }
 
                     }
-                    return Ok(new_non_terminal(non_terminal, &child_nodes)?);
+                    return Ok(new_non_terminal(&non_terminal, &child_nodes, &rhs)?);
                 }
                 Rhs::Epsilon => {
-                    *current_token_index += 1;
                     return parse_node(stack, tokens, current_token_index);
                 }
             }
@@ -67,43 +66,72 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<Box<dyn Terminal>>, curr
     }
 }
 
-fn new_non_terminal(non_terminal: NonTerminalType, children: &Vec<Box<dyn Symbol>>) -> Result<Box<dyn NonTerminal>, IncompleteAst> {
+fn new_non_terminal(non_terminal: &NonTerminalType, children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Box<dyn NonTerminal>, IncompleteAst> {
     match non_terminal {
-        NonTerminalType::S => Ok(Box::new(S::try_new(children)?)),
-        NonTerminalType::DeclarativeSentence => Ok(Box::new(DeclarativeSentence::try_new(children)?)),
-        NonTerminalType::InterrogativeSentence => Ok(Box::new(InterrogativeSentence::try_new(children)?)),
-        NonTerminalType::PostModifiedMtaEvent => Ok(Box::new(PostModifiedMtaEvent::try_new(children)?)),
-        NonTerminalType::PostMtaEventExpression => Ok(Box::new(PostMtaEventExpression::try_new(children)?)),
-        NonTerminalType::ModalityExpression => Ok(Box::new(ModalityExpression::try_new(children)?)),
-        NonTerminalType::ModalityWithAgent => Ok(Box::new(ModalityWithAgent::try_new(children)?)),
-        NonTerminalType::ModifiedModality => Ok(Box::new(ModifiedModality::try_new(children)?)),
-        NonTerminalType::ModalityAgent => Ok(Box::new(ModalityAgent::try_new(children)?)),
-        NonTerminalType::TenseExpression => Ok(Box::new(TenseExpression::try_new(children)?)),
-        NonTerminalType::ModifiedTense => Ok(Box::new(ModifiedTense::try_new(children)?)),
-        NonTerminalType::AspectExpression => Ok(Box::new(AspectExpression::try_new(children)?)),
-        NonTerminalType::ModifiedAspect => Ok(Box::new(ModifiedAspect::try_new(children)?)),
-        NonTerminalType::MtaEvent => Ok(Box::new(MtaEvent::try_new(children)?)),
-        NonTerminalType::TaEvent => Ok(Box::new(TaEvent::try_new(children)?)),
-        NonTerminalType::AEvent => Ok(Box::new(AEvent::try_new(children)?)),
-        NonTerminalType::Event => Ok(Box::new(Event::try_new(children)?)),
-        NonTerminalType::PostModifiedBinaryPredicatePhrase => Ok(Box::new(PostModifiedBinaryPredicatePhrase::try_new(children)?)),
-        NonTerminalType::PostBinaryPredicatePhraseExpression => Ok(Box::new(PostBinaryPredicatePhraseExpression::try_new(children)?)),
-        NonTerminalType::BinaryPredicatePhrase => Ok(Box::new(BinaryPredicatePhrase::try_new(children)?)),
-        NonTerminalType::ArgumentPhrase => Ok(Box::new(ArgumentPhrase::try_new(children)?)),
-        NonTerminalType::ArgumentPhraseOrEpsilon => Ok(Box::new(ArgumentPhraseOrEpsilon::try_new(children)?)),
-        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => Ok(Box::new(DeterminedArgumentRetrievalBinaryPredicate::try_new(children)?)),
-        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => Ok(Box::new(ArticlizedArgumentRetrievalBinaryPredicate::try_new(children)?)),
-        NonTerminalType::ArgumentRetrievalBinaryPredicate => Ok(Box::new(ArgumentRetrievalBinaryPredicate::try_new(children)?)),
-        NonTerminalType::ArgumentRetrievalWithArgumentPhrase => Ok(Box::new(ArgumentRetrievalWithArgumentPhrase::try_new(children)?)),
-        NonTerminalType::Quantification => Ok(Box::new(Quantification::try_new(children)?)),
-        NonTerminalType::Article => Ok(Box::new(Article::try_new(children)?)),
+        NonTerminalType::S => Ok(Box::new(S::try_new(children, rhs)?)),
+        NonTerminalType::DeclarativeSentence => Ok(Box::new(DeclarativeSentence::try_new(children, rhs)?)),
+        NonTerminalType::InterrogativeSentence => Ok(Box::new(InterrogativeSentence::try_new(children, rhs)?)),
+        NonTerminalType::PostModifiedMtaEvent => Ok(Box::new(PostModifiedMtaEvent::try_new(children, rhs)?)),
+        NonTerminalType::PostMtaEventExpression => Ok(Box::new(PostMtaEventExpression::try_new(children, rhs)?)),
+        NonTerminalType::ModalityExpression => Ok(Box::new(ModalityExpression::try_new(children, rhs)?)),
+        NonTerminalType::ModalityWithAgent => Ok(Box::new(ModalityWithAgent::try_new(children, rhs)?)),
+        NonTerminalType::ModifiedModality => Ok(Box::new(ModifiedModality::try_new(children, rhs)?)),
+        NonTerminalType::ModalityAgent => Ok(Box::new(ModalityAgent::try_new(children, rhs)?)),
+        NonTerminalType::TenseExpression => Ok(Box::new(TenseExpression::try_new(children, rhs)?)),
+        NonTerminalType::ModifiedTense => Ok(Box::new(ModifiedTense::try_new(children, rhs)?)),
+        NonTerminalType::AspectExpression => Ok(Box::new(AspectExpression::try_new(children, rhs)?)),
+        NonTerminalType::ModifiedAspect => Ok(Box::new(ModifiedAspect::try_new(children, rhs)?)),
+        NonTerminalType::MtaEvent => Ok(Box::new(MtaEvent::try_new(children, rhs)?)),
+        NonTerminalType::TaEvent => Ok(Box::new(TaEvent::try_new(children, rhs)?)),
+        NonTerminalType::AEvent => Ok(Box::new(AEvent::try_new(children, rhs)?)),
+        NonTerminalType::Event => Ok(Box::new(Event::try_new(children, rhs)?)),
+        NonTerminalType::PostModifiedBinaryPredicatePhrase => Ok(Box::new(PostModifiedBinaryPredicatePhrase::try_new(children, rhs)?)),
+        NonTerminalType::PostBinaryPredicatePhraseExpression => Ok(Box::new(PostBinaryPredicatePhraseExpression::try_new(children, rhs)?)),
+        NonTerminalType::BinaryPredicatePhrase => Ok(Box::new(BinaryPredicatePhrase::try_new(children, rhs)?)),
+        NonTerminalType::ArgumentPhrase => Ok(Box::new(ArgumentPhrase::try_new(children, rhs)?)),
+        NonTerminalType::ArgumentPhraseOrEpsilon => Ok(Box::new(ArgumentPhraseOrEpsilon::try_new(children, rhs)?)),
+        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => Ok(Box::new(DeterminedArgumentRetrievalBinaryPredicate::try_new(children, rhs)?)),
+        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => Ok(Box::new(ArticlizedArgumentRetrievalBinaryPredicate::try_new(children, rhs)?)),
+        NonTerminalType::ArgumentRetrievalBinaryPredicate => Ok(Box::new(ArgumentRetrievalBinaryPredicate::try_new(children, rhs)?)),
+        NonTerminalType::ArgumentRetrievalWithArgumentPhrase => Ok(Box::new(ArgumentRetrievalWithArgumentPhrase::try_new(children, rhs)?)),
+        NonTerminalType::Quantification => Ok(Box::new(Quantification::try_new(children, rhs)?)),
+        NonTerminalType::Article => Ok(Box::new(Article::try_new(children, rhs)?)),
         _ => Err(IncompleteAst {}),
     }
 }
 
 
 fn parse_table(nt: NonTerminalType, t: TerminalType) -> Result<Rhs, IncompleteAst> {
-    todo!()
+    match nt {
+        NonTerminalType::S => S::parse_table(t),
+        NonTerminalType::DeclarativeSentence => DeclarativeSentence::parse_table(t),
+        NonTerminalType::InterrogativeSentence => InterrogativeSentence::parse_table(t),
+        NonTerminalType::PostModifiedMtaEvent => PostModifiedMtaEvent::parse_table(t),
+        NonTerminalType::PostMtaEventExpression => PostMtaEventExpression::parse_table(t),
+        NonTerminalType::ModalityExpression => ModalityExpression::parse_table(t),
+        NonTerminalType::ModalityWithAgent => ModalityWithAgent::parse_table(t),
+        NonTerminalType::ModifiedModality => ModifiedModality::parse_table(t),
+        NonTerminalType::ModalityAgent => ModalityAgent::parse_table(t),
+        NonTerminalType::TenseExpression => TenseExpression::parse_table(t),
+        NonTerminalType::ModifiedTense => ModifiedTense::parse_table(t),
+        NonTerminalType::AspectExpression => AspectExpression::parse_table(t),
+        NonTerminalType::ModifiedAspect => ModifiedAspect::parse_table(t),
+        NonTerminalType::MtaEvent => MtaEvent::parse_table(t),
+        NonTerminalType::TaEvent => TaEvent::parse_table(t),
+        NonTerminalType::AEvent => AEvent::parse_table(t),
+        NonTerminalType::Event => Event::parse_table(t),
+        NonTerminalType::PostModifiedBinaryPredicatePhrase => PostModifiedBinaryPredicatePhrase::parse_table(t),
+        NonTerminalType::PostBinaryPredicatePhraseExpression => PostBinaryPredicatePhraseExpression::parse_table(t),
+        NonTerminalType::BinaryPredicatePhrase => BinaryPredicatePhrase::parse_table(t),
+        NonTerminalType::ArgumentPhrase => ArgumentPhrase::parse_table(t),
+        NonTerminalType::ArgumentPhraseOrEpsilon => ArgumentPhraseOrEpsilon::parse_table(t),
+        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => DeterminedArgumentRetrievalBinaryPredicate::parse_table(t),
+        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => ArticlizedArgumentRetrievalBinaryPredicate::parse_table(t),
+        NonTerminalType::ArgumentRetrievalBinaryPredicate => ArgumentRetrievalBinaryPredicate::parse_table(t),
+        NonTerminalType::ArgumentRetrievalWithArgumentPhrase => ArgumentRetrievalWithArgumentPhrase::parse_table(t),
+        NonTerminalType::Quantification => Quantification::parse_table(t),
+        NonTerminalType::Article => Article::parse_table(t),
+    }
 }
 
 #[derive(Debug)]
@@ -128,16 +156,16 @@ trait Symbol {
 
 trait NonTerminal:  Symbol {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized;
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized;
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized;
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum SymbolType {
     Terminal(TerminalType),
     NonTerminal(NonTerminalType),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum NonTerminalType {
     S,
     DeclarativeSentence,
@@ -169,7 +197,7 @@ enum NonTerminalType {
     Article,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum TerminalType {
     InterrogativeMarker,
     Modality,
@@ -199,6 +227,12 @@ enum TerminalType {
 trait Terminal: Symbol {
     fn terminal_type(&self) -> TerminalType;
     fn clone_box(&self) -> Box<dyn Terminal>;
+}
+
+impl Clone for Box<dyn Terminal> {
+    fn clone(&self) -> Box<dyn Terminal> {
+        self.clone_box()
+    }
 }
 
 // non-terminal types
@@ -261,47 +295,71 @@ struct Article;
 
 // terminal types
 
+#[derive(Clone, Debug)]
 struct InterrogativeMarker;
 
+#[derive(Clone, Debug)]
 struct Modality;
 
+#[derive(Clone, Debug)]
 struct Tense;
 
+#[derive(Clone, Debug)]
 struct Aspect;
 
+#[derive(Clone, Debug)]
 struct ModalityNegationBegin;
 
+#[derive(Clone, Debug)]
 struct TenseNegationBegin;
 
+#[derive(Clone, Debug)]
 struct AspectNegationBegin;
 
+#[derive(Clone, Debug)]
 struct Negation;
 
+#[derive(Clone, Debug)]
 struct BinaryPredicate;
 
+#[derive(Clone, Debug)]
 struct Argument;
 
+#[derive(Clone, Debug)]
 struct ArgumentPhraseSeparator;
 
+#[derive(Clone, Debug)]
 struct ArgumentPhraseTransposer;
 
+#[derive(Clone, Debug)]
 struct BinaryOperator;
 
+#[derive(Clone, Debug)]
 struct ArgumentRetriever;
 
+#[derive(Clone, Debug)]
 struct Quantifier;
 
+#[derive(Clone, Debug)]
 struct Articlizer;
 
+#[derive(Clone, Debug)]
 struct MtaEventToArgumentPhraseConverter;
 
+#[derive(Clone, Debug)]
 struct MtaEventToArgumentPhraseConverterEnd;
 
+#[derive(Clone, Debug)]
 struct PostMtaEventModifier;
 
+#[derive(Clone, Debug)]
 struct PostBinaryPredicatePhraseModifier;
 
+#[derive(Clone, Debug)]
 struct PostArgumentPhraseModifier;
+
+#[derive(Clone, Debug)]
+struct Eos;
 
 impl Symbol for S {}
 impl NonTerminal for S {
@@ -367,7 +425,7 @@ impl NonTerminal for S {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         todo!()
     }
 }
@@ -431,7 +489,7 @@ impl NonTerminal for DeclarativeSentence {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         todo!()
     }
 }
@@ -451,7 +509,7 @@ impl NonTerminal for InterrogativeSentence {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         todo!()
     }
 }
@@ -525,7 +583,7 @@ impl NonTerminal for PostModifiedMtaEvent {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new PostModifiedMtaEvent from children
         todo!()
     }
@@ -549,7 +607,7 @@ impl NonTerminal for PostMtaEventExpression {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new PostMtaEventExpression from children
         todo!()
     }
@@ -598,7 +656,7 @@ impl NonTerminal for ModalityExpression {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ModalityExpression from children
         todo!()
     }
@@ -625,7 +683,7 @@ impl NonTerminal for ModalityWithAgent {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ModalityWithAgent from children
         todo!()
     }
@@ -652,7 +710,7 @@ impl NonTerminal for ModifiedModality {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ModifiedModality from children
         todo!()
     }
@@ -697,7 +755,7 @@ impl NonTerminal for ModalityAgent {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ModalityAgent from children
         todo!()
     }
@@ -740,7 +798,7 @@ impl NonTerminal for TenseExpression {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new TenseExpression from children
         todo!()
     }
@@ -767,7 +825,7 @@ impl NonTerminal for ModifiedTense {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ModifiedTense from children
         todo!()
     }
@@ -804,7 +862,7 @@ impl NonTerminal for AspectExpression {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new AspectExpression from children
         todo!()
     }
@@ -831,7 +889,7 @@ impl NonTerminal for ModifiedAspect {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ModifiedAspect from children
         todo!()
     }
@@ -906,7 +964,7 @@ impl NonTerminal for MtaEvent {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new MtaEvent from children
         todo!()   
     }
@@ -969,7 +1027,7 @@ impl NonTerminal for TaEvent {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new TaEvent from children
         todo!()
     }
@@ -1020,7 +1078,7 @@ impl NonTerminal for AEvent {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new AEvent from children
         todo!()
     }
@@ -1063,7 +1121,7 @@ impl NonTerminal for Event {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new Event from children
         todo!()
     }
@@ -1102,7 +1160,7 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new PostModifiedBinaryPredicatePhrase from children
         todo!()
     }
@@ -1171,7 +1229,7 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new PostBinaryPredicatePhraseExpression from children
         todo!()
     }
@@ -1210,8 +1268,37 @@ impl NonTerminal for BinaryPredicatePhrase {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new BinaryPredicatePhrase from children
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                // Check if the sequence matches the expected structure for BinaryPredicatePhrase
+                if symbols.len() == 2 && symbols[0] == SymbolType::Terminal(TerminalType::Negation) &&
+                   symbols[1] == SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase) {
+                    if children.len() == 2 {
+                        return Ok(Negation {} BinaryPredicatePhrase {});
+                    } else {
+                        return Err(IncompleteAst {})
+                    }
+                    Ok(BinaryPredicatePhrase {});
+                } else if sequence.len() == 3 && sequence[0] == SymbolType::Terminal(TerminalType::Negation) &&
+                          sequence[1] == SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase) {
+                    return Ok(BinaryPredicatePhrase {});
+                } else if sequence.len() == 3 && sequence[0] == SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer) &&
+                          sequence[1] == SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase) {
+                    return Ok(BinaryPredicatePhrase {});
+                } else if sequence.len() == 4 && sequence[0] == SymbolType::Terminal(TerminalType::BinaryOperator) &&
+                          sequence[1] == SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase) &&
+                          sequence[2] == SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase) {
+                    return Ok(BinaryPredicatePhrase {});
+                }
+            }
+            _ => {IncompleteAst {}}
+        }
+        // for child in children {
+        //     if let Some(binary_predicate) = child.as_any().downcast_ref::<BinaryPredicatePhrase>() {
+        //         return Ok(binary_predicate.clone());
+        //     }
+        // }
         todo!()
     }
 }
@@ -1256,7 +1343,7 @@ impl NonTerminal for ArgumentPhrase {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ArgumentPhrase from children
         todo!()
     }
@@ -1286,7 +1373,7 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ArgumentPhraseOrEpsilon from children
         todo!()
     }
@@ -1337,7 +1424,7 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new DeterminedArgumentRetrievalBinaryPredicate from children
         todo!()
     }   
@@ -1382,7 +1469,7 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ArticlizedArgumentRetrievalBinaryPredicate from children
         todo!()
     }
@@ -1421,7 +1508,7 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ArgumentRetrievalBinaryPredicate from children
         todo!()
     }
@@ -1487,7 +1574,7 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new ArgumentRetrievalWithArgumentPhrase from children
         todo!()
     }
@@ -1522,7 +1609,7 @@ impl NonTerminal for Quantification {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new Quantification from children
         todo!()
     }
@@ -1554,9 +1641,49 @@ impl NonTerminal for Article {
             }
         }
     }
-    fn try_new(children: &Vec<Box<dyn Symbol>>) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn try_new(children: &Vec<Box<dyn Symbol>>, rhs: &Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
         // Implement the logic to create a new Article from children
         todo!()
+    }
+}
+
+impl Symbol for BinaryPredicate {}
+impl Terminal for BinaryPredicate {
+    fn clone_box(&self) -> Box<dyn Terminal> {
+        Box::new(self.clone())
+    }
+    fn terminal_type(&self) -> TerminalType {
+        TerminalType::BinaryPredicate
+    }
+}
+
+impl Symbol for Argument {}
+impl Terminal for Argument {
+    fn clone_box(&self) -> Box<dyn Terminal> {
+        Box::new(self.clone())
+    }
+    fn terminal_type(&self) -> TerminalType {
+        TerminalType::Argument
+    }
+}
+
+impl Symbol for ArgumentPhraseSeparator {}
+impl Terminal for ArgumentPhraseSeparator {
+    fn clone_box(&self) -> Box<dyn Terminal> {
+        Box::new(self.clone())
+    }
+    fn terminal_type(&self) -> TerminalType {
+        TerminalType::ArgumentPhraseSeparator
+    }
+}
+
+impl Symbol for Eos {}
+impl Terminal for Eos {
+    fn clone_box(&self) -> Box<dyn Terminal> {
+        Box::new(self.clone())
+    }
+    fn terminal_type(&self) -> TerminalType {
+        TerminalType::Eos
     }
 }
 
@@ -2068,5 +2195,17 @@ mod tests {
                         panic!("Manual parse result found but auto parse result is None for non-terminal: {:?}, terminal: {:?}", nt, lt);
                     }
                 }
+    }
+
+    #[test]
+    fn test_parse() {
+        let tokens: Vec<Box<dyn Terminal>> = vec![
+            Box::new(BinaryPredicate {}),
+            Box::new(Argument {}),
+            Box::new(ArgumentPhraseSeparator {}),
+            Box::new(Argument {}),
+            Box::new(Eos {}),
+        ];
+        println!("Testing parse with tokens: {:?}", parse(tokens));
     }
 }
