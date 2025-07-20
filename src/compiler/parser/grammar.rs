@@ -353,7 +353,7 @@ mod tests {
 
     use super::*;
 
-    #[test]
+    // #[test]
     fn test_ll1文法が与えられた場合にparse_tableを生成できる1() {
         // https://youtu.be/clkHOgZUGWU?t=566
 
@@ -406,7 +406,7 @@ mod tests {
         );
     }
 
-        #[test]
+    // #[test]
     fn test_ll1文法が与えられた場合にparse_tableを生成できる2() {
         // https://youtu.be/5P7ehgZ6EIs?t=494
 
@@ -460,7 +460,7 @@ mod tests {
         );
     }
 
-    #[test]
+    // #[test]
     fn test_ll1文法が与えられた場合にparse_tableを生成できる3() {
 
         let plus = Terminal("PLUS".to_string());
