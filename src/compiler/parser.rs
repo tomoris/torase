@@ -6,6 +6,8 @@ mod grammar;
 use core::panic;
 use std::mem::discriminant;
 
+use crate::compiler::tokenizer::*;
+
 pub fn parse(tokens: Vec<TerminalType>) -> Result<Ast, IncompleteAst> {
     let mut stack: Vec<SymbolType> = vec![
         SymbolType::Terminal(TerminalType::Eos(None)),
@@ -327,32 +329,6 @@ enum NonTerminalType {
     Article(Option<Article>),
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum TerminalType {
-    InterrogativeMarker(Option<InterrogativeMarker>),
-    Modality(Option<Modality>),
-    Tense(Option<Tense>),
-    Aspect(Option<Aspect>),
-    ModalityNegationBegin(Option<ModalityNegationBegin>),
-    TenseNegationBegin(Option<TenseNegationBegin>),
-    AspectNegationBegin(Option<AspectNegationBegin>),
-    Negation(Option<Negation>),
-    BinaryPredicate(Option<BinaryPredicate>),
-    Argument(Option<Argument>),
-    ArgumentPhraseSeparator(Option<ArgumentPhraseSeparator>),
-    ArgumentPhraseTransposer(Option<ArgumentPhraseTransposer>),
-    BinaryOperator(Option<BinaryOperator>),
-    ArgumentRetriever(Option<ArgumentRetriever>),
-    Quantifier(Option<Quantifier>),
-    Articlizer(Option<Articlizer>),
-    MtaEventToArgumentPhraseConverter(Option<MtaEventToArgumentPhraseConverter>),
-    MtaEventToArgumentPhraseConverterEnd(Option<MtaEventToArgumentPhraseConverterEnd>),
-    PostMtaEventModifier(Option<PostMtaEventModifier>),
-    PostBinaryPredicatePhraseModifier(Option<PostBinaryPredicatePhraseModifier>),
-    PostArgumentPhraseModifier(Option<PostArgumentPhraseModifier>),
-    Eos(Option<Eos>),
-}
-
 // non-terminal types
 
 #[derive(Clone, Debug)]
@@ -494,74 +470,6 @@ struct Quantification {
 struct Article {
     rhs: Rhs,
 }
-
-// terminal types
-
-#[derive(Clone, Copy, Debug)]
-pub struct InterrogativeMarker;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Modality;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Tense;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Aspect;
-
-#[derive(Clone, Copy, Debug)]
-pub struct ModalityNegationBegin;
-
-#[derive(Clone, Copy, Debug)]
-pub struct TenseNegationBegin;
-
-#[derive(Clone, Copy, Debug)]
-pub struct AspectNegationBegin;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Negation;
-
-#[derive(Clone, Copy, Debug)]
-pub struct BinaryPredicate;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Argument;
-
-#[derive(Clone, Copy, Debug)]
-pub struct ArgumentPhraseSeparator;
-
-#[derive(Clone, Copy, Debug)]
-pub struct ArgumentPhraseTransposer;
-
-#[derive(Clone, Copy, Debug)]
-pub struct BinaryOperator;
-
-#[derive(Clone, Copy, Debug)]
-pub struct ArgumentRetriever;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Quantifier;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Articlizer;
-
-#[derive(Clone, Copy, Debug)]
-pub struct MtaEventToArgumentPhraseConverter;
-
-#[derive(Clone, Copy, Debug)]
-pub struct MtaEventToArgumentPhraseConverterEnd;
-
-#[derive(Clone, Copy, Debug)]
-pub struct PostMtaEventModifier;
-
-#[derive(Clone, Copy, Debug)]
-pub struct PostBinaryPredicatePhraseModifier;
-
-#[derive(Clone, Copy, Debug)]
-pub struct PostArgumentPhraseModifier;
-
-#[derive(Clone, Copy, Debug)]
-pub struct Eos;
 
 impl NonTerminal for S {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
@@ -3205,6 +3113,6 @@ mod tests {
             TerminalType::Argument(Some(Argument {})),
             TerminalType::Eos(Some(Eos {})),
         ];
-        println!("Testing parse with tokens: {:?}", parse(tokens));
+        let _ = parse(tokens);
     }
 }
