@@ -1,11 +1,7 @@
 mod grammar;
 
 use core::panic;
-use std::{f32::consts::E, mem::discriminant};
-
-pub fn add(a: i32, b: i32) -> i32 {
-    a + b
-}
+use std::mem::discriminant;
 
 pub fn parse(tokens: Vec<TerminalType>) -> Result<Ast, IncompleteAst> {
     let mut stack: Vec<SymbolType> = vec![SymbolType::Terminal(TerminalType::Eos(None)), SymbolType::NonTerminal(NonTerminalType::S(None))];
@@ -44,8 +40,7 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<TerminalType>, current_t
                         *current_token_index += 1;
                         return Ok(SymbolType::Terminal(current_token.clone()));
                     } else {
-                        panic!("Expected end of stream, found: {:?}", current_token);
-                        return Err(IncompleteAst {});
+                        return Err(IncompleteAst {error_token: current_token.clone(), error_top: top_symbol, error_message: "Expected end of stream".to_string()});
                     }
                 }
                 _ => {
@@ -53,8 +48,7 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<TerminalType>, current_t
                         *current_token_index += 1;
                         return Ok(SymbolType::Terminal(current_token.clone()));
                     } else {
-                        panic!("Expected token: {:?}, found: {:?}", terminal, current_token);
-                        return Err(IncompleteAst {});
+                        return Err(IncompleteAst {error_token: current_token.clone(), error_top: top_symbol, error_message: format!("Expected token: {:?}, found: {:?}", terminal, current_token)});
                     }
                 }
             }
@@ -73,8 +67,11 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<TerminalType>, current_t
                                 child_nodes.push(child_node);
                             }
                             Err(e) => {
-                                panic!("Failed to parse child node: {:?}", e);
-                                return Err(e);
+                                return Err(IncompleteAst {
+                                    error_token: current_token.clone(),
+                                    error_top: SymbolType::NonTerminal(non_terminal.clone()),
+                                    error_message: format!("Failed to parse child node: {:?}", e),
+                                });
                             }
                         }
 
@@ -91,35 +88,34 @@ fn parse_node(stack: &mut Vec<SymbolType>, tokens: &Vec<TerminalType>, current_t
 
 fn new_non_terminal(non_terminal: &NonTerminalType, rhs: Rhs) -> Result<NonTerminalType, IncompleteAst> {
     match non_terminal {
-        NonTerminalType::S(_) => Ok(NonTerminalType::S(Some(S::try_new(rhs)?))),
-        NonTerminalType::DeclarativeSentence(_) => Ok(NonTerminalType::DeclarativeSentence(Some(DeclarativeSentence::try_new(rhs)?))),
-        NonTerminalType::InterrogativeSentence(_) => Ok(NonTerminalType::InterrogativeSentence(Some(InterrogativeSentence::try_new(rhs)?))),
-        NonTerminalType::PostModifiedMtaEvent(_) => Ok(NonTerminalType::PostModifiedMtaEvent(Some(PostModifiedMtaEvent::try_new(rhs)?))),
-        NonTerminalType::PostMtaEventExpression(_) => Ok(NonTerminalType::PostMtaEventExpression(Some(PostMtaEventExpression::try_new(rhs)?))),
-        NonTerminalType::ModalityExpression(_) => Ok(NonTerminalType::ModalityExpression(Some(ModalityExpression::try_new(rhs)?))),
-        NonTerminalType::ModalityWithAgent(_) => Ok(NonTerminalType::ModalityWithAgent(Some(ModalityWithAgent::try_new(rhs)?))),
-        NonTerminalType::ModifiedModality(_) => Ok(NonTerminalType::ModifiedModality(Some(ModifiedModality::try_new(rhs)?))),
-        NonTerminalType::ModalityAgent(_) => Ok(NonTerminalType::ModalityAgent(Some(ModalityAgent::try_new(rhs)?))),
-        NonTerminalType::TenseExpression(_) => Ok(NonTerminalType::TenseExpression(Some(TenseExpression::try_new(rhs)?))),
-        NonTerminalType::ModifiedTense(_) => Ok(NonTerminalType::ModifiedTense(Some(ModifiedTense::try_new(rhs)?))),
-        NonTerminalType::AspectExpression(_) => Ok(NonTerminalType::AspectExpression(Some(AspectExpression::try_new(rhs)?))),
-        NonTerminalType::ModifiedAspect(_) => Ok(NonTerminalType::ModifiedAspect(Some(ModifiedAspect::try_new(rhs)?))),
-        NonTerminalType::MtaEvent(_) => Ok(NonTerminalType::MtaEvent(Some(MtaEvent::try_new(rhs)?))),
-        NonTerminalType::TaEvent(_) => Ok(NonTerminalType::TaEvent(Some(TaEvent::try_new(rhs)?))),
-        NonTerminalType::AEvent(_) => Ok(NonTerminalType::AEvent(Some(AEvent::try_new(rhs)?))),
-        NonTerminalType::Event(_) => Ok(NonTerminalType::Event(Some(Event::try_new(rhs)?))),
-        NonTerminalType::PostModifiedBinaryPredicatePhrase(_) => Ok(NonTerminalType::PostModifiedBinaryPredicatePhrase(Some(PostModifiedBinaryPredicatePhrase::try_new(rhs)?))),
-        NonTerminalType::PostBinaryPredicatePhraseExpression(_) => Ok(NonTerminalType::PostBinaryPredicatePhraseExpression(Some(PostBinaryPredicatePhraseExpression::try_new(rhs)?))),
-        NonTerminalType::BinaryPredicatePhrase(_) => Ok(NonTerminalType::BinaryPredicatePhrase(Some(BinaryPredicatePhrase::try_new(rhs)?))),
-        NonTerminalType::ArgumentPhrase(_) => Ok(NonTerminalType::ArgumentPhrase(Some(ArgumentPhrase::try_new(rhs)?))),
-        NonTerminalType::ArgumentPhraseOrEpsilon(_) => Ok(NonTerminalType::ArgumentPhraseOrEpsilon(Some(ArgumentPhraseOrEpsilon::try_new(rhs)?))),
-        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(_) => Ok(NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(Some(DeterminedArgumentRetrievalBinaryPredicate::try_new(rhs)?))),
-        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(_) => Ok(NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(Some(ArticlizedArgumentRetrievalBinaryPredicate::try_new(rhs)?))),
-        NonTerminalType::ArgumentRetrievalBinaryPredicate(_) => Ok(NonTerminalType::ArgumentRetrievalBinaryPredicate(Some(ArgumentRetrievalBinaryPredicate::try_new(rhs)?))),
-        NonTerminalType::ArgumentRetrievalWithArgumentPhrase(_) => Ok(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(Some(ArgumentRetrievalWithArgumentPhrase::try_new(rhs)?))),
-        NonTerminalType::Quantification(_) => Ok(NonTerminalType::Quantification(Some(Quantification::try_new(rhs)?))),
-        NonTerminalType::Article(_) => Ok(NonTerminalType::Article(Some(Article::try_new(rhs)?))),
-        _ => Err(IncompleteAst {}),
+        NonTerminalType::S(_) => Ok(NonTerminalType::S(Some(S::new(rhs)))),
+        NonTerminalType::DeclarativeSentence(_) => Ok(NonTerminalType::DeclarativeSentence(Some(DeclarativeSentence::new(rhs)))),
+        NonTerminalType::InterrogativeSentence(_) => Ok(NonTerminalType::InterrogativeSentence(Some(InterrogativeSentence::new(rhs)))),
+        NonTerminalType::PostModifiedMtaEvent(_) => Ok(NonTerminalType::PostModifiedMtaEvent(Some(PostModifiedMtaEvent::new(rhs)))),
+        NonTerminalType::PostMtaEventExpression(_) => Ok(NonTerminalType::PostMtaEventExpression(Some(PostMtaEventExpression::new(rhs)))),
+        NonTerminalType::ModalityExpression(_) => Ok(NonTerminalType::ModalityExpression(Some(ModalityExpression::new(rhs)))),
+        NonTerminalType::ModalityWithAgent(_) => Ok(NonTerminalType::ModalityWithAgent(Some(ModalityWithAgent::new(rhs)))),
+        NonTerminalType::ModifiedModality(_) => Ok(NonTerminalType::ModifiedModality(Some(ModifiedModality::new(rhs)))),
+        NonTerminalType::ModalityAgent(_) => Ok(NonTerminalType::ModalityAgent(Some(ModalityAgent::new(rhs)))),
+        NonTerminalType::TenseExpression(_) => Ok(NonTerminalType::TenseExpression(Some(TenseExpression::new(rhs)))),
+        NonTerminalType::ModifiedTense(_) => Ok(NonTerminalType::ModifiedTense(Some(ModifiedTense::new(rhs)))),
+        NonTerminalType::AspectExpression(_) => Ok(NonTerminalType::AspectExpression(Some(AspectExpression::new(rhs)))),
+        NonTerminalType::ModifiedAspect(_) => Ok(NonTerminalType::ModifiedAspect(Some(ModifiedAspect::new(rhs)))),
+        NonTerminalType::MtaEvent(_) => Ok(NonTerminalType::MtaEvent(Some(MtaEvent::new(rhs)))),
+        NonTerminalType::TaEvent(_) => Ok(NonTerminalType::TaEvent(Some(TaEvent::new(rhs)))),
+        NonTerminalType::AEvent(_) => Ok(NonTerminalType::AEvent(Some(AEvent::new(rhs)))),
+        NonTerminalType::Event(_) => Ok(NonTerminalType::Event(Some(Event::new(rhs)))),
+        NonTerminalType::PostModifiedBinaryPredicatePhrase(_) => Ok(NonTerminalType::PostModifiedBinaryPredicatePhrase(Some(PostModifiedBinaryPredicatePhrase::new(rhs)))),
+        NonTerminalType::PostBinaryPredicatePhraseExpression(_) => Ok(NonTerminalType::PostBinaryPredicatePhraseExpression(Some(PostBinaryPredicatePhraseExpression::new(rhs)))),
+        NonTerminalType::BinaryPredicatePhrase(_) => Ok(NonTerminalType::BinaryPredicatePhrase(Some(BinaryPredicatePhrase::new(rhs)))),
+        NonTerminalType::ArgumentPhrase(_) => Ok(NonTerminalType::ArgumentPhrase(Some(ArgumentPhrase::new(rhs)))),
+        NonTerminalType::ArgumentPhraseOrEpsilon(_) => Ok(NonTerminalType::ArgumentPhraseOrEpsilon(Some(ArgumentPhraseOrEpsilon::new(rhs)))),
+        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(_) => Ok(NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(Some(DeterminedArgumentRetrievalBinaryPredicate::new(rhs)))),
+        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(_) => Ok(NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(Some(ArticlizedArgumentRetrievalBinaryPredicate::new(rhs)))),
+        NonTerminalType::ArgumentRetrievalBinaryPredicate(_) => Ok(NonTerminalType::ArgumentRetrievalBinaryPredicate(Some(ArgumentRetrievalBinaryPredicate::new(rhs)))),
+        NonTerminalType::ArgumentRetrievalWithArgumentPhrase(_) => Ok(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(Some(ArgumentRetrievalWithArgumentPhrase::new(rhs)))),
+        NonTerminalType::Quantification(_) => Ok(NonTerminalType::Quantification(Some(Quantification::new(rhs)))),
+        NonTerminalType::Article(_) => Ok(NonTerminalType::Article(Some(Article::new(rhs)))),
     }
 }
 
@@ -170,12 +166,14 @@ pub struct Ast {
 
 #[derive(Debug)]
 pub struct IncompleteAst {
-    // Define the structure of the ErrorAST here
+    error_token: TerminalType,
+    error_top: SymbolType,
+    error_message: String,
 }
 
 trait NonTerminal {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized;
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized;
+    fn new(rhs: Rhs) -> Self where Self: Sized;
 }
 
 #[derive(Clone, Debug)]
@@ -217,7 +215,7 @@ enum NonTerminalType {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum TerminalType {
+pub enum TerminalType {
     InterrogativeMarker(Option<InterrogativeMarker>),
     Modality(Option<Modality>),
     Tense(Option<Tense>),
@@ -387,70 +385,70 @@ struct Article {
 // terminal types
 
 #[derive(Clone, Copy, Debug)]
-struct InterrogativeMarker;
+pub struct InterrogativeMarker;
 
 #[derive(Clone, Copy, Debug)]
-struct Modality;
+pub struct Modality;
 
 #[derive(Clone, Copy, Debug)]
-struct Tense;
+pub struct Tense;
 
 #[derive(Clone, Copy, Debug)]
-struct Aspect;
+pub struct Aspect;
 
 #[derive(Clone, Copy, Debug)]
-struct ModalityNegationBegin;
+pub struct ModalityNegationBegin;
 
 #[derive(Clone, Copy, Debug)]
-struct TenseNegationBegin;
+pub struct TenseNegationBegin;
 
 #[derive(Clone, Copy, Debug)]
-struct AspectNegationBegin;
+pub struct AspectNegationBegin;
 
 #[derive(Clone, Copy, Debug)]
-struct Negation;
+pub struct Negation;
 
 #[derive(Clone, Copy, Debug)]
-struct BinaryPredicate;
+pub struct BinaryPredicate;
 
 #[derive(Clone, Copy, Debug)]
-struct Argument;
+pub struct Argument;
 
 #[derive(Clone, Copy, Debug)]
-struct ArgumentPhraseSeparator;
+pub struct ArgumentPhraseSeparator;
 
 #[derive(Clone, Copy, Debug)]
-struct ArgumentPhraseTransposer;
+pub struct ArgumentPhraseTransposer;
 
 #[derive(Clone, Copy, Debug)]
-struct BinaryOperator;
+pub struct BinaryOperator;
 
 #[derive(Clone, Copy, Debug)]
-struct ArgumentRetriever;
+pub struct ArgumentRetriever;
 
 #[derive(Clone, Copy, Debug)]
-struct Quantifier;
+pub struct Quantifier;
 
 #[derive(Clone, Copy, Debug)]
-struct Articlizer;
+pub struct Articlizer;
 
 #[derive(Clone, Copy, Debug)]
-struct MtaEventToArgumentPhraseConverter;
+pub struct MtaEventToArgumentPhraseConverter;
 
 #[derive(Clone, Copy, Debug)]
-struct MtaEventToArgumentPhraseConverterEnd;
+pub struct MtaEventToArgumentPhraseConverterEnd;
 
 #[derive(Clone, Copy, Debug)]
-struct PostMtaEventModifier;
+pub struct PostMtaEventModifier;
 
 #[derive(Clone, Copy, Debug)]
-struct PostBinaryPredicatePhraseModifier;
+pub struct PostBinaryPredicatePhraseModifier;
 
 #[derive(Clone, Copy, Debug)]
-struct PostArgumentPhraseModifier;
+pub struct PostArgumentPhraseModifier;
 
 #[derive(Clone, Copy, Debug)]
-struct Eos;
+pub struct Eos;
 
 impl NonTerminal for S {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
@@ -511,38 +509,37 @@ impl NonTerminal for S {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(child1))] => {
                         if child1.is_none() {
-                            panic!("InterrogativeSentence is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(child1))] => {
                         if child1.is_none() {
-                            panic!("DeclarativeSentence is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in S");
-                return Err(IncompleteAst {})
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -602,31 +599,31 @@ impl NonTerminal for DeclarativeSentence {
                 ]))
             }            
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child1))] => {
                         if child1.is_none() {
-                            panic!("PostModifiedMtaEvent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in DeclarativeSentence");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -642,35 +639,34 @@ impl NonTerminal for InterrogativeSentence {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::InterrogativeMarker(child1)), SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child2))] => {
                         if child1.is_none() {
-                            panic!("InterrogativeMarker is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("PostModifiedMtaEvent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in InterrogativeSentence");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -740,35 +736,34 @@ impl NonTerminal for PostModifiedMtaEvent {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::MtaEvent(child1)), SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(child2))] => {
                         if child1.is_none() {
-                            panic!("MtaEvent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("PostMtaEventExpression is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in PostModifiedMtaEvent");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -787,34 +782,34 @@ impl NonTerminal for PostMtaEventExpression {
                 Ok(Rhs::Epsilon)
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::PostMtaEventModifier(child1)), SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2))] => {
                         if child1.is_none() {
-                            panic!("PostMtaEventModifier is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("MtaEvent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -858,30 +853,31 @@ impl NonTerminal for ModalityExpression {
                 Ok(Rhs::Epsilon)
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(child1))] => {
                         if child1.is_none() {
-                            panic!("ModalityWithAgent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -903,35 +899,34 @@ impl NonTerminal for ModalityWithAgent {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child1)), SymbolType::NonTerminal(NonTerminalType::ModalityAgent(child2))] => {
                         if child1.is_none() {
-                            panic!("ModifiedModality is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ModalityAgent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in ModalityWithAgent");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -953,46 +948,43 @@ impl NonTerminal for ModifiedModality {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedModality(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::Modality(child1))] => {
                         if child1.is_none() {
-                            panic!("Modality is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::ModalityNegationBegin(child1)), SymbolType::Terminal(TerminalType::Negation(child2)), SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child3))] => {
                         if child1.is_none() {
-                            panic!("ModalityNegationBegin is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("Negation is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child3.is_none() {
-                            panic!("ModifiedModality is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in ModifiedModality");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1032,34 +1024,34 @@ impl NonTerminal for ModalityAgent {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ModalityAgent(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("PostArgumentPhraseModifier is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -1097,30 +1089,31 @@ impl NonTerminal for TenseExpression {
                 Ok(Rhs::Epsilon)
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child1))] => {
                         if child1.is_none() {
-                            panic!("ModifiedTense is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -1142,46 +1135,43 @@ impl NonTerminal for ModifiedTense {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedTense(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::Tense(child1))] => {
                         if child1.is_none() {
-                            panic!("Tense is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::TenseNegationBegin(child1)), SymbolType::Terminal(TerminalType::Negation(child2)), SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child3))] => {
                         if child1.is_none() {
-                            panic!("TenseNegationBegin is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("Negation is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child3.is_none() {
-                            panic!("ModifiedTense is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in ModifiedModality");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1213,30 +1203,31 @@ impl NonTerminal for AspectExpression {
                 Ok(Rhs::Epsilon)
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child1))] => {
                         if child1.is_none() {
-                            panic!("ModifiedAspect is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -1258,46 +1249,43 @@ impl NonTerminal for ModifiedAspect {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::Aspect(child1))] => {
                         if child1.is_none() {
-                            panic!("Aspect is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::AspectNegationBegin(child1)), SymbolType::Terminal(TerminalType::Negation(child2)), SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child3))] => {
                         if child1.is_none() {
-                            panic!("AspectNegationBegin is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("Negation is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child3.is_none() {
-                            panic!("ModifiedAspect is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in ModifiedModality");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1367,35 +1355,34 @@ impl NonTerminal for MtaEvent {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::ModalityExpression(child1)), SymbolType::NonTerminal(NonTerminalType::TaEvent(child2))] => {
                         if child1.is_none() {
-                            panic!("ModalityExpression is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("TaEvent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in MtaEvent");
-                return Err(IncompleteAst {})
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1453,35 +1440,34 @@ impl NonTerminal for TaEvent {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::TenseExpression(child1)), SymbolType::NonTerminal(NonTerminalType::AEvent(child2))] => {
                         if child1.is_none() {
-                            panic!("TenseExpression is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("AEvent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in TaEvent");
-                return Err(IncompleteAst {})
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1527,35 +1513,34 @@ impl NonTerminal for AEvent {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::AspectExpression(child1)), SymbolType::NonTerminal(NonTerminalType::Event(child2))] => {
                         if child1.is_none() {
-                            panic!("AspectExpression is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("Event is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in AEvent");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1593,39 +1578,37 @@ impl NonTerminal for Event {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::Event(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(child3))] => {
                         if child1.is_none() {
-                            panic!("PostModifiedBinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child3.is_none() {
-                            panic!("ArgumentPhraseOrEpsilon is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Event cannot be epsilon");
-                return Err(IncompleteAst {})
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1659,35 +1642,35 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child1)), SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(child2))] => {
                         if child1.is_none() {
-                            panic!("BinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("PostBinaryPredicatePhraseExpression is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in PostModifiedBinaryPredicatePhrase: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
+
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("PostModifiedBinaryPredicatePhrase cannot be epsilon");
-                return Err(IncompleteAst {})
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1751,34 +1734,34 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
                 Ok(Rhs::Epsilon)
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::PostBinaryPredicatePhraseModifier(child1)), SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("PostBinaryPredicatePhraseModifier is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("BinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in PostBinaryPredicatePhraseExpression");
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -1812,68 +1795,61 @@ impl NonTerminal for BinaryPredicatePhrase {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::Negation(child1)), SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("Negation is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("BinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::BinaryPredicate(child1))] => {
                         if child1.is_none() {
-                            panic!("BinaryPredicate is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(child1)), SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("ArgumentPhraseTransposer is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("BinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::BinaryOperator(child1)), SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)), SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child3))] => {
                         if child1.is_none() {
-                            panic!("BinaryOperator is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("BinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child3.is_none() {
-                            panic!("BinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in BinaryPredicatePhrase");
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("BinaryPredicatePhrase cannot be epsilon");
-                return Err(IncompleteAst {})
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -1914,83 +1890,73 @@ impl NonTerminal for ArgumentPhrase {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::Negation(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("Negation is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::Argument(child1))] => {
                         if child1.is_none() {
-                            panic!("Argument is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::BinaryOperator(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3))] => {
                         if child1.is_none() {
-                            panic!("BinaryOperator is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child3.is_none() {
-                            panic!("ArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::ArgumentRetriever(child1)), SymbolType::NonTerminal(NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(child2))] => {
                         if child1.is_none() {
-                            panic!("ArgumentRetriever is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("DeterminedArgumentRetrievalBinaryPredicate is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     [SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)), SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)), SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverterEnd(child3))] => {
                         if child1.is_none() {
-                            panic!("MtaEventToArgumentPhraseConverter is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("MtaEvent is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child3.is_none() {
-                            panic!("MtaEventToArgumentPhraseConverterEnd is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in ArgumentPhrase");
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("ArgumentPhrase cannot be epsilon");
-                return Err(IncompleteAst {})
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -2015,34 +1981,34 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
                 Ok(Rhs::Epsilon)
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("ArgumentPhraseSeparator is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -2088,35 +2054,34 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::Quantification(child1)), SymbolType::NonTerminal(NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(child2))] => {
                         if child1.is_none() {
-                            panic!("Quantification is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArticlizedArgumentRetrievalBinaryPredicate is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in ModifiedModality");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }   
@@ -2156,35 +2121,34 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::Article(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(child2))] => {
                         if child1.is_none() {
-                            panic!("Article is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentRetrievalBinaryPredicate is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in ArticlizedArgumentRetrievalBinaryPredicate");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -2218,35 +2182,34 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("PostModifiedBinaryPredicatePhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentRetrievalWithArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                panic!("Unexpected epsilon in ArgumentRetrievalBinaryPredicate");
-                return Err(IncompleteAst {});
+                panic!("Unexpected epsilon");
             }
         }
     }
@@ -2307,34 +2270,34 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
                 Ok(Rhs::Epsilon)
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2))] => {
                         if child1.is_none() {
-                            panic!("PostArgumentPhraseModifier is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
                         if child2.is_none() {
-                            panic!("ArgumentPhrase is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -2364,30 +2327,31 @@ impl NonTerminal for Quantification {
                 Ok(Rhs::Epsilon)    
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::Quantifier(child1))] => {
                         if child1.is_none() {
-                            panic!("Quantifier is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -2414,30 +2378,31 @@ impl NonTerminal for Article {
                 ]))
             }
             _ => {
-                panic!("Unexpected token: {:?}", current_token);
-                Err(IncompleteAst {})
+                Err(IncompleteAst {
+                    error_token: current_token,
+                    error_top: SymbolType::NonTerminal(NonTerminalType::Article(None)),
+                    error_message: format!("Unexpected token: {:?}", current_token),
+                })
             }
         }
     }
-    fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
+    fn new(rhs: Rhs) -> Self where Self: Sized {
         match rhs {
             Rhs::Sequence(ref symbols) => {
                 match symbols.as_slice() {
                     [SymbolType::Terminal(TerminalType::Articlizer(child1))] => {
                         if child1.is_none() {
-                            panic!("Articlizer is None");
-                            return Err(IncompleteAst {});
+                            panic!("child is None");
                         }
-                        return Ok(Self {rhs})
+                        return Self {rhs}
                     }
                     _ => {
-                        panic!("Unexpected symbols in S: {:?}", symbols);
-                        return Err(IncompleteAst {})
+                        panic!("Unexpected symbols: {:?}", symbols);
                     }
                 }
             }
             Rhs::Epsilon => {
-                return Ok(Self {rhs})
+                return Self {rhs}
             }
         }
     }
@@ -2447,7 +2412,7 @@ impl NonTerminal for Article {
 mod tests {
     use super::*;
 
-    // #[test]
+    #[test]
     fn test_自動生成されたparse_tableと一致する() {
         use std::any::type_name;
         use std::collections::HashMap;
