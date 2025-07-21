@@ -165,7 +165,7 @@ impl LL1Grammar {
                     result.insert(FirstElement::Terminal(t.clone()));
                     return result;
                 }
-                Symbol::NonTerminal(nt) => match first_sets.get(&nt) {
+                Symbol::NonTerminal(nt) => match first_sets.get(nt) {
                     Some(first_set) => {
                         for element in first_set {
                             result.insert(element.clone());
