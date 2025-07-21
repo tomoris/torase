@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 mod grammar;
 
 use core::panic;
@@ -16,37 +19,36 @@ pub fn parse(tokens: Vec<TerminalType>) -> Result<Ast, IncompleteAst> {
             let eos = parse_node(&mut stack, &tokens, &mut current_token_index)?;
             if let SymbolType::Terminal(TerminalType::Eos(_)) = eos {
                 if stack.is_empty() && current_token_index == tokens.len() {
-                    return Ok(Ast { s });
+                    Ok(Ast { s })
                 } else {
-                    return Err(IncompleteAst {
+                    Err(IncompleteAst {
                         error_token: TerminalType::Eos(None),
                         error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
                         error_message: format!(
-                            "Expected end of stream, but stack is not empty or current token index is not at the end: stack: {:?}, current_token_index: {}",
-                            stack, current_token_index
+                            "Expected end of stream, but stack is not empty or current token index is not at the end: stack: {stack:?}, current_token_index: {current_token_index:}",
                         ),
-                    });
+                    })
                 }
             } else {
-                return Err(IncompleteAst {
+                Err(IncompleteAst {
                     error_token: TerminalType::Eos(None),
                     error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-                    error_message: format!("Expected Eos as the last token, found: {:?}", eos),
-                });
+                    error_message: format!("Expected Eos as the last token, found: {eos:?}"),
+                })
             }
         } else {
-            return Err(IncompleteAst {
+            Err(IncompleteAst {
                 error_token: TerminalType::Eos(None),
                 error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
                 error_message: "Expected S to be present, but it was None".to_string(),
-            });
+            })
         }
     } else {
-        return Err(IncompleteAst {
+        Err(IncompleteAst {
             error_token: TerminalType::Eos(None),
             error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-            error_message: format!("Expected S as the root non-terminal, found: {:?}", s),
-        });
+            error_message: format!("Expected S as the root non-terminal, found: {s:?}"),
+        })
     }
 }
 
@@ -63,28 +65,27 @@ fn parse_node(
             TerminalType::Eos(_) => {
                 if discriminant(&TerminalType::Eos(None)) == discriminant(current_token) {
                     *current_token_index += 1;
-                    return Ok(SymbolType::Terminal(current_token.clone()));
+                    Ok(SymbolType::Terminal(*current_token))
                 } else {
-                    return Err(IncompleteAst {
-                        error_token: current_token.clone(),
+                    Err(IncompleteAst {
+                        error_token: *current_token,
                         error_top: top_symbol,
                         error_message: "Expected end of stream".to_string(),
-                    });
+                    })
                 }
             }
             _ => {
                 if discriminant(&terminal) == discriminant(current_token) {
                     *current_token_index += 1;
-                    return Ok(SymbolType::Terminal(current_token.clone()));
+                    Ok(SymbolType::Terminal(*current_token))
                 } else {
-                    return Err(IncompleteAst {
-                        error_token: current_token.clone(),
+                    Err(IncompleteAst {
+                        error_token: *current_token,
                         error_top: top_symbol,
                         error_message: format!(
-                            "Expected token: {:?}, found: {:?}",
-                            terminal, current_token
+                            "Expected token: {terminal:?}, found: {current_token:?}"
                         ),
-                    });
+                    })
                 }
             }
         },
@@ -103,24 +104,22 @@ fn parse_node(
                             }
                             Err(e) => {
                                 return Err(IncompleteAst {
-                                    error_token: current_token.clone(),
+                                    error_token: *current_token,
                                     error_top: SymbolType::NonTerminal(non_terminal.clone()),
-                                    error_message: format!("Failed to parse child node: {:?}", e),
+                                    error_message: format!("Failed to parse child node: {e:?}"),
                                 });
                             }
                         }
                     }
-                    return Ok(SymbolType::NonTerminal(new_non_terminal(
+                    Ok(SymbolType::NonTerminal(new_non_terminal(
                         &non_terminal,
                         Rhs::Sequence(child_nodes),
-                    )?));
+                    )?))
                 }
-                Rhs::Epsilon => {
-                    return Ok(SymbolType::NonTerminal(new_non_terminal(
-                        &non_terminal,
-                        rhs,
-                    )?));
-                }
+                Rhs::Epsilon => Ok(SymbolType::NonTerminal(new_non_terminal(
+                    &non_terminal,
+                    rhs,
+                )?)),
             }
         }
     }
@@ -616,7 +615,7 @@ impl NonTerminal for S {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -630,13 +629,13 @@ impl NonTerminal for S {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(child1))] => {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -696,7 +695,7 @@ impl NonTerminal for DeclarativeSentence {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -710,7 +709,7 @@ impl NonTerminal for DeclarativeSentence {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -736,7 +735,7 @@ impl NonTerminal for InterrogativeSentence {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -756,7 +755,7 @@ impl NonTerminal for InterrogativeSentence {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -818,7 +817,7 @@ impl NonTerminal for PostModifiedMtaEvent {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -838,7 +837,7 @@ impl NonTerminal for PostModifiedMtaEvent {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -865,7 +864,7 @@ impl NonTerminal for PostMtaEventExpression {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -885,13 +884,13 @@ impl NonTerminal for PostMtaEventExpression {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -921,7 +920,7 @@ impl NonTerminal for ModalityExpression {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -935,13 +934,13 @@ impl NonTerminal for ModalityExpression {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -963,7 +962,7 @@ impl NonTerminal for ModalityWithAgent {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -983,7 +982,7 @@ impl NonTerminal for ModalityWithAgent {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1013,7 +1012,7 @@ impl NonTerminal for ModifiedModality {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedModality(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1027,7 +1026,7 @@ impl NonTerminal for ModifiedModality {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::ModalityNegationBegin(child1)),
@@ -1043,7 +1042,7 @@ impl NonTerminal for ModifiedModality {
                     if child3.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1077,7 +1076,7 @@ impl NonTerminal for ModalityAgent {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ModalityAgent(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1097,13 +1096,13 @@ impl NonTerminal for ModalityAgent {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -1131,7 +1130,7 @@ impl NonTerminal for TenseExpression {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1145,13 +1144,13 @@ impl NonTerminal for TenseExpression {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -1173,7 +1172,7 @@ impl NonTerminal for ModifiedTense {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedTense(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1187,7 +1186,7 @@ impl NonTerminal for ModifiedTense {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::TenseNegationBegin(child1)),
@@ -1203,7 +1202,7 @@ impl NonTerminal for ModifiedTense {
                     if child3.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1237,7 +1236,7 @@ impl NonTerminal for AspectExpression {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1251,13 +1250,13 @@ impl NonTerminal for AspectExpression {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -1279,7 +1278,7 @@ impl NonTerminal for ModifiedAspect {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1293,7 +1292,7 @@ impl NonTerminal for ModifiedAspect {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::AspectNegationBegin(child1)),
@@ -1309,7 +1308,7 @@ impl NonTerminal for ModifiedAspect {
                     if child3.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1371,7 +1370,7 @@ impl NonTerminal for MtaEvent {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1391,7 +1390,7 @@ impl NonTerminal for MtaEvent {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1445,7 +1444,7 @@ impl NonTerminal for TaEvent {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1465,7 +1464,7 @@ impl NonTerminal for TaEvent {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1511,7 +1510,7 @@ impl NonTerminal for AEvent {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1531,7 +1530,7 @@ impl NonTerminal for AEvent {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1573,7 +1572,7 @@ impl NonTerminal for Event {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::Event(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1599,7 +1598,7 @@ impl NonTerminal for Event {
                     if child3.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1639,7 +1638,7 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
                 error_top: SymbolType::NonTerminal(
                     NonTerminalType::PostModifiedBinaryPredicatePhrase(None),
                 ),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1661,7 +1660,7 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1705,7 +1704,7 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
                 error_top: SymbolType::NonTerminal(
                     NonTerminalType::PostBinaryPredicatePhraseExpression(None),
                 ),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1725,13 +1724,13 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -1761,7 +1760,7 @@ impl NonTerminal for BinaryPredicatePhrase {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1781,13 +1780,13 @@ impl NonTerminal for BinaryPredicatePhrase {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [SymbolType::Terminal(TerminalType::BinaryPredicate(child1))] => {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(child1)),
@@ -1799,7 +1798,7 @@ impl NonTerminal for BinaryPredicatePhrase {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
@@ -1815,7 +1814,7 @@ impl NonTerminal for BinaryPredicatePhrase {
                     if child3.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1860,7 +1859,7 @@ impl NonTerminal for ArgumentPhrase {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1880,13 +1879,13 @@ impl NonTerminal for ArgumentPhrase {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [SymbolType::Terminal(TerminalType::Argument(child1))] => {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
@@ -1902,7 +1901,7 @@ impl NonTerminal for ArgumentPhrase {
                     if child3.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::ArgumentRetriever(child1)),
@@ -1916,7 +1915,7 @@ impl NonTerminal for ArgumentPhrase {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 [
                     SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)),
@@ -1934,7 +1933,7 @@ impl NonTerminal for ArgumentPhrase {
                     if child3.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1963,7 +1962,7 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -1983,13 +1982,13 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -2041,7 +2040,7 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
                 error_top: SymbolType::NonTerminal(
                     NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(None),
                 ),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -2063,7 +2062,7 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -2107,7 +2106,7 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
                 error_top: SymbolType::NonTerminal(
                     NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
                 ),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -2129,7 +2128,7 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -2169,7 +2168,7 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
                 error_top: SymbolType::NonTerminal(
                     NonTerminalType::ArgumentRetrievalBinaryPredicate(None),
                 ),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -2193,7 +2192,7 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -2236,7 +2235,7 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
                 error_top: SymbolType::NonTerminal(
                     NonTerminalType::ArgumentRetrievalWithArgumentPhrase(None),
                 ),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -2256,13 +2255,13 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
                     if child2.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -2284,7 +2283,7 @@ impl NonTerminal for Quantification {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -2298,13 +2297,13 @@ impl NonTerminal for Quantification {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -2325,7 +2324,7 @@ impl NonTerminal for Article {
             _ => Err(IncompleteAst {
                 error_token: current_token,
                 error_top: SymbolType::NonTerminal(NonTerminalType::Article(None)),
-                error_message: format!("Unexpected token: {:?}", current_token),
+                error_message: format!("Unexpected token: {current_token:?}"),
             }),
         }
     }
@@ -2339,13 +2338,13 @@ impl NonTerminal for Article {
                     if child1.is_none() {
                         panic!("child is None");
                     }
-                    return Self { rhs };
+                    Self { rhs }
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => return Self { rhs },
+            Rhs::Epsilon => Self { rhs },
         }
     }
 }
@@ -2992,13 +2991,13 @@ mod tests {
                 };
 
                 let auto_parse_result = parse_table.get(&(nt.clone(), lt.clone()));
-                helper(&nt, &lt, tt, &auto_parse_result);
+                helper(nt, &lt, tt, &auto_parse_result);
             }
             let lt = grammar::Lookahead::Eos;
             let tt = TerminalType::Eos(None);
 
             let auto_parse_result = parse_table.get(&(nt.clone(), lt.clone()));
-            helper(&nt, &grammar::Lookahead::Eos, tt, &auto_parse_result);
+            helper(nt, &grammar::Lookahead::Eos, tt, &auto_parse_result);
         }
     }
 
@@ -3102,8 +3101,7 @@ mod tests {
                                             };
                                     assert_eq!(
                                         auto_nt.0, manual_nt_variant_name,
-                                        "Parse table mismatch for non-terminal: {:?}, terminal: {:?}. Auto: {:?}, Manual: {:?}",
-                                        nt, lt, auto_nt, manual_nt
+                                        "Parse table mismatch for non-terminal: {nt:?}, terminal: {lt:?}. Auto: {auto_nt:?}, Manual: {manual_nt:?}",
                                     );
                                 }
                                 (
@@ -3156,8 +3154,7 @@ mod tests {
                                     };
                                     assert_eq!(
                                         auto_t.0, manual_nt_variant_name,
-                                        "Parse table mismatch for terminal: {:?}, terminal: {:?}. Auto: {:?}, Manual: {:?}",
-                                        nt, lt, auto_t, manual_t
+                                        "Parse table mismatch for terminal: {nt:?}, terminal: {lt:?}. Auto: {auto_t:?}, Manual: {manual_t:?}",
                                     );
                                 }
                                 _ => {
