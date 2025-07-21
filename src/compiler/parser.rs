@@ -157,7 +157,7 @@ fn parse_table(nt: NonTerminalType, &t: &TerminalType) -> Result<Rhs, Incomplete
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Rhs {
     Sequence(Vec<SymbolType>),
     Epsilon,
@@ -173,22 +173,18 @@ pub struct IncompleteAst {
     // Define the structure of the ErrorAST here
 }
 
-trait Symbol {
-    // Define the methods that all symbols (terminals and non-terminals) should implement
-}
-
-trait NonTerminal:  Symbol {
+trait NonTerminal {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized;
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized;
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 enum SymbolType {
     Terminal(TerminalType),
     NonTerminal(NonTerminalType),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 enum NonTerminalType {
     S(Option<S>),
     DeclarativeSentence(Option<DeclarativeSentence>),
@@ -220,7 +216,7 @@ enum NonTerminalType {
     Article(Option<Article>),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 enum TerminalType {
     InterrogativeMarker(Option<InterrogativeMarker>),
     Modality(Option<Modality>),
@@ -246,217 +242,216 @@ enum TerminalType {
     Eos(Option<Eos>),
 }
 
-
-trait Terminal: Symbol {
-    fn terminal_type(&self) -> TerminalType;
-    fn clone_box(&self) -> Box<dyn Terminal>;
-}
-
-impl Clone for Box<dyn Terminal> {
-    fn clone(&self) -> Box<dyn Terminal> {
-        self.clone_box()
-    }
-}
-
 // non-terminal types
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct S {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct DeclarativeSentence {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct InterrogativeSentence {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct PostModifiedMtaEvent {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct PostMtaEventExpression {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ModalityExpression {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ModalityWithAgent {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ModifiedModality {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ModalityAgent {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct TenseExpression {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ModifiedTense {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct AspectExpression {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ModifiedAspect {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct MtaEvent {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct TaEvent {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct AEvent {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct Event {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct PostModifiedBinaryPredicatePhrase {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct PostBinaryPredicatePhraseExpression {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct BinaryPredicatePhrase {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ArgumentPhrase {
     rhs: Rhs,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ArgumentPhraseOrEpsilon {
     rhs: Rhs,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct DeterminedArgumentRetrievalBinaryPredicate;
+#[derive(Clone, Debug)]
+struct DeterminedArgumentRetrievalBinaryPredicate {
+    rhs: Rhs,
+}
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct ArticlizedArgumentRetrievalBinaryPredicate;
+#[derive(Clone, Debug)]
+struct ArticlizedArgumentRetrievalBinaryPredicate {
+    rhs: Rhs,
+}
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct ArgumentRetrievalBinaryPredicate;
+#[derive(Clone, Debug)]
+struct ArgumentRetrievalBinaryPredicate {
+    rhs: Rhs,
+}
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct ArgumentRetrievalWithArgumentPhrase;
+#[derive(Clone, Debug)]
+struct ArgumentRetrievalWithArgumentPhrase {
+    rhs: Rhs,
+}
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Quantification;
+#[derive(Clone, Debug)]
+struct Quantification {
+    rhs: Rhs,
+}
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Article;
+#[derive(Clone, Debug)]
+struct Article {
+    rhs: Rhs,
+}
 
 // terminal types
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct InterrogativeMarker;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Modality;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Tense;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Aspect;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct ModalityNegationBegin;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct TenseNegationBegin;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct AspectNegationBegin;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Negation;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct BinaryPredicate;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Argument;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct ArgumentPhraseSeparator;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct ArgumentPhraseTransposer;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct BinaryOperator;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct ArgumentRetriever;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Quantifier;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Articlizer;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct MtaEventToArgumentPhraseConverter;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct MtaEventToArgumentPhraseConverterEnd;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct PostMtaEventModifier;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct PostBinaryPredicatePhraseModifier;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct PostArgumentPhraseModifier;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 struct Eos;
 
-impl Symbol for S {}
 impl NonTerminal for S {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -553,7 +548,6 @@ impl NonTerminal for S {
     }
 }
 
-impl Symbol for DeclarativeSentence {}
 impl NonTerminal for DeclarativeSentence {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -638,7 +632,6 @@ impl NonTerminal for DeclarativeSentence {
     }
 }
 
-impl Symbol for InterrogativeSentence {}
 impl NonTerminal for InterrogativeSentence {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -683,7 +676,6 @@ impl NonTerminal for InterrogativeSentence {
     }
 }
 
-impl Symbol for PostModifiedMtaEvent {}
 impl NonTerminal for PostModifiedMtaEvent {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -782,7 +774,6 @@ impl NonTerminal for PostModifiedMtaEvent {
     }
 }
 
-impl Symbol for PostMtaEventExpression {}
 impl NonTerminal for PostMtaEventExpression {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -829,7 +820,6 @@ impl NonTerminal for PostMtaEventExpression {
     }
 }
 
-impl Symbol for ModalityExpression {}
 impl NonTerminal for ModalityExpression {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -897,7 +887,6 @@ impl NonTerminal for ModalityExpression {
     }
 }
 
-impl Symbol for ModalityWithAgent {}
 impl NonTerminal for ModalityWithAgent {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -920,12 +909,34 @@ impl NonTerminal for ModalityWithAgent {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new ModalityWithAgent from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child1)), SymbolType::NonTerminal(NonTerminalType::ModalityAgent(child2))] => {
+                        if child1.is_none() {
+                            panic!("ModifiedModality is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("ModalityAgent is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon in ModalityWithAgent");
+                return Err(IncompleteAst {});
+            }
+        }
     }
 }
 
-impl Symbol for ModifiedModality {}
 impl NonTerminal for ModifiedModality {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -948,12 +959,45 @@ impl NonTerminal for ModifiedModality {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new ModifiedModality from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::Terminal(TerminalType::Modality(child1))] => {
+                        if child1.is_none() {
+                            panic!("Modality is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    [SymbolType::Terminal(TerminalType::ModalityNegationBegin(child1)), SymbolType::Terminal(TerminalType::Negation(child2)), SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child3))] => {
+                        if child1.is_none() {
+                            panic!("ModalityNegationBegin is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("Negation is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child3.is_none() {
+                            panic!("ModifiedModality is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon in ModifiedModality");
+                return Err(IncompleteAst {});
+            }
+        }
     }
 }
 
-impl Symbol for ModalityAgent {}
 impl NonTerminal for ModalityAgent {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1021,7 +1065,6 @@ impl NonTerminal for ModalityAgent {
     }
 }
 
-impl Symbol for TenseExpression {}
 impl NonTerminal for TenseExpression {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1083,7 +1126,6 @@ impl NonTerminal for TenseExpression {
     }
 }
 
-impl Symbol for ModifiedTense {}
 impl NonTerminal for ModifiedTense {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1106,12 +1148,45 @@ impl NonTerminal for ModifiedTense {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new ModifiedTense from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::Terminal(TerminalType::Tense(child1))] => {
+                        if child1.is_none() {
+                            panic!("Tense is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    [SymbolType::Terminal(TerminalType::TenseNegationBegin(child1)), SymbolType::Terminal(TerminalType::Negation(child2)), SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child3))] => {
+                        if child1.is_none() {
+                            panic!("TenseNegationBegin is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("Negation is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child3.is_none() {
+                            panic!("ModifiedTense is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon in ModifiedModality");
+                return Err(IncompleteAst {});
+            }
+        }
     }
 }
 
-impl Symbol for AspectExpression {}
 impl NonTerminal for AspectExpression {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1167,7 +1242,6 @@ impl NonTerminal for AspectExpression {
     }
 }
 
-impl Symbol for ModifiedAspect {}
 impl NonTerminal for ModifiedAspect {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1190,12 +1264,45 @@ impl NonTerminal for ModifiedAspect {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new ModifiedAspect from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::Terminal(TerminalType::Aspect(child1))] => {
+                        if child1.is_none() {
+                            panic!("Aspect is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    [SymbolType::Terminal(TerminalType::AspectNegationBegin(child1)), SymbolType::Terminal(TerminalType::Negation(child2)), SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child3))] => {
+                        if child1.is_none() {
+                            panic!("AspectNegationBegin is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("Negation is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child3.is_none() {
+                            panic!("ModifiedAspect is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon in ModifiedModality");
+                return Err(IncompleteAst {});
+            }
+        }
     }
 }
 
-impl Symbol for MtaEvent {}
 impl NonTerminal for MtaEvent {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1294,7 +1401,6 @@ impl NonTerminal for MtaEvent {
     }
 }
 
-impl Symbol for TaEvent {}
 impl NonTerminal for TaEvent {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1381,7 +1487,6 @@ impl NonTerminal for TaEvent {
     }
 }
 
-impl Symbol for AEvent {}
 impl NonTerminal for AEvent {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1456,7 +1561,6 @@ impl NonTerminal for AEvent {
     }
 }
 
-impl Symbol for Event {}
 impl NonTerminal for Event {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1527,7 +1631,6 @@ impl NonTerminal for Event {
     }
 }
 
-impl Symbol for PostModifiedBinaryPredicatePhrase {}
 impl NonTerminal for PostModifiedBinaryPredicatePhrase {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1590,7 +1693,6 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
     }
 }
 
-impl Symbol for PostBinaryPredicatePhraseExpression {}
 impl NonTerminal for PostBinaryPredicatePhraseExpression {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1682,7 +1784,6 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
     }
 }
 
-impl Symbol for BinaryPredicatePhrase {}
 impl NonTerminal for BinaryPredicatePhrase {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1778,7 +1879,6 @@ impl NonTerminal for BinaryPredicatePhrase {
     }
 }
 
-impl Symbol for ArgumentPhrase {}
 impl NonTerminal for ArgumentPhrase {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1896,7 +1996,6 @@ impl NonTerminal for ArgumentPhrase {
     }
 }
 
-impl Symbol for ArgumentPhraseOrEpsilon {}
 impl NonTerminal for ArgumentPhraseOrEpsilon {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1949,7 +2048,6 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
     }
 }
 
-impl Symbol for DeterminedArgumentRetrievalBinaryPredicate {}
 impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -1996,12 +2094,34 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new DeterminedArgumentRetrievalBinaryPredicate from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::NonTerminal(NonTerminalType::Quantification(child1)), SymbolType::NonTerminal(NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(child2))] => {
+                        if child1.is_none() {
+                            panic!("Quantification is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("ArticlizedArgumentRetrievalBinaryPredicate is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon in ModifiedModality");
+                return Err(IncompleteAst {});
+            }
+        }
     }   
 }
 
-impl Symbol for ArticlizedArgumentRetrievalBinaryPredicate {}
 impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -2042,12 +2162,34 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new ArticlizedArgumentRetrievalBinaryPredicate from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::NonTerminal(NonTerminalType::Article(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(child2))] => {
+                        if child1.is_none() {
+                            panic!("Article is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("ArgumentRetrievalBinaryPredicate is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon in ArticlizedArgumentRetrievalBinaryPredicate");
+                return Err(IncompleteAst {});
+            }
+        }
     }
 }
 
-impl Symbol for ArgumentRetrievalBinaryPredicate {}
 impl NonTerminal for ArgumentRetrievalBinaryPredicate {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -2082,12 +2224,34 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new ArgumentRetrievalBinaryPredicate from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(child2))] => {
+                        if child1.is_none() {
+                            panic!("PostModifiedBinaryPredicatePhrase is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("ArgumentRetrievalWithArgumentPhrase is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon in ArgumentRetrievalBinaryPredicate");
+                return Err(IncompleteAst {});
+            }
+        }
     }
 }
 
-impl Symbol for ArgumentRetrievalWithArgumentPhrase {}
 impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -2149,12 +2313,33 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new ArgumentRetrievalWithArgumentPhrase from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)), SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2))] => {
+                        if child1.is_none() {
+                            panic!("PostArgumentPhraseModifier is None");
+                            return Err(IncompleteAst {});
+                        }
+                        if child2.is_none() {
+                            panic!("ArgumentPhrase is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                return Ok(Self {rhs})
+            }
+        }
     }
 }
 
-impl Symbol for Quantification {}
 impl NonTerminal for Quantification {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -2185,12 +2370,29 @@ impl NonTerminal for Quantification {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new Quantification from children
-        todo!()
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::Terminal(TerminalType::Quantifier(child1))] => {
+                        if child1.is_none() {
+                            panic!("Quantifier is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                return Ok(Self {rhs})
+            }
+        }
     }
 }
 
-impl Symbol for Article {}
 impl NonTerminal for Article {
     fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst> where Self: Sized {
         match current_token {
@@ -2218,52 +2420,26 @@ impl NonTerminal for Article {
         }
     }
     fn try_new(rhs: Rhs) -> Result<Self, IncompleteAst> where Self: Sized {
-        // Implement the logic to create a new Article from children
-        todo!()
-    }
-}
-
-impl Symbol for BinaryPredicate {}
-impl Terminal for BinaryPredicate {
-    fn clone_box(&self) -> Box<dyn Terminal> {
-        Box::new(self.clone())
-    }
-    fn terminal_type(&self) -> TerminalType {
-        todo!();
-        // TerminalType::BinaryPredicate
-    }
-}
-
-impl Symbol for Argument {}
-impl Terminal for Argument {
-    fn clone_box(&self) -> Box<dyn Terminal> {
-        Box::new(self.clone())
-    }
-    fn terminal_type(&self) -> TerminalType {
-        todo!();
-        // TerminalType::Argument
-    }
-}
-
-impl Symbol for ArgumentPhraseSeparator {}
-impl Terminal for ArgumentPhraseSeparator {
-    fn clone_box(&self) -> Box<dyn Terminal> {
-        Box::new(self.clone())
-    }
-    fn terminal_type(&self) -> TerminalType {
-        todo!();
-        // TerminalType::ArgumentPhraseSeparator
-    }
-}
-
-impl Symbol for Eos {}
-impl Terminal for Eos {
-    fn clone_box(&self) -> Box<dyn Terminal> {
-        Box::new(self.clone())
-    }
-    fn terminal_type(&self) -> TerminalType {
-        todo!();
-        // TerminalType::Eos
+        match rhs {
+            Rhs::Sequence(ref symbols) => {
+                match symbols.as_slice() {
+                    [SymbolType::Terminal(TerminalType::Articlizer(child1))] => {
+                        if child1.is_none() {
+                            panic!("Articlizer is None");
+                            return Err(IncompleteAst {});
+                        }
+                        return Ok(Self {rhs})
+                    }
+                    _ => {
+                        panic!("Unexpected symbols in S: {:?}", symbols);
+                        return Err(IncompleteAst {})
+                    }
+                }
+            }
+            Rhs::Epsilon => {
+                return Ok(Self {rhs})
+            }
+        }
     }
 }
 
