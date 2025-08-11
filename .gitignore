@@ -3,3 +3,6 @@ __pycache__
 data
 /target
 .vscode
+**/node_modules
+client/out
+client/tsconfig.tsbuildinfo

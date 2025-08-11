@@ -3106,13 +3106,8 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let tokens: Vec<TerminalType> = vec![
-            TerminalType::BinaryPredicate(Some(BinaryPredicate {})),
-            TerminalType::Argument(Some(Argument {})),
-            TerminalType::ArgumentPhraseSeparator(Some(ArgumentPhraseSeparator {})),
-            TerminalType::Argument(Some(Argument {})),
-            TerminalType::Eos(Some(Eos {})),
-        ];
+        let input = "binary_predicate argument argument_phrase_separator argument eos";
+        let tokens = tokenize(input);
         let _ = parse(tokens);
     }
 }
