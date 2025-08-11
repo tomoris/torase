@@ -2,67 +2,157 @@
 #![allow(unused_variables)]
 
 pub fn tokenize(input: &str) -> Vec<TerminalType> {
-    let tokens: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
+    let tokens = split_with_utf8_ranges(input);
 
     let mut result = Vec::new();
     for token in &tokens {
-        match token.as_str() {
+        match token.0 {
             "?" => result.push(TerminalType::InterrogativeMarker(Some(
-                InterrogativeMarker {},
+                InterrogativeMarker {
+                    start: token.1,
+                    end: token.2,
+                },
             ))),
-            "modal" => result.push(TerminalType::Modality(Some(Modality {}))),
-            "tense" => result.push(TerminalType::Tense(Some(Tense {}))),
-            "aspect" => result.push(TerminalType::Aspect(Some(Aspect {}))),
+            "modal" => result.push(TerminalType::Modality(Some(Modality {
+                start: token.1,
+                end: token.2,
+            }))),
+            "tense" => result.push(TerminalType::Tense(Some(Tense {
+                start: token.1,
+                end: token.2,
+            }))),
+            "aspect" => result.push(TerminalType::Aspect(Some(Aspect {
+                start: token.1,
+                end: token.2,
+            }))),
             "modality_negation_begin" => result.push(TerminalType::ModalityNegationBegin(Some(
-                ModalityNegationBegin {},
+                ModalityNegationBegin {
+                    start: token.1,
+                    end: token.2,
+                },
             ))),
-            "tense_negation_begin" => result.push(TerminalType::TenseNegationBegin(Some(
-                TenseNegationBegin {},
-            ))),
-            "aspect_negation_begin" => result.push(TerminalType::AspectNegationBegin(Some(
-                AspectNegationBegin {},
-            ))),
-            "negation" => result.push(TerminalType::Negation(Some(Negation {}))),
-            "binary_predicate" => {
-                result.push(TerminalType::BinaryPredicate(Some(BinaryPredicate {})))
+            "tense_negation_begin" => {
+                result.push(TerminalType::TenseNegationBegin(Some(TenseNegationBegin {
+                    start: token.1,
+                    end: token.2,
+                })))
             }
-            "argument" => result.push(TerminalType::Argument(Some(Argument {}))),
+            "aspect_negation_begin" => result.push(TerminalType::AspectNegationBegin(Some(
+                AspectNegationBegin {
+                    start: token.1,
+                    end: token.2,
+                },
+            ))),
+            "negation" => result.push(TerminalType::Negation(Some(Negation {
+                start: token.1,
+                end: token.2,
+            }))),
+            "binary_predicate" => {
+                result.push(TerminalType::BinaryPredicate(Some(BinaryPredicate {
+                    start: token.1,
+                    end: token.2,
+                })))
+            }
+            "argument" => result.push(TerminalType::Argument(Some(Argument {
+                start: token.1,
+                end: token.2,
+            }))),
             "argument_phrase_separator" => result.push(TerminalType::ArgumentPhraseSeparator(
-                Some(ArgumentPhraseSeparator {}),
+                Some(ArgumentPhraseSeparator {
+                    start: token.1,
+                    end: token.2,
+                }),
             )),
             "argument_phrase_transposer" => result.push(TerminalType::ArgumentPhraseTransposer(
-                Some(ArgumentPhraseTransposer {}),
+                Some(ArgumentPhraseTransposer {
+                    start: token.1,
+                    end: token.2,
+                }),
             )),
-            "binary_operator" => result.push(TerminalType::BinaryOperator(Some(BinaryOperator {}))),
+            "binary_operator" => result.push(TerminalType::BinaryOperator(Some(BinaryOperator {
+                start: token.1,
+                end: token.2,
+            }))),
             "argument_retriever" => {
-                result.push(TerminalType::ArgumentRetriever(Some(ArgumentRetriever {})))
+                result.push(TerminalType::ArgumentRetriever(Some(ArgumentRetriever {
+                    start: token.1,
+                    end: token.2,
+                })))
             }
-            "quantifier" => result.push(TerminalType::Quantifier(Some(Quantifier {}))),
-            "articlizer" => result.push(TerminalType::Articlizer(Some(Articlizer {}))),
+            "quantifier" => result.push(TerminalType::Quantifier(Some(Quantifier {
+                start: token.1,
+                end: token.2,
+            }))),
+            "articlizer" => result.push(TerminalType::Articlizer(Some(Articlizer {
+                start: token.1,
+                end: token.2,
+            }))),
             "mta_event_to_argument_phrase_converter" => {
                 result.push(TerminalType::MtaEventToArgumentPhraseConverter(Some(
-                    MtaEventToArgumentPhraseConverter {},
+                    MtaEventToArgumentPhraseConverter {
+                        start: token.1,
+                        end: token.2,
+                    },
                 )))
             }
             "mta_event_to_argument_phrase_converter_end" => {
                 result.push(TerminalType::MtaEventToArgumentPhraseConverterEnd(Some(
-                    MtaEventToArgumentPhraseConverterEnd {},
+                    MtaEventToArgumentPhraseConverterEnd {
+                        start: token.1,
+                        end: token.2,
+                    },
                 )))
             }
             "post_mta_event_modifier" => result.push(TerminalType::PostMtaEventModifier(Some(
-                PostMtaEventModifier {},
+                PostMtaEventModifier {
+                    start: token.1,
+                    end: token.2,
+                },
             ))),
             "post_binary_predicate_phrase_modifier" => {
                 result.push(TerminalType::PostBinaryPredicatePhraseModifier(Some(
-                    PostBinaryPredicatePhraseModifier {},
+                    PostBinaryPredicatePhraseModifier {
+                        start: token.1,
+                        end: token.2,
+                    },
                 )))
             }
             "post_argument_phrase_modifier" => result.push(
-                TerminalType::PostArgumentPhraseModifier(Some(PostArgumentPhraseModifier {})),
+                TerminalType::PostArgumentPhraseModifier(Some(PostArgumentPhraseModifier {
+                    start: token.1,
+                    end: token.2,
+                })),
             ),
-            "eos" => result.push(TerminalType::Eos(Some(Eos {}))),
+            "eos" => result.push(TerminalType::Eos(Some(Eos {
+                start: token.1,
+                end: token.2,
+            }))),
             _ => panic!("Unknown"),
         }
+    }
+
+    result
+}
+
+fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize)> {
+    let mut result = Vec::new();
+    let mut in_word = false;
+    let mut start = 0;
+
+    for (i, c) in input.char_indices() {
+        if c.is_whitespace() {
+            if in_word {
+                result.push((&input[start..i], start, i)); // UTF-8 バイト範囲
+                in_word = false;
+            }
+        } else if !in_word {
+            start = i;
+            in_word = true;
+        }
+    }
+
+    if in_word {
+        result.push((&input[start..], start, input.len()));
     }
 
     result
@@ -97,67 +187,133 @@ pub enum TerminalType {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct InterrogativeMarker;
+pub struct InterrogativeMarker {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Modality;
+pub struct Modality {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Tense;
+pub struct Tense {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Aspect;
+pub struct Aspect {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct ModalityNegationBegin;
+pub struct ModalityNegationBegin {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct TenseNegationBegin;
+pub struct TenseNegationBegin {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct AspectNegationBegin;
+pub struct AspectNegationBegin {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Negation;
+pub struct Negation {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct BinaryPredicate;
+pub struct BinaryPredicate {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Argument;
+pub struct Argument {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct ArgumentPhraseSeparator;
+pub struct ArgumentPhraseSeparator {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct ArgumentPhraseTransposer;
+pub struct ArgumentPhraseTransposer {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct BinaryOperator;
+pub struct BinaryOperator {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct ArgumentRetriever;
+pub struct ArgumentRetriever {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Quantifier;
+pub struct Quantifier {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Articlizer;
+pub struct Articlizer {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct MtaEventToArgumentPhraseConverter;
+pub struct MtaEventToArgumentPhraseConverter {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct MtaEventToArgumentPhraseConverterEnd;
+pub struct MtaEventToArgumentPhraseConverterEnd {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct PostMtaEventModifier;
+pub struct PostMtaEventModifier {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct PostBinaryPredicatePhraseModifier;
+pub struct PostBinaryPredicatePhraseModifier {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct PostArgumentPhraseModifier;
+pub struct PostArgumentPhraseModifier {
+    start: usize,
+    end: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Eos;
+pub struct Eos {
+    start: usize,
+    end: usize,
+}
