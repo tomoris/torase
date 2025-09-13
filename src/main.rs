@@ -9,14 +9,30 @@ mod compiler;
 //     );
 // }
 
+use dashmap::DashMap;
 use serde_json::Value;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
+use compiler::tokenizer::TerminalType;
+
 #[derive(Debug)]
 struct Backend {
     client: Client,
+    document_map: DashMap<Url, String>,
+}
+
+pub const LEGEND_TYPE: &[SemanticTokenType] = &[
+    SemanticTokenType::VARIABLE,
+    SemanticTokenType::FUNCTION,
+    SemanticTokenType::KEYWORD,
+];
+
+struct TextDocumentItem<'a> {
+    uri: Url,
+    text: &'a str,
+    version: Option<i32>,
 }
 
 #[tower_lsp::async_trait]
@@ -52,7 +68,7 @@ impl LanguageServer for Backend {
                             text_document_registration_options: {
                                 TextDocumentRegistrationOptions {
                                     document_selector: Some(vec![DocumentFilter {
-                                        language: Some("nrs".to_string()),
+                                        language: Some("plaintext".to_string()),
                                         scheme: Some("file".to_string()),
                                         pattern: None,
                                     }]),
@@ -61,10 +77,10 @@ impl LanguageServer for Backend {
                             semantic_tokens_options: SemanticTokensOptions {
                                 work_done_progress_options: WorkDoneProgressOptions::default(),
                                 legend: SemanticTokensLegend {
-                                    token_types: vec!["function".into(), "variable".into()],
+                                    token_types: LEGEND_TYPE.into(),
                                     token_modifiers: vec![],
                                 },
-                                range: Some(true),
+                                range: Some(false),
                                 full: Some(SemanticTokensFullOptions::Bool(true)),
                             },
                             static_registration_options: StaticRegistrationOptions::default(),
@@ -73,7 +89,6 @@ impl LanguageServer for Backend {
                 ),
                 ..ServerCapabilities::default()
             },
-            ..Default::default()
         })
     }
 
@@ -119,16 +134,28 @@ impl LanguageServer for Backend {
         Ok(None)
     }
 
-    async fn did_open(&self, _: DidOpenTextDocumentParams) {
+    async fn did_open(&self, params: DidOpenTextDocumentParams) {
         self.client
             .log_message(MessageType::INFO, "file opened!")
             .await;
+        self.on_change(TextDocumentItem {
+            uri: params.text_document.uri,
+            text: &params.text_document.text,
+            version: Some(params.text_document.version),
+        })
+        .await;
     }
 
-    async fn did_change(&self, _: DidChangeTextDocumentParams) {
+    async fn did_change(&self, params: DidChangeTextDocumentParams) {
         self.client
             .log_message(MessageType::INFO, "file changed!")
             .await;
+        self.on_change(TextDocumentItem {
+            uri: params.text_document.uri,
+            text: &params.content_changes[0].text,
+            version: Some(params.text_document.version),
+        })
+        .await;
     }
 
     async fn did_save(&self, _: DidSaveTextDocumentParams) {
@@ -147,7 +174,77 @@ impl LanguageServer for Backend {
         Ok(Some(CompletionResponse::Array(vec![
             CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
             CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
+            CompletionItem::new_simple("aaaaaaaaaaa".to_string(), "More detail".to_string()),
         ])))
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let uri = params.text_document.uri;
+        let semantic_tokens = || -> Option<Vec<SemanticToken>> {
+            let text = self.document_map.get(&uri)?;
+            let mut im_complete_tokens = compiler::tokenizer::tokenize(&text);
+            im_complete_tokens.sort_by_key(|t| t.start());
+            let mut pre_line = 0;
+            let mut pre_start = 0;
+            let semantic_tokens = im_complete_tokens
+                .iter()
+                .filter_map(|token| {
+                    let line = 0_u32;
+                    let start = token.start() as u32;
+                    let delta_line = line - pre_line;
+                    let delta_start = if delta_line == 0 {
+                        start - pre_start
+                    } else {
+                        start
+                    };
+                    let length = (token.end() - token.start()) as u32;
+                    let semantic_token_type = get_semantic_token_type(token);
+                    let ret = Some(SemanticToken {
+                        delta_line,
+                        delta_start,
+                        length,
+                        token_type: LEGEND_TYPE
+                            .iter()
+                            .position(|t| *t == semantic_token_type)
+                            .unwrap() as u32,
+                        token_modifiers_bitset: 0,
+                    });
+                    pre_line = line;
+                    pre_start = start;
+                    ret
+                })
+                .collect::<Vec<_>>();
+            Some(semantic_tokens)
+        }();
+        if let Some(semantic_token) = semantic_tokens {
+            return Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
+                result_id: None,
+                data: semantic_token,
+            })));
+        }
+        Ok(None)
+    }
+}
+
+impl Backend {
+    async fn on_change<'a>(&self, params: TextDocumentItem<'a>) {
+        dbg!(&params.version);
+        self.document_map
+            .insert(params.uri, params.text.to_string());
+        _ = self.client.semantic_tokens_refresh().await;
+    }
+}
+
+fn get_semantic_token_type(token: &TerminalType) -> SemanticTokenType {
+    match token {
+        TerminalType::BinaryPredicate(Some(_)) => SemanticTokenType::FUNCTION,
+        TerminalType::Argument(Some(_)) => SemanticTokenType::VARIABLE,
+        TerminalType::ArgumentPhraseSeparator(Some(_)) => SemanticTokenType::KEYWORD,
+        TerminalType::Eos(Some(_)) => SemanticTokenType::KEYWORD,
+        _ => SemanticTokenType::KEYWORD,
     }
 }
 
@@ -157,6 +254,9 @@ async fn main() {
 
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
 
-    let (service, socket) = LspService::new(|client| Backend { client });
+    let (service, socket) = LspService::new(|client| Backend {
+        client,
+        document_map: DashMap::new(),
+    });
     Server::new(stdin, stdout, socket).serve(service).await;
 }

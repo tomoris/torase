@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use core::panic;
+
 pub fn tokenize(input: &str) -> Vec<TerminalType> {
     let tokens = split_with_utf8_ranges(input);
 
@@ -184,6 +186,67 @@ pub enum TerminalType {
     PostBinaryPredicatePhraseModifier(Option<PostBinaryPredicatePhraseModifier>),
     PostArgumentPhraseModifier(Option<PostArgumentPhraseModifier>),
     Eos(Option<Eos>),
+}
+
+impl TerminalType {
+    pub fn start(&self) -> usize {
+        match self {
+            TerminalType::InterrogativeMarker(Some(marker)) => marker.start,
+            TerminalType::Modality(Some(modality)) => modality.start,
+            TerminalType::Tense(Some(tense)) => tense.start,
+            TerminalType::Aspect(Some(aspect)) => aspect.start,
+            TerminalType::ModalityNegationBegin(Some(negation)) => negation.start,
+            TerminalType::TenseNegationBegin(Some(negation)) => negation.start,
+            TerminalType::AspectNegationBegin(Some(negation)) => negation.start,
+            TerminalType::Negation(Some(negation)) => negation.start,
+            TerminalType::BinaryPredicate(Some(predicate)) => predicate.start,
+            TerminalType::Argument(Some(argument)) => argument.start,
+            TerminalType::ArgumentPhraseSeparator(Some(separator)) => separator.start,
+            TerminalType::ArgumentPhraseTransposer(Some(transposer)) => transposer.start,
+            TerminalType::BinaryOperator(Some(operator)) => operator.start,
+            TerminalType::ArgumentRetriever(Some(retriever)) => retriever.start,
+            TerminalType::Quantifier(Some(quantifier)) => quantifier.start,
+            TerminalType::Articlizer(Some(articlizer)) => articlizer.start,
+            TerminalType::MtaEventToArgumentPhraseConverter(Some(converter)) => converter.start,
+            TerminalType::MtaEventToArgumentPhraseConverterEnd(Some(converter_end)) => {
+                converter_end.start
+            }
+            TerminalType::PostMtaEventModifier(Some(modifier)) => modifier.start,
+            TerminalType::PostBinaryPredicatePhraseModifier(Some(modifier)) => modifier.start,
+            TerminalType::PostArgumentPhraseModifier(Some(modifier)) => modifier.start,
+            TerminalType::Eos(Some(eos)) => eos.start,
+            _ => panic!("Unmatched terminal type"),
+        }
+    }
+    pub fn end(&self) -> usize {
+        match self {
+            TerminalType::InterrogativeMarker(Some(marker)) => marker.end,
+            TerminalType::Modality(Some(modality)) => modality.end,
+            TerminalType::Tense(Some(tense)) => tense.end,
+            TerminalType::Aspect(Some(aspect)) => aspect.end,
+            TerminalType::ModalityNegationBegin(Some(negation)) => negation.end,
+            TerminalType::TenseNegationBegin(Some(negation)) => negation.end,
+            TerminalType::AspectNegationBegin(Some(negation)) => negation.end,
+            TerminalType::Negation(Some(negation)) => negation.end,
+            TerminalType::BinaryPredicate(Some(predicate)) => predicate.end,
+            TerminalType::Argument(Some(argument)) => argument.end,
+            TerminalType::ArgumentPhraseSeparator(Some(separator)) => separator.end,
+            TerminalType::ArgumentPhraseTransposer(Some(transposer)) => transposer.end,
+            TerminalType::BinaryOperator(Some(operator)) => operator.end,
+            TerminalType::ArgumentRetriever(Some(retriever)) => retriever.end,
+            TerminalType::Quantifier(Some(quantifier)) => quantifier.end,
+            TerminalType::Articlizer(Some(articlizer)) => articlizer.end,
+            TerminalType::MtaEventToArgumentPhraseConverter(Some(converter)) => converter.end,
+            TerminalType::MtaEventToArgumentPhraseConverterEnd(Some(converter_end)) => {
+                converter_end.end
+            }
+            TerminalType::PostMtaEventModifier(Some(modifier)) => modifier.end,
+            TerminalType::PostBinaryPredicatePhraseModifier(Some(modifier)) => modifier.end,
+            TerminalType::PostArgumentPhraseModifier(Some(modifier)) => modifier.end,
+            TerminalType::Eos(Some(eos)) => eos.end,
+            _ => panic!("Unmatched terminal type"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
