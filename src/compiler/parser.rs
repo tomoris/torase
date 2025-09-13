@@ -2836,7 +2836,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let input = "binary_predicate argument argument_phrase_separator argument eos";
-        let tokens = tokenize(input);
-        let _ = parse(tokens);
+        let sentences = tokenize(input);
+        let _ = parse(sentences[0].clone());
     }
 }

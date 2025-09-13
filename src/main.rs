@@ -185,38 +185,43 @@ impl LanguageServer for Backend {
         let uri = params.text_document.uri;
         let semantic_tokens = || -> Option<Vec<SemanticToken>> {
             let text = self.document_map.get(&uri)?;
-            let mut im_complete_tokens = compiler::tokenizer::tokenize(&text);
-            im_complete_tokens.sort_by_key(|t| t.start());
-            let mut pre_line = 0;
-            let mut pre_start = 0;
-            let semantic_tokens = im_complete_tokens
-                .iter()
-                .filter_map(|token| {
-                    let line = 0_u32;
-                    let start = token.start() as u32;
-                    let delta_line = line - pre_line;
-                    let delta_start = if delta_line == 0 {
-                        start - pre_start
-                    } else {
-                        start
-                    };
-                    let length = (token.end() - token.start()) as u32;
-                    let semantic_token_type = get_semantic_token_type(token);
-                    let ret = Some(SemanticToken {
-                        delta_line,
-                        delta_start,
-                        length,
-                        token_type: LEGEND_TYPE
-                            .iter()
-                            .position(|t| *t == semantic_token_type)
-                            .unwrap() as u32,
-                        token_modifiers_bitset: 0,
-                    });
-                    pre_line = line;
-                    pre_start = start;
-                    ret
-                })
-                .collect::<Vec<_>>();
+            let sentences = compiler::tokenizer::tokenize(&text);
+            let mut semantic_tokens = Vec::new();
+            for sentence in sentences {
+                let mut im_complete_tokens = sentence.clone();
+                im_complete_tokens.sort_by_key(|t| t.start());
+                let mut pre_line = 0;
+                let mut pre_start = 0;
+                let tmp_semantic_tokens = im_complete_tokens
+                    .iter()
+                    .filter_map(|token| {
+                        let line = 0_u32;
+                        let start = token.start() as u32;
+                        let delta_line = line - pre_line;
+                        let delta_start = if delta_line == 0 {
+                            start - pre_start
+                        } else {
+                            start
+                        };
+                        let length = (token.end() - token.start()) as u32;
+                        let semantic_token_type = get_semantic_token_type(token);
+                        let ret = Some(SemanticToken {
+                            delta_line,
+                            delta_start,
+                            length,
+                            token_type: LEGEND_TYPE
+                                .iter()
+                                .position(|t| *t == semantic_token_type)
+                                .unwrap() as u32,
+                            token_modifiers_bitset: 0,
+                        });
+                        pre_line = line;
+                        pre_start = start;
+                        ret
+                    })
+                    .collect::<Vec<_>>();
+                semantic_tokens.extend(tmp_semantic_tokens);
+            }
             Some(semantic_tokens)
         }();
         if let Some(semantic_token) = semantic_tokens {
