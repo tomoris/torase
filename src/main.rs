@@ -240,10 +240,10 @@ impl Backend {
 
 fn get_semantic_token_type(token: &TerminalType) -> SemanticTokenType {
     match token {
-        TerminalType::BinaryPredicate(Some(_)) => SemanticTokenType::FUNCTION,
-        TerminalType::Argument(Some(_)) => SemanticTokenType::VARIABLE,
-        TerminalType::ArgumentPhraseSeparator(Some(_)) => SemanticTokenType::KEYWORD,
-        TerminalType::Eos(Some(_)) => SemanticTokenType::KEYWORD,
+        TerminalType::BinaryPredicate(_) => SemanticTokenType::FUNCTION,
+        TerminalType::Argument(_) => SemanticTokenType::VARIABLE,
+        TerminalType::ArgumentPhraseSeparator(_) => SemanticTokenType::KEYWORD,
+        TerminalType::Eos => SemanticTokenType::KEYWORD,
         _ => SemanticTokenType::KEYWORD,
     }
 }

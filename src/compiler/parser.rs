@@ -9,53 +9,45 @@ use std::mem::discriminant;
 use crate::compiler::tokenizer::*;
 
 pub fn parse(tokens: Vec<TerminalType>) -> Result<Ast, IncompleteAst> {
-    let mut stack: Vec<SymbolType> = vec![
-        SymbolType::Terminal(TerminalType::Eos(None)),
-        SymbolType::NonTerminal(NonTerminalType::S(None)),
+    let mut stack: Vec<DummySymbolType> = vec![
+        DummySymbolType::DummyTerminal(DummyTerminalType::Eos),
+        DummySymbolType::DummyNonTerminal(DummyNonTerminalType::S),
     ];
     let mut current_token_index = 0;
 
-    let s = parse_node(&mut stack, &tokens, &mut current_token_index)?;
-    if let SymbolType::NonTerminal(NonTerminalType::S(s)) = s {
-        if let Some(s) = s {
-            let eos = parse_node(&mut stack, &tokens, &mut current_token_index)?;
-            if let SymbolType::Terminal(TerminalType::Eos(_)) = eos {
-                if stack.is_empty() && current_token_index == tokens.len() {
-                    Ok(Ast { s })
-                } else {
-                    Err(IncompleteAst {
-                        error_token: TerminalType::Eos(None),
-                        error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-                        error_message: format!(
-                            "Expected end of stream, but stack is not empty or current token index is not at the end: stack: {stack:?}, current_token_index: {current_token_index:}",
-                        ),
-                    })
-                }
+    let top = parse_node(&mut stack, &tokens, &mut current_token_index)?;
+    if let SymbolType::NonTerminal(NonTerminalType::S(s)) = top {
+        let eos = parse_node(&mut stack, &tokens, &mut current_token_index)?;
+        if let SymbolType::Terminal(TerminalType::Eos) = eos {
+            if stack.is_empty() && current_token_index == tokens.len() {
+                Ok(Ast { s })
             } else {
                 Err(IncompleteAst {
-                    error_token: TerminalType::Eos(None),
-                    error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-                    error_message: format!("Expected Eos as the last token, found: {eos:?}"),
+                    error_token: TerminalType::Eos,
+                    error_top: ErrorTop::SymbolType(SymbolType::NonTerminal(NonTerminalType::S(s))),
+                    error_message: format!(
+                        "Expected end of stream, but stack is not empty or current token index is not at the end: stack: {stack:?}, current_token_index: {current_token_index:}",
+                    ),
                 })
             }
         } else {
             Err(IncompleteAst {
-                error_token: TerminalType::Eos(None),
-                error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-                error_message: "Expected S to be present, but it was None".to_string(),
+                error_token: TerminalType::Eos,
+                error_top: ErrorTop::SymbolType(SymbolType::NonTerminal(NonTerminalType::S(s))),
+                error_message: format!("Expected Eos as the last token, found: {eos:?}"),
             })
         }
     } else {
         Err(IncompleteAst {
-            error_token: TerminalType::Eos(None),
-            error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-            error_message: format!("Expected S as the root non-terminal, found: {s:?}"),
+            error_token: TerminalType::Eos,
+            error_top: ErrorTop::SymbolType(top.clone()),
+            error_message: format!("Expected S as the root non-terminal, found: {top:?}"),
         })
     }
 }
 
 fn parse_node(
-    stack: &mut Vec<SymbolType>,
+    stack: &mut Vec<DummySymbolType>,
     tokens: &Vec<TerminalType>,
     current_token_index: &mut usize,
 ) -> Result<SymbolType, IncompleteAst> {
@@ -63,27 +55,28 @@ fn parse_node(
     let top_symbol = stack.pop().unwrap();
 
     match top_symbol {
-        SymbolType::Terminal(terminal) => match terminal {
-            TerminalType::Eos(_) => {
-                if discriminant(&TerminalType::Eos(None)) == discriminant(current_token) {
+        DummySymbolType::DummyTerminal(terminal) => match terminal {
+            DummyTerminalType::Eos => {
+                if discriminant(&TerminalType::Eos) == discriminant(current_token) {
                     *current_token_index += 1;
                     Ok(SymbolType::Terminal(*current_token))
                 } else {
                     Err(IncompleteAst {
                         error_token: *current_token,
-                        error_top: top_symbol,
+                        error_top: ErrorTop::DummySymbolType(top_symbol),
                         error_message: "Expected end of stream".to_string(),
                     })
                 }
             }
             _ => {
-                if discriminant(&terminal) == discriminant(current_token) {
+                if discriminant(&terminal) == discriminant(&get_dummy_terminal_type(current_token))
+                {
                     *current_token_index += 1;
                     Ok(SymbolType::Terminal(*current_token))
                 } else {
                     Err(IncompleteAst {
                         error_token: *current_token,
-                        error_top: top_symbol,
+                        error_top: ErrorTop::DummySymbolType(top_symbol),
                         error_message: format!(
                             "Expected token: {terminal:?}, found: {current_token:?}"
                         ),
@@ -91,10 +84,16 @@ fn parse_node(
                 }
             }
         },
-        SymbolType::NonTerminal(non_terminal) => {
-            let rhs = parse_table(non_terminal.clone(), current_token)?;
-            match rhs {
-                Rhs::Sequence(ref symbols) => {
+        DummySymbolType::DummyNonTerminal(dummy_non_terminal) => {
+            let dummy_rhs = parse_table(dummy_non_terminal.clone(), get_dummy_terminal_type(current_token)).map_err(|_| IncompleteAst {
+                error_token: *current_token,
+                error_top: ErrorTop::DummySymbolType(DummySymbolType::DummyNonTerminal(dummy_non_terminal.clone())),
+                error_message: format!(
+                    "No production rule for non-terminal: {dummy_non_terminal:?} with token: {current_token:?}"
+                ),
+            })?;
+            match dummy_rhs {
+                DummyRhs::Sequence(ref symbols) => {
                     for symbol in symbols.iter().rev() {
                         stack.push(symbol.clone());
                     }
@@ -107,20 +106,22 @@ fn parse_node(
                             Err(e) => {
                                 return Err(IncompleteAst {
                                     error_token: *current_token,
-                                    error_top: SymbolType::NonTerminal(non_terminal.clone()),
+                                    error_top: ErrorTop::DummySymbolType(
+                                        DummySymbolType::DummyNonTerminal(dummy_non_terminal),
+                                    ),
                                     error_message: format!("Failed to parse child node: {e:?}"),
                                 });
                             }
                         }
                     }
                     Ok(SymbolType::NonTerminal(new_non_terminal(
-                        &non_terminal,
+                        &dummy_non_terminal,
                         Rhs::Sequence(child_nodes),
                     )?))
                 }
-                Rhs::Epsilon => Ok(SymbolType::NonTerminal(new_non_terminal(
-                    &non_terminal,
-                    rhs,
+                DummyRhs::Epsilon => Ok(SymbolType::NonTerminal(new_non_terminal(
+                    &dummy_non_terminal,
+                    Rhs::Epsilon,
                 )?)),
             }
         }
@@ -128,145 +129,151 @@ fn parse_node(
 }
 
 fn new_non_terminal(
-    non_terminal: &NonTerminalType,
+    dummy_non_terminal: &DummyNonTerminalType,
     rhs: Rhs,
 ) -> Result<NonTerminalType, IncompleteAst> {
-    match non_terminal {
-        NonTerminalType::S(_) => Ok(NonTerminalType::S(Some(S::new(rhs)))),
-        NonTerminalType::DeclarativeSentence(_) => Ok(NonTerminalType::DeclarativeSentence(Some(
+    match dummy_non_terminal {
+        DummyNonTerminalType::S => Ok(NonTerminalType::S(S::new(rhs))),
+        DummyNonTerminalType::DeclarativeSentence => Ok(NonTerminalType::DeclarativeSentence(
             DeclarativeSentence::new(rhs),
-        ))),
-        NonTerminalType::InterrogativeSentence(_) => Ok(NonTerminalType::InterrogativeSentence(
-            Some(InterrogativeSentence::new(rhs)),
         )),
-        NonTerminalType::PostModifiedMtaEvent(_) => Ok(NonTerminalType::PostModifiedMtaEvent(
-            Some(PostModifiedMtaEvent::new(rhs)),
+        DummyNonTerminalType::InterrogativeSentence => Ok(NonTerminalType::InterrogativeSentence(
+            InterrogativeSentence::new(rhs),
         )),
-        NonTerminalType::PostMtaEventExpression(_) => Ok(NonTerminalType::PostMtaEventExpression(
-            Some(PostMtaEventExpression::new(rhs)),
+        DummyNonTerminalType::PostModifiedMtaEvent => Ok(NonTerminalType::PostModifiedMtaEvent(
+            PostModifiedMtaEvent::new(rhs),
         )),
-        NonTerminalType::ModalityExpression(_) => Ok(NonTerminalType::ModalityExpression(Some(
-            ModalityExpression::new(rhs),
-        ))),
-        NonTerminalType::ModalityWithAgent(_) => Ok(NonTerminalType::ModalityWithAgent(Some(
-            ModalityWithAgent::new(rhs),
-        ))),
-        NonTerminalType::ModifiedModality(_) => Ok(NonTerminalType::ModifiedModality(Some(
-            ModifiedModality::new(rhs),
-        ))),
-        NonTerminalType::ModalityAgent(_) => Ok(NonTerminalType::ModalityAgent(Some(
-            ModalityAgent::new(rhs),
-        ))),
-        NonTerminalType::TenseExpression(_) => Ok(NonTerminalType::TenseExpression(Some(
-            TenseExpression::new(rhs),
-        ))),
-        NonTerminalType::ModifiedTense(_) => Ok(NonTerminalType::ModifiedTense(Some(
-            ModifiedTense::new(rhs),
-        ))),
-        NonTerminalType::AspectExpression(_) => Ok(NonTerminalType::AspectExpression(Some(
-            AspectExpression::new(rhs),
-        ))),
-        NonTerminalType::ModifiedAspect(_) => Ok(NonTerminalType::ModifiedAspect(Some(
-            ModifiedAspect::new(rhs),
-        ))),
-        NonTerminalType::MtaEvent(_) => Ok(NonTerminalType::MtaEvent(Some(MtaEvent::new(rhs)))),
-        NonTerminalType::TaEvent(_) => Ok(NonTerminalType::TaEvent(Some(TaEvent::new(rhs)))),
-        NonTerminalType::AEvent(_) => Ok(NonTerminalType::AEvent(Some(AEvent::new(rhs)))),
-        NonTerminalType::Event(_) => Ok(NonTerminalType::Event(Some(Event::new(rhs)))),
-        NonTerminalType::PostModifiedBinaryPredicatePhrase(_) => {
-            Ok(NonTerminalType::PostModifiedBinaryPredicatePhrase(Some(
-                PostModifiedBinaryPredicatePhrase::new(rhs),
-            )))
-        }
-        NonTerminalType::PostBinaryPredicatePhraseExpression(_) => {
-            Ok(NonTerminalType::PostBinaryPredicatePhraseExpression(Some(
-                PostBinaryPredicatePhraseExpression::new(rhs),
-            )))
-        }
-        NonTerminalType::BinaryPredicatePhrase(_) => Ok(NonTerminalType::BinaryPredicatePhrase(
-            Some(BinaryPredicatePhrase::new(rhs)),
-        )),
-        NonTerminalType::ArgumentPhrase(_) => Ok(NonTerminalType::ArgumentPhrase(Some(
-            ArgumentPhrase::new(rhs),
-        ))),
-        NonTerminalType::ArgumentPhraseOrEpsilon(_) => Ok(
-            NonTerminalType::ArgumentPhraseOrEpsilon(Some(ArgumentPhraseOrEpsilon::new(rhs))),
+        DummyNonTerminalType::PostMtaEventExpression => Ok(
+            NonTerminalType::PostMtaEventExpression(PostMtaEventExpression::new(rhs)),
         ),
-        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(_) => {
+        DummyNonTerminalType::ModalityExpression => Ok(NonTerminalType::ModalityExpression(
+            ModalityExpression::new(rhs),
+        )),
+        DummyNonTerminalType::ModalityWithAgent => Ok(NonTerminalType::ModalityWithAgent(
+            ModalityWithAgent::new(rhs),
+        )),
+        DummyNonTerminalType::ModifiedModality => Ok(NonTerminalType::ModifiedModality(
+            ModifiedModality::new(rhs),
+        )),
+        DummyNonTerminalType::ModalityAgent => {
+            Ok(NonTerminalType::ModalityAgent(ModalityAgent::new(rhs)))
+        }
+        DummyNonTerminalType::TenseExpression => {
+            Ok(NonTerminalType::TenseExpression(TenseExpression::new(rhs)))
+        }
+        DummyNonTerminalType::ModifiedTense => {
+            Ok(NonTerminalType::ModifiedTense(ModifiedTense::new(rhs)))
+        }
+        DummyNonTerminalType::AspectExpression => Ok(NonTerminalType::AspectExpression(
+            AspectExpression::new(rhs),
+        )),
+        DummyNonTerminalType::ModifiedAspect => {
+            Ok(NonTerminalType::ModifiedAspect(ModifiedAspect::new(rhs)))
+        }
+        DummyNonTerminalType::MtaEvent => Ok(NonTerminalType::MtaEvent(MtaEvent::new(rhs))),
+        DummyNonTerminalType::TaEvent => Ok(NonTerminalType::TaEvent(TaEvent::new(rhs))),
+        DummyNonTerminalType::AEvent => Ok(NonTerminalType::AEvent(AEvent::new(rhs))),
+        DummyNonTerminalType::Event => Ok(NonTerminalType::Event(Event::new(rhs))),
+        DummyNonTerminalType::PostModifiedBinaryPredicatePhrase => {
+            Ok(NonTerminalType::PostModifiedBinaryPredicatePhrase(
+                PostModifiedBinaryPredicatePhrase::new(rhs),
+            ))
+        }
+        DummyNonTerminalType::PostBinaryPredicatePhraseExpression => {
+            Ok(NonTerminalType::PostBinaryPredicatePhraseExpression(
+                PostBinaryPredicatePhraseExpression::new(rhs),
+            ))
+        }
+        DummyNonTerminalType::BinaryPredicatePhrase => Ok(NonTerminalType::BinaryPredicatePhrase(
+            BinaryPredicatePhrase::new(rhs),
+        )),
+        DummyNonTerminalType::ArgumentPhrase => {
+            Ok(NonTerminalType::ArgumentPhrase(ArgumentPhrase::new(rhs)))
+        }
+        DummyNonTerminalType::ArgumentPhraseOrEpsilon => Ok(
+            NonTerminalType::ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon::new(rhs)),
+        ),
+        DummyNonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => {
             Ok(NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(
-                Some(DeterminedArgumentRetrievalBinaryPredicate::new(rhs)),
+                DeterminedArgumentRetrievalBinaryPredicate::new(rhs),
             ))
         }
-        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(_) => {
+        DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => {
             Ok(NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(
-                Some(ArticlizedArgumentRetrievalBinaryPredicate::new(rhs)),
+                ArticlizedArgumentRetrievalBinaryPredicate::new(rhs),
             ))
         }
-        NonTerminalType::ArgumentRetrievalBinaryPredicate(_) => {
-            Ok(NonTerminalType::ArgumentRetrievalBinaryPredicate(Some(
+        DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
+            Ok(NonTerminalType::ArgumentRetrievalBinaryPredicate(
                 ArgumentRetrievalBinaryPredicate::new(rhs),
-            )))
+            ))
         }
-        NonTerminalType::ArgumentRetrievalWithArgumentPhrase(_) => {
-            Ok(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(Some(
+        DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => {
+            Ok(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(
                 ArgumentRetrievalWithArgumentPhrase::new(rhs),
-            )))
+            ))
         }
-        NonTerminalType::Quantification(_) => Ok(NonTerminalType::Quantification(Some(
-            Quantification::new(rhs),
-        ))),
-        NonTerminalType::Article(_) => Ok(NonTerminalType::Article(Some(Article::new(rhs)))),
+        DummyNonTerminalType::Quantification => {
+            Ok(NonTerminalType::Quantification(Quantification::new(rhs)))
+        }
+        DummyNonTerminalType::Article => Ok(NonTerminalType::Article(Article::new(rhs))),
     }
 }
 
-fn parse_table(nt: NonTerminalType, &t: &TerminalType) -> Result<Rhs, IncompleteAst> {
+fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRhs, ()> {
     match nt {
-        NonTerminalType::S(_) => S::parse_table(t),
-        NonTerminalType::DeclarativeSentence(_) => DeclarativeSentence::parse_table(t),
-        NonTerminalType::InterrogativeSentence(_) => InterrogativeSentence::parse_table(t),
-        NonTerminalType::PostModifiedMtaEvent(_) => PostModifiedMtaEvent::parse_table(t),
-        NonTerminalType::PostMtaEventExpression(_) => PostMtaEventExpression::parse_table(t),
-        NonTerminalType::ModalityExpression(_) => ModalityExpression::parse_table(t),
-        NonTerminalType::ModalityWithAgent(_) => ModalityWithAgent::parse_table(t),
-        NonTerminalType::ModifiedModality(_) => ModifiedModality::parse_table(t),
-        NonTerminalType::ModalityAgent(_) => ModalityAgent::parse_table(t),
-        NonTerminalType::TenseExpression(_) => TenseExpression::parse_table(t),
-        NonTerminalType::ModifiedTense(_) => ModifiedTense::parse_table(t),
-        NonTerminalType::AspectExpression(_) => AspectExpression::parse_table(t),
-        NonTerminalType::ModifiedAspect(_) => ModifiedAspect::parse_table(t),
-        NonTerminalType::MtaEvent(_) => MtaEvent::parse_table(t),
-        NonTerminalType::TaEvent(_) => TaEvent::parse_table(t),
-        NonTerminalType::AEvent(_) => AEvent::parse_table(t),
-        NonTerminalType::Event(_) => Event::parse_table(t),
-        NonTerminalType::PostModifiedBinaryPredicatePhrase(_) => {
+        DummyNonTerminalType::S => S::parse_table(t),
+        DummyNonTerminalType::DeclarativeSentence => DeclarativeSentence::parse_table(t),
+        DummyNonTerminalType::InterrogativeSentence => InterrogativeSentence::parse_table(t),
+        DummyNonTerminalType::PostModifiedMtaEvent => PostModifiedMtaEvent::parse_table(t),
+        DummyNonTerminalType::PostMtaEventExpression => PostMtaEventExpression::parse_table(t),
+        DummyNonTerminalType::ModalityExpression => ModalityExpression::parse_table(t),
+        DummyNonTerminalType::ModalityWithAgent => ModalityWithAgent::parse_table(t),
+        DummyNonTerminalType::ModifiedModality => ModifiedModality::parse_table(t),
+        DummyNonTerminalType::ModalityAgent => ModalityAgent::parse_table(t),
+        DummyNonTerminalType::TenseExpression => TenseExpression::parse_table(t),
+        DummyNonTerminalType::ModifiedTense => ModifiedTense::parse_table(t),
+        DummyNonTerminalType::AspectExpression => AspectExpression::parse_table(t),
+        DummyNonTerminalType::ModifiedAspect => ModifiedAspect::parse_table(t),
+        DummyNonTerminalType::MtaEvent => MtaEvent::parse_table(t),
+        DummyNonTerminalType::TaEvent => TaEvent::parse_table(t),
+        DummyNonTerminalType::AEvent => AEvent::parse_table(t),
+        DummyNonTerminalType::Event => Event::parse_table(t),
+        DummyNonTerminalType::PostModifiedBinaryPredicatePhrase => {
             PostModifiedBinaryPredicatePhrase::parse_table(t)
         }
-        NonTerminalType::PostBinaryPredicatePhraseExpression(_) => {
+        DummyNonTerminalType::PostBinaryPredicatePhraseExpression => {
             PostBinaryPredicatePhraseExpression::parse_table(t)
         }
-        NonTerminalType::BinaryPredicatePhrase(_) => BinaryPredicatePhrase::parse_table(t),
-        NonTerminalType::ArgumentPhrase(_) => ArgumentPhrase::parse_table(t),
-        NonTerminalType::ArgumentPhraseOrEpsilon(_) => ArgumentPhraseOrEpsilon::parse_table(t),
-        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(_) => {
+        DummyNonTerminalType::BinaryPredicatePhrase => BinaryPredicatePhrase::parse_table(t),
+        DummyNonTerminalType::ArgumentPhrase => ArgumentPhrase::parse_table(t),
+        DummyNonTerminalType::ArgumentPhraseOrEpsilon => ArgumentPhraseOrEpsilon::parse_table(t),
+        DummyNonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => {
             DeterminedArgumentRetrievalBinaryPredicate::parse_table(t)
         }
-        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(_) => {
+        DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => {
             ArticlizedArgumentRetrievalBinaryPredicate::parse_table(t)
         }
-        NonTerminalType::ArgumentRetrievalBinaryPredicate(_) => {
+        DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
             ArgumentRetrievalBinaryPredicate::parse_table(t)
         }
-        NonTerminalType::ArgumentRetrievalWithArgumentPhrase(_) => {
+        DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => {
             ArgumentRetrievalWithArgumentPhrase::parse_table(t)
         }
-        NonTerminalType::Quantification(_) => Quantification::parse_table(t),
-        NonTerminalType::Article(_) => Article::parse_table(t),
+        DummyNonTerminalType::Quantification => Quantification::parse_table(t),
+        DummyNonTerminalType::Article => Article::parse_table(t),
     }
 }
 
 #[derive(Clone, Debug)]
 enum Rhs {
     Sequence(Vec<SymbolType>),
+    Epsilon,
+}
+
+#[derive(Clone, Debug)]
+enum DummyRhs {
+    Sequence(Vec<DummySymbolType>),
     Epsilon,
 }
 
@@ -278,12 +285,18 @@ pub struct Ast {
 #[derive(Debug)]
 pub struct IncompleteAst {
     error_token: TerminalType,
-    error_top: SymbolType,
+    error_top: ErrorTop,
     error_message: String,
 }
 
+#[derive(Debug)]
+pub enum ErrorTop {
+    SymbolType(SymbolType),
+    DummySymbolType(DummySymbolType),
+}
+
 trait NonTerminal {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized;
     fn new(rhs: Rhs) -> Self
@@ -292,239 +305,285 @@ trait NonTerminal {
 }
 
 #[derive(Clone, Debug)]
-enum SymbolType {
+pub enum SymbolType {
     Terminal(TerminalType),
     NonTerminal(NonTerminalType),
 }
 
 #[derive(Clone, Debug)]
-enum NonTerminalType {
-    S(Option<S>),
-    DeclarativeSentence(Option<DeclarativeSentence>),
-    InterrogativeSentence(Option<InterrogativeSentence>),
-    PostModifiedMtaEvent(Option<PostModifiedMtaEvent>),
-    PostMtaEventExpression(Option<PostMtaEventExpression>),
-    ModalityExpression(Option<ModalityExpression>),
-    ModalityWithAgent(Option<ModalityWithAgent>),
-    ModifiedModality(Option<ModifiedModality>),
-    ModalityAgent(Option<ModalityAgent>),
-    TenseExpression(Option<TenseExpression>),
-    ModifiedTense(Option<ModifiedTense>),
-    AspectExpression(Option<AspectExpression>),
-    ModifiedAspect(Option<ModifiedAspect>),
-    MtaEvent(Option<MtaEvent>),
-    TaEvent(Option<TaEvent>),
-    AEvent(Option<AEvent>),
-    Event(Option<Event>),
-    PostModifiedBinaryPredicatePhrase(Option<PostModifiedBinaryPredicatePhrase>),
-    PostBinaryPredicatePhraseExpression(Option<PostBinaryPredicatePhraseExpression>),
-    BinaryPredicatePhrase(Option<BinaryPredicatePhrase>),
-    ArgumentPhrase(Option<ArgumentPhrase>),
-    ArgumentPhraseOrEpsilon(Option<ArgumentPhraseOrEpsilon>),
-    DeterminedArgumentRetrievalBinaryPredicate(Option<DeterminedArgumentRetrievalBinaryPredicate>),
-    ArticlizedArgumentRetrievalBinaryPredicate(Option<ArticlizedArgumentRetrievalBinaryPredicate>),
-    ArgumentRetrievalBinaryPredicate(Option<ArgumentRetrievalBinaryPredicate>),
-    ArgumentRetrievalWithArgumentPhrase(Option<ArgumentRetrievalWithArgumentPhrase>),
-    Quantification(Option<Quantification>),
-    Article(Option<Article>),
+pub enum DummySymbolType {
+    DummyTerminal(DummyTerminalType),
+    DummyNonTerminal(DummyNonTerminalType),
+}
+
+#[derive(Clone, Debug)]
+pub enum NonTerminalType {
+    S(S),
+    DeclarativeSentence(DeclarativeSentence),
+    InterrogativeSentence(InterrogativeSentence),
+    PostModifiedMtaEvent(PostModifiedMtaEvent),
+    PostMtaEventExpression(PostMtaEventExpression),
+    ModalityExpression(ModalityExpression),
+    ModalityWithAgent(ModalityWithAgent),
+    ModifiedModality(ModifiedModality),
+    ModalityAgent(ModalityAgent),
+    TenseExpression(TenseExpression),
+    ModifiedTense(ModifiedTense),
+    AspectExpression(AspectExpression),
+    ModifiedAspect(ModifiedAspect),
+    MtaEvent(MtaEvent),
+    TaEvent(TaEvent),
+    AEvent(AEvent),
+    Event(Event),
+    PostModifiedBinaryPredicatePhrase(PostModifiedBinaryPredicatePhrase),
+    PostBinaryPredicatePhraseExpression(PostBinaryPredicatePhraseExpression),
+    BinaryPredicatePhrase(BinaryPredicatePhrase),
+    ArgumentPhrase(ArgumentPhrase),
+    ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon),
+    DeterminedArgumentRetrievalBinaryPredicate(DeterminedArgumentRetrievalBinaryPredicate),
+    ArticlizedArgumentRetrievalBinaryPredicate(ArticlizedArgumentRetrievalBinaryPredicate),
+    ArgumentRetrievalBinaryPredicate(ArgumentRetrievalBinaryPredicate),
+    ArgumentRetrievalWithArgumentPhrase(ArgumentRetrievalWithArgumentPhrase),
+    Quantification(Quantification),
+    Article(Article),
+}
+
+#[derive(Clone, Debug)]
+pub enum DummyNonTerminalType {
+    S,
+    DeclarativeSentence,
+    InterrogativeSentence,
+    PostModifiedMtaEvent,
+    PostMtaEventExpression,
+    ModalityExpression,
+    ModalityWithAgent,
+    ModifiedModality,
+    ModalityAgent,
+    TenseExpression,
+    ModifiedTense,
+    AspectExpression,
+    ModifiedAspect,
+    MtaEvent,
+    TaEvent,
+    AEvent,
+    Event,
+    PostModifiedBinaryPredicatePhrase,
+    PostBinaryPredicatePhraseExpression,
+    BinaryPredicatePhrase,
+    ArgumentPhrase,
+    ArgumentPhraseOrEpsilon,
+    DeterminedArgumentRetrievalBinaryPredicate,
+    ArticlizedArgumentRetrievalBinaryPredicate,
+    ArgumentRetrievalBinaryPredicate,
+    ArgumentRetrievalWithArgumentPhrase,
+    Quantification,
+    Article,
 }
 
 // non-terminal types
 
 #[derive(Clone, Debug)]
-struct S {
+pub struct S {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct DeclarativeSentence {
+pub struct DeclarativeSentence {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct InterrogativeSentence {
+pub struct InterrogativeSentence {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct PostModifiedMtaEvent {
+pub struct PostModifiedMtaEvent {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct PostMtaEventExpression {
+pub struct PostMtaEventExpression {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ModalityExpression {
+pub struct ModalityExpression {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ModalityWithAgent {
+pub struct ModalityWithAgent {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ModifiedModality {
+pub struct ModifiedModality {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ModalityAgent {
+pub struct ModalityAgent {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct TenseExpression {
+pub struct TenseExpression {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ModifiedTense {
+pub struct ModifiedTense {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct AspectExpression {
+pub struct AspectExpression {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ModifiedAspect {
+pub struct ModifiedAspect {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct MtaEvent {
+pub struct MtaEvent {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct TaEvent {
+pub struct TaEvent {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct AEvent {
+pub struct AEvent {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct Event {
+pub struct Event {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct PostModifiedBinaryPredicatePhrase {
+pub struct PostModifiedBinaryPredicatePhrase {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct PostBinaryPredicatePhraseExpression {
+pub struct PostBinaryPredicatePhraseExpression {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct BinaryPredicatePhrase {
+pub struct BinaryPredicatePhrase {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ArgumentPhrase {
+pub struct ArgumentPhrase {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ArgumentPhraseOrEpsilon {
+pub struct ArgumentPhraseOrEpsilon {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct DeterminedArgumentRetrievalBinaryPredicate {
+pub struct DeterminedArgumentRetrievalBinaryPredicate {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ArticlizedArgumentRetrievalBinaryPredicate {
+pub struct ArticlizedArgumentRetrievalBinaryPredicate {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ArgumentRetrievalBinaryPredicate {
+pub struct ArgumentRetrievalBinaryPredicate {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct ArgumentRetrievalWithArgumentPhrase {
+pub struct ArgumentRetrievalWithArgumentPhrase {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct Quantification {
+pub struct Quantification {
     rhs: Rhs,
 }
 
 #[derive(Clone, Debug)]
-struct Article {
+pub struct Article {
     rhs: Rhs,
 }
 
 impl NonTerminal for S {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::InterrogativeMarker(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::InterrogativeSentence(None),
+            DummyTerminalType::InterrogativeMarker => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::InterrogativeSentence,
                 )]))
             }
-            TerminalType::Modality(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::DeclarativeSentence(None),
-            )])),
-            TerminalType::Tense(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::DeclarativeSentence(None),
-            )])),
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::DeclarativeSentence(None),
-            )])),
-            TerminalType::ModalityNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::DeclarativeSentence(None),
+            DummyTerminalType::Modality => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            TerminalType::TenseNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::DeclarativeSentence(None),
+            DummyTerminalType::Tense => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            TerminalType::AspectNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::DeclarativeSentence(None),
+            DummyTerminalType::Aspect => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::DeclarativeSentence(None),
-            )])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::DeclarativeSentence(None),
-            )])),
-            TerminalType::ArgumentPhraseTransposer(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::DeclarativeSentence(None),
+            DummyTerminalType::ModalityNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::DeclarativeSentence(None),
-            )])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::S(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::TenseNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
+                )]))
+            }
+            DummyTerminalType::AspectNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
+                )]))
+            }
+            DummyTerminalType::Negation => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
+                )]))
+            }
+            DummyTerminalType::BinaryPredicate => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
+                )]))
+            }
+            DummyTerminalType::ArgumentPhraseTransposer => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
+                )]))
+            }
+            DummyTerminalType::BinaryOperator => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
+                )]))
+            }
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -534,15 +593,9 @@ impl NonTerminal for S {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
                     Self { rhs }
                 }
                 [SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
                     Self { rhs }
                 }
                 _ => {
@@ -557,54 +610,62 @@ impl NonTerminal for S {
 }
 
 impl NonTerminal for DeclarativeSentence {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Modality(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::PostModifiedMtaEvent(None),
-            )])),
-            TerminalType::Tense(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::PostModifiedMtaEvent(None),
-            )])),
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::PostModifiedMtaEvent(None),
-            )])),
-            TerminalType::ModalityNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::PostModifiedMtaEvent(None),
+            DummyTerminalType::Modality => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            TerminalType::TenseNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::PostModifiedMtaEvent(None),
+            DummyTerminalType::Tense => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            TerminalType::AspectNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::PostModifiedMtaEvent(None),
+            DummyTerminalType::Aspect => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::PostModifiedMtaEvent(None),
-            )])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::PostModifiedMtaEvent(None),
-            )])),
-            TerminalType::ArgumentPhraseTransposer(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::PostModifiedMtaEvent(None),
+            DummyTerminalType::ModalityNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::PostModifiedMtaEvent(None),
-            )])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::TenseNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
+                )]))
+            }
+            DummyTerminalType::AspectNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
+                )]))
+            }
+            DummyTerminalType::Negation => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
+                )]))
+            }
+            DummyTerminalType::BinaryPredicate => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
+                )]))
+            }
+            DummyTerminalType::ArgumentPhraseTransposer => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
+                )]))
+            }
+            DummyTerminalType::BinaryOperator => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
+                )]))
+            }
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -614,9 +675,6 @@ impl NonTerminal for DeclarativeSentence {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
                     Self { rhs }
                 }
                 _ => {
@@ -631,20 +689,16 @@ impl NonTerminal for DeclarativeSentence {
 }
 
 impl NonTerminal for InterrogativeSentence {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::InterrogativeMarker(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::InterrogativeMarker(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(None)),
+            DummyTerminalType::InterrogativeMarker => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::InterrogativeMarker),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostModifiedMtaEvent),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -656,15 +710,7 @@ impl NonTerminal for InterrogativeSentence {
                 [
                     SymbolType::Terminal(TerminalType::InterrogativeMarker(child1)),
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -677,56 +723,52 @@ impl NonTerminal for InterrogativeSentence {
 }
 
 impl NonTerminal for PostModifiedMtaEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Modality(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::Tense(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::Tense => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::ModalityNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -738,15 +780,7 @@ impl NonTerminal for PostModifiedMtaEvent {
                 [
                     SymbolType::NonTerminal(NonTerminalType::MtaEvent(child1)),
                     SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -759,21 +793,17 @@ impl NonTerminal for PostModifiedMtaEvent {
 }
 
 impl NonTerminal for PostMtaEventExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::PostMtaEventModifier(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::PostMtaEventModifier(None)),
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
+            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::PostMtaEventModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
             ])),
-            TerminalType::Eos(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -785,15 +815,7 @@ impl NonTerminal for PostMtaEventExpression {
                 [
                     SymbolType::Terminal(TerminalType::PostMtaEventModifier(child1)),
                     SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -804,32 +826,30 @@ impl NonTerminal for PostMtaEventExpression {
 }
 
 impl NonTerminal for ModalityExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Modality(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::ModalityWithAgent(None),
-            )])),
-            TerminalType::Tense(_) => Ok(Rhs::Epsilon),
-            TerminalType::Aspect(_) => Ok(Rhs::Epsilon),
-            TerminalType::ModalityNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::ModalityWithAgent(None),
+            DummyTerminalType::Modality => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ModalityWithAgent,
                 )]))
             }
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ModalityNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ModalityWithAgent,
+                )]))
+            }
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -839,9 +859,6 @@ impl NonTerminal for ModalityExpression {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
                     Self { rhs }
                 }
                 _ => {
@@ -854,24 +871,20 @@ impl NonTerminal for ModalityExpression {
 }
 
 impl NonTerminal for ModalityWithAgent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Modality(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModifiedModality(None)),
-                SymbolType::NonTerminal(NonTerminalType::ModalityAgent(None)),
+            DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityAgent),
             ])),
-            TerminalType::ModalityNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModifiedModality(None)),
-                SymbolType::NonTerminal(NonTerminalType::ModalityAgent(None)),
+            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityAgent),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -883,15 +896,7 @@ impl NonTerminal for ModalityWithAgent {
                 [
                     SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ModalityAgent(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -904,24 +909,22 @@ impl NonTerminal for ModalityWithAgent {
 }
 
 impl NonTerminal for ModifiedModality {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Modality(_) => Ok(Rhs::Sequence(vec![SymbolType::Terminal(
-                TerminalType::Modality(None),
-            )])),
-            TerminalType::ModalityNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::ModalityNegationBegin(None)),
-                SymbolType::Terminal(TerminalType::Negation(None)),
-                SymbolType::NonTerminal(NonTerminalType::ModifiedModality(None)),
+            DummyTerminalType::Modality => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::Modality,
+                )]))
+            }
+            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityNegationBegin),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedModality(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -930,28 +933,12 @@ impl NonTerminal for ModifiedModality {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Modality(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                [SymbolType::Terminal(TerminalType::Modality(child1))] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::ModalityNegationBegin(child1)),
                     SymbolType::Terminal(TerminalType::Negation(child2)),
                     SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child3)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    if child3.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -964,28 +951,24 @@ impl NonTerminal for ModifiedModality {
 }
 
 impl NonTerminal for ModalityAgent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Tense(_) => Ok(Rhs::Epsilon),
-            TerminalType::Aspect(_) => Ok(Rhs::Epsilon),
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            TerminalType::PostArgumentPhraseModifier(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
+            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::PostArgumentPhraseModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ModalityAgent(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -997,15 +980,7 @@ impl NonTerminal for ModalityAgent {
                 [
                     SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1016,30 +991,28 @@ impl NonTerminal for ModalityAgent {
 }
 
 impl NonTerminal for TenseExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Tense(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::ModifiedTense(None),
-            )])),
-            TerminalType::Aspect(_) => Ok(Rhs::Epsilon),
-            TerminalType::TenseNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::ModifiedTense(None),
+            DummyTerminalType::Tense => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ModifiedTense,
                 )]))
             }
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ModifiedTense,
+                )]))
+            }
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1048,12 +1021,7 @@ impl NonTerminal for TenseExpression {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                [SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1064,24 +1032,22 @@ impl NonTerminal for TenseExpression {
 }
 
 impl NonTerminal for ModifiedTense {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Tense(_) => Ok(Rhs::Sequence(vec![SymbolType::Terminal(
-                TerminalType::Tense(None),
-            )])),
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::TenseNegationBegin(None)),
-                SymbolType::Terminal(TerminalType::Negation(None)),
-                SymbolType::NonTerminal(NonTerminalType::ModifiedTense(None)),
+            DummyTerminalType::Tense => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::Tense,
+                )]))
+            }
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::TenseNegationBegin),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedTense),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedTense(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1090,28 +1056,12 @@ impl NonTerminal for ModifiedTense {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Tense(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                [SymbolType::Terminal(TerminalType::Tense(child1))] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::TenseNegationBegin(child1)),
                     SymbolType::Terminal(TerminalType::Negation(child2)),
                     SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child3)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    if child3.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1124,28 +1074,26 @@ impl NonTerminal for ModifiedTense {
 }
 
 impl NonTerminal for AspectExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                NonTerminalType::ModifiedAspect(None),
-            )])),
-            TerminalType::AspectNegationBegin(_) => {
-                Ok(Rhs::Sequence(vec![SymbolType::NonTerminal(
-                    NonTerminalType::ModifiedAspect(None),
+            DummyTerminalType::Aspect => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ModifiedAspect,
                 )]))
             }
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::AspectNegationBegin => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ModifiedAspect,
+                )]))
+            }
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1154,12 +1102,7 @@ impl NonTerminal for AspectExpression {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                [SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1170,24 +1113,22 @@ impl NonTerminal for AspectExpression {
 }
 
 impl NonTerminal for ModifiedAspect {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![SymbolType::Terminal(
-                TerminalType::Aspect(None),
-            )])),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::AspectNegationBegin(None)),
-                SymbolType::Terminal(TerminalType::Negation(None)),
-                SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(None)),
+            DummyTerminalType::Aspect => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::Aspect,
+                )]))
+            }
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::AspectNegationBegin),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedAspect),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1196,28 +1137,12 @@ impl NonTerminal for ModifiedAspect {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Aspect(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                [SymbolType::Terminal(TerminalType::Aspect(child1))] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::AspectNegationBegin(child1)),
                     SymbolType::Terminal(TerminalType::Negation(child2)),
                     SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child3)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    if child3.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1230,56 +1155,52 @@ impl NonTerminal for ModifiedAspect {
 }
 
 impl NonTerminal for MtaEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Modality(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::Tense(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::Tense => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::ModalityNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::ModalityExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1291,15 +1212,7 @@ impl NonTerminal for MtaEvent {
                 [
                     SymbolType::NonTerminal(NonTerminalType::ModalityExpression(child1)),
                     SymbolType::NonTerminal(NonTerminalType::TaEvent(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1312,48 +1225,44 @@ impl NonTerminal for MtaEvent {
 }
 
 impl NonTerminal for TaEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Tense(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::Tense => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::TenseExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::TaEvent(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1365,15 +1274,7 @@ impl NonTerminal for TaEvent {
                 [
                     SymbolType::NonTerminal(NonTerminalType::TenseExpression(child1)),
                     SymbolType::NonTerminal(NonTerminalType::AEvent(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1386,40 +1287,36 @@ impl NonTerminal for TaEvent {
 }
 
 impl NonTerminal for AEvent {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Aspect(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::Event(None)),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::Event(None)),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::Event(None)),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::Event(None)),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::Event(None)),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::AspectExpression(None)),
-                SymbolType::NonTerminal(NonTerminalType::Event(None)),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::AEvent(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1431,15 +1328,7 @@ impl NonTerminal for AEvent {
                 [
                     SymbolType::NonTerminal(NonTerminalType::AspectExpression(child1)),
                     SymbolType::NonTerminal(NonTerminalType::Event(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1452,36 +1341,40 @@ impl NonTerminal for AEvent {
 }
 
 impl NonTerminal for Event {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(None)),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(None)),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(None)),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(None)),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::Event(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1496,18 +1389,7 @@ impl NonTerminal for Event {
                     )),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(child3)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    if child3.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1520,34 +1402,36 @@ impl NonTerminal for Event {
 }
 
 impl NonTerminal for PostModifiedBinaryPredicatePhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(None)),
-            ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(None)),
-            ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(None)),
-            ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(None)),
-            ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(
-                    NonTerminalType::PostModifiedBinaryPredicatePhrase(None),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
                 ),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            ])),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
+                ),
+            ])),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
+                ),
+            ])),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
+                ),
+            ])),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1561,15 +1445,7 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
                     SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(
                         child2,
                     )),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1582,38 +1458,34 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
 }
 
 impl NonTerminal for PostBinaryPredicatePhraseExpression {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Tense(_) => Ok(Rhs::Epsilon),
-            TerminalType::Aspect(_) => Ok(Rhs::Epsilon),
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::Argument(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseSeparator(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentRetriever(_) => Ok(Rhs::Epsilon),
-            TerminalType::MtaEventToArgumentPhraseConverter(_) => Ok(Rhs::Epsilon),
-            TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => Ok(Rhs::Epsilon),
-            TerminalType::PostMtaEventModifier(_) => Ok(Rhs::Epsilon),
-            TerminalType::PostBinaryPredicatePhraseModifier(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::PostBinaryPredicatePhraseModifier(None)),
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-            ])),
-            TerminalType::PostArgumentPhraseModifier(_) => Ok(Rhs::Epsilon),
-            TerminalType::Eos(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(
-                    NonTerminalType::PostBinaryPredicatePhraseExpression(None),
+            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PostBinaryPredicatePhraseModifier => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(
+                    DummyTerminalType::PostBinaryPredicatePhraseModifier,
                 ),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+            ])),
+            DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1625,15 +1497,7 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
                 [
                     SymbolType::Terminal(TerminalType::PostBinaryPredicatePhraseModifier(child1)),
                     SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1644,32 +1508,30 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
 }
 
 impl NonTerminal for BinaryPredicatePhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::Negation(None)),
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
             ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![SymbolType::Terminal(
-                TerminalType::BinaryPredicate(None),
-            )])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(None)),
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
+            DummyTerminalType::BinaryPredicate => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::BinaryPredicate,
+                )]))
+            }
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentPhraseTransposer),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
             ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::BinaryOperator(None)),
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1681,49 +1543,17 @@ impl NonTerminal for BinaryPredicatePhrase {
                 [
                     SymbolType::Terminal(TerminalType::Negation(child1)),
                     SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
-                [SymbolType::Terminal(TerminalType::BinaryPredicate(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::BinaryPredicate(child1))] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(child1)),
                     SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
                     SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
                     SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child3)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    if child3.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1736,39 +1566,41 @@ impl NonTerminal for BinaryPredicatePhrase {
 }
 
 impl NonTerminal for ArgumentPhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::Negation(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            TerminalType::Argument(_) => Ok(Rhs::Sequence(vec![SymbolType::Terminal(
-                TerminalType::Argument(None),
-            )])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::BinaryOperator(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
+            DummyTerminalType::Argument => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::Argument,
+                )]))
+            }
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            TerminalType::ArgumentRetriever(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::ArgumentRetriever(None)),
-                SymbolType::NonTerminal(
-                    NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentRetriever),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeterminedArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            TerminalType::MtaEventToArgumentPhraseConverter(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(None)),
-                SymbolType::NonTerminal(NonTerminalType::MtaEvent(None)),
-                SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverterEnd(None)),
+            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(
+                    DummyTerminalType::MtaEventToArgumentPhraseConverter,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyTerminal(
+                    DummyTerminalType::MtaEventToArgumentPhraseConverterEnd,
+                ),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1780,69 +1612,26 @@ impl NonTerminal for ArgumentPhrase {
                 [
                     SymbolType::Terminal(TerminalType::Negation(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
-                [SymbolType::Terminal(TerminalType::Argument(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Argument(child1))] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    if child3.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::ArgumentRetriever(child1)),
                     SymbolType::NonTerminal(
                         NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(child2),
                     ),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 [
                     SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)),
                     SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
                     SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverterEnd(
                         child3,
                     )),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    if child3.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1855,23 +1644,19 @@ impl NonTerminal for ArgumentPhrase {
 }
 
 impl NonTerminal for ArgumentPhraseOrEpsilon {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::ArgumentPhraseSeparator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
+            DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentPhraseSeparator),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => Ok(Rhs::Epsilon),
-            TerminalType::PostMtaEventModifier(_) => Ok(Rhs::Epsilon),
-            TerminalType::Eos(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1883,15 +1668,7 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
                 [
                     SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1902,54 +1679,48 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
 }
 
 impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                SymbolType::NonTerminal(
-                    NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Quantification),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                SymbolType::NonTerminal(
-                    NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Quantification),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                SymbolType::NonTerminal(
-                    NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Quantification),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                SymbolType::NonTerminal(
-                    NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Quantification),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            TerminalType::Quantifier(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                SymbolType::NonTerminal(
-                    NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::Quantifier => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Quantification),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            TerminalType::Articlizer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                SymbolType::NonTerminal(
-                    NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::Articlizer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Quantification),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(
-                    NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(None),
-                ),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -1963,15 +1734,7 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
                     SymbolType::NonTerminal(
                         NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(child2),
                     ),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1984,38 +1747,42 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
 }
 
 impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Article(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(None)),
-            ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Article(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(None)),
-            ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Article(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(None)),
-            ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Article(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(None)),
-            ])),
-            TerminalType::Articlizer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::Article(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(None)),
-            ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(
-                    NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Article),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            ])),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Article),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
+                ),
+            ])),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Article),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
+                ),
+            ])),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Article),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
+                ),
+            ])),
+            DummyTerminalType::Articlizer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Article),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
+                ),
+            ])),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -2029,15 +1796,7 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(
                         child2,
                     )),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -2050,34 +1809,44 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
 }
 
 impl NonTerminal for ArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(None)),
-            ])),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(None)),
-            ])),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(None)),
-            ])),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(None)),
-            ])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(
-                    NonTerminalType::ArgumentRetrievalBinaryPredicate(None),
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
+                ),
+            ])),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
+                ),
+            ])),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
+                ),
+            ])),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
+                ),
+            ])),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -2093,15 +1862,7 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(
                         child2,
                     )),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -2114,37 +1875,31 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
 }
 
 impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Tense(_) => Ok(Rhs::Epsilon),
-            TerminalType::Aspect(_) => Ok(Rhs::Epsilon),
-            TerminalType::TenseNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::AspectNegationBegin(_) => Ok(Rhs::Epsilon),
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::Argument(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseSeparator(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentRetriever(_) => Ok(Rhs::Epsilon),
-            TerminalType::MtaEventToArgumentPhraseConverter(_) => Ok(Rhs::Epsilon),
-            TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => Ok(Rhs::Epsilon),
-            TerminalType::PostMtaEventModifier(_) => Ok(Rhs::Epsilon),
-            TerminalType::PostArgumentPhraseModifier(_) => Ok(Rhs::Sequence(vec![
-                SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(None)),
-                SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(None)),
+            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::PostArgumentPhraseModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            TerminalType::Eos(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(
-                    NonTerminalType::ArgumentRetrievalWithArgumentPhrase(None),
-                ),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -2156,15 +1911,7 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
                 [
                     SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    if child2.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -2175,24 +1922,22 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
 }
 
 impl NonTerminal for Quantification {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            TerminalType::Quantifier(_) => Ok(Rhs::Sequence(vec![SymbolType::Terminal(
-                TerminalType::Quantifier(None),
-            )])),
-            TerminalType::Articlizer(_) => Ok(Rhs::Epsilon),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::Quantification(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Quantifier => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::Quantifier,
+                )]))
+            }
+            DummyTerminalType::Articlizer => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -2201,12 +1946,7 @@ impl NonTerminal for Quantification {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Quantifier(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                [SymbolType::Terminal(TerminalType::Quantifier(child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -2217,23 +1957,21 @@ impl NonTerminal for Quantification {
 }
 
 impl NonTerminal for Article {
-    fn parse_table(current_token: TerminalType) -> Result<Rhs, IncompleteAst>
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
     {
         match current_token {
-            TerminalType::Negation(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryPredicate(_) => Ok(Rhs::Epsilon),
-            TerminalType::ArgumentPhraseTransposer(_) => Ok(Rhs::Epsilon),
-            TerminalType::BinaryOperator(_) => Ok(Rhs::Epsilon),
-            TerminalType::Articlizer(_) => Ok(Rhs::Sequence(vec![SymbolType::Terminal(
-                TerminalType::Articlizer(None),
-            )])),
-            _ => Err(IncompleteAst {
-                error_token: current_token,
-                error_top: SymbolType::NonTerminal(NonTerminalType::Article(None)),
-                error_message: format!("Unexpected token: {current_token:?}"),
-            }),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Articlizer => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::Articlizer,
+                )]))
+            }
+            _ => Err(()),
         }
     }
     fn new(rhs: Rhs) -> Self
@@ -2242,12 +1980,7 @@ impl NonTerminal for Article {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Articlizer(child1))] => {
-                    if child1.is_none() {
-                        panic!("child is None");
-                    }
-                    Self { rhs }
-                }
+                [SymbolType::Terminal(TerminalType::Articlizer(child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -2868,33 +2601,33 @@ mod tests {
             for t in terminals {
                 let lt = grammar::Lookahead::Terminal(t.clone());
                 let tt = match t.0.as_str() {
-                    "InterrogativeMarker" => TerminalType::InterrogativeMarker(None),
-                    "Modality" => TerminalType::Modality(None),
-                    "Tense" => TerminalType::Tense(None),
-                    "Aspect" => TerminalType::Aspect(None),
-                    "ModalityNegationBegin" => TerminalType::ModalityNegationBegin(None),
-                    "TenseNegationBegin" => TerminalType::TenseNegationBegin(None),
-                    "AspectNegationBegin" => TerminalType::AspectNegationBegin(None),
-                    "Negation" => TerminalType::Negation(None),
-                    "BinaryPredicate" => TerminalType::BinaryPredicate(None),
-                    "Argument" => TerminalType::Argument(None),
-                    "ArgumentPhraseSeparator" => TerminalType::ArgumentPhraseSeparator(None),
-                    "ArgumentPhraseTransposer" => TerminalType::ArgumentPhraseTransposer(None),
-                    "BinaryOperator" => TerminalType::BinaryOperator(None),
-                    "ArgumentRetriever" => TerminalType::ArgumentRetriever(None),
-                    "Quantifier" => TerminalType::Quantifier(None),
-                    "Articlizer" => TerminalType::Articlizer(None),
+                    "InterrogativeMarker" => DummyTerminalType::InterrogativeMarker,
+                    "Modality" => DummyTerminalType::Modality,
+                    "Tense" => DummyTerminalType::Tense,
+                    "Aspect" => DummyTerminalType::Aspect,
+                    "ModalityNegationBegin" => DummyTerminalType::ModalityNegationBegin,
+                    "TenseNegationBegin" => DummyTerminalType::TenseNegationBegin,
+                    "AspectNegationBegin" => DummyTerminalType::AspectNegationBegin,
+                    "Negation" => DummyTerminalType::Negation,
+                    "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
+                    "Argument" => DummyTerminalType::Argument,
+                    "ArgumentPhraseSeparator" => DummyTerminalType::ArgumentPhraseSeparator,
+                    "ArgumentPhraseTransposer" => DummyTerminalType::ArgumentPhraseTransposer,
+                    "BinaryOperator" => DummyTerminalType::BinaryOperator,
+                    "ArgumentRetriever" => DummyTerminalType::ArgumentRetriever,
+                    "Quantifier" => DummyTerminalType::Quantifier,
+                    "Articlizer" => DummyTerminalType::Articlizer,
                     "MtaEventToArgumentPhraseConverter" => {
-                        TerminalType::MtaEventToArgumentPhraseConverter(None)
+                        DummyTerminalType::MtaEventToArgumentPhraseConverter
                     }
                     "MtaEventToArgumentPhraseConverterEnd" => {
-                        TerminalType::MtaEventToArgumentPhraseConverterEnd(None)
+                        DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
                     }
-                    "PostMtaEventModifier" => TerminalType::PostMtaEventModifier(None),
+                    "PostMtaEventModifier" => DummyTerminalType::PostMtaEventModifier,
                     "PostBinaryPredicatePhraseModifier" => {
-                        TerminalType::PostBinaryPredicatePhraseModifier(None)
+                        DummyTerminalType::PostBinaryPredicatePhraseModifier
                     }
-                    "PostArgumentPhraseModifier" => TerminalType::PostArgumentPhraseModifier(None),
+                    "PostArgumentPhraseModifier" => DummyTerminalType::PostArgumentPhraseModifier,
                     _ => self::panic!("Unknown terminal type: {}", t.0),
                 };
 
@@ -2902,7 +2635,7 @@ mod tests {
                 helper(nt, &lt, tt, &auto_parse_result);
             }
             let lt = grammar::Lookahead::Eos;
-            let tt = TerminalType::Eos(None);
+            let tt = DummyTerminalType::Eos;
 
             let auto_parse_result = parse_table.get(&(nt.clone(), lt.clone()));
             helper(nt, &grammar::Lookahead::Eos, tt, &auto_parse_result);
@@ -2912,7 +2645,7 @@ mod tests {
     fn helper(
         nt: &grammar::NonTerminal,
         lt: &grammar::Lookahead,
-        tt: TerminalType,
+        tt: DummyTerminalType,
         auto_parse_result: &Option<&grammar::Rhs>,
     ) {
         let manual_parse_result = match nt.0.as_str() {
@@ -2958,134 +2691,128 @@ mod tests {
         };
 
         match (auto_parse_result, manual_parse_result) {
-            (Some(auto_result), Ok(manual_result)) => {
-                match (auto_result, &manual_result) {
-                    (grammar::Rhs::Epsilon, Rhs::Epsilon) => {}
-                    (grammar::Rhs::Sequence(auto_seq), Rhs::Sequence(manual_seq)) => {
-                        assert_eq!(
-                            auto_seq.len(),
-                            manual_seq.len(),
-                            "Parse table mismatch for non-terminal: {:?}, terminal: {:?}. Auto sequence length: {}, Manual sequence length: {}",
-                            nt,
-                            lt,
-                            auto_seq.len(),
-                            manual_seq.len()
-                        );
-                        for (auto_symbol, manual_symbol) in auto_seq.iter().zip(manual_seq.iter()) {
-                            match (auto_symbol, manual_symbol) {
-                                (
-                                    grammar::Symbol::NonTerminal(auto_nt),
-                                    SymbolType::NonTerminal(manual_nt),
-                                ) => {
-                                    let manual_nt_variant_name = match manual_nt {
-                                                NonTerminalType::S(_) => "S",
-                                                NonTerminalType::DeclarativeSentence(_) => "DeclarativeSentence",
-                                                NonTerminalType::InterrogativeSentence(_) => "InterrogativeSentence",
-                                                NonTerminalType::PostModifiedMtaEvent(_) => "PostModifiedMtaEvent",
-                                                NonTerminalType::PostMtaEventExpression(_) => "PostMtaEventExpression",
-                                                NonTerminalType::ModalityExpression(_) => "ModalityExpression",
-                                                NonTerminalType::ModalityWithAgent(_) => "ModalityWithAgent",
-                                                NonTerminalType::ModifiedModality(_) => "ModifiedModality",
-                                                NonTerminalType::ModalityAgent(_) => "ModalityAgent",
-                                                NonTerminalType::TenseExpression(_) => "TenseExpression",
-                                                NonTerminalType::ModifiedTense(_) => "ModifiedTense",
-                                                NonTerminalType::AspectExpression(_) => "AspectExpression",
-                                                NonTerminalType::ModifiedAspect(_) => "ModifiedAspect",
-                                                NonTerminalType::MtaEvent(_) => "MtaEvent",
-                                                NonTerminalType::TaEvent(_) => "TaEvent",
-                                                NonTerminalType::AEvent(_) => "AEvent",
-                                                NonTerminalType::Event(_) => "Event",
-                                                NonTerminalType::PostModifiedBinaryPredicatePhrase(_) => "PostModifiedBinaryPredicatePhrase",
-                                                NonTerminalType::PostBinaryPredicatePhraseExpression(_) => "PostBinaryPredicatePhraseExpression",
-                                                NonTerminalType::BinaryPredicatePhrase(_) => "BinaryPredicatePhrase",
-                                                NonTerminalType::ArgumentPhrase(_) => "ArgumentPhrase",
-                                                NonTerminalType::ArgumentPhraseOrEpsilon(_) => "ArgumentPhraseOrEpsilon",
-                                                NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(_) => "DeterminedArgumentRetrievalBinaryPredicate",
-                                                NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(_) => "ArticlizedArgumentRetrievalBinaryPredicate",
-                                                NonTerminalType::ArgumentRetrievalBinaryPredicate(_) => "ArgumentRetrievalBinaryPredicate",
-                                                NonTerminalType::ArgumentRetrievalWithArgumentPhrase(_) => "ArgumentRetrievalWithArgumentPhrase",
-                                                NonTerminalType::Quantification(_) => "Quantification",
-                                                NonTerminalType::Article(_) => "Article"
+            (Some(auto_result), Ok(manual_result)) => match (auto_result, &manual_result) {
+                (grammar::Rhs::Epsilon, DummyRhs::Epsilon) => {}
+                (grammar::Rhs::Sequence(auto_seq), DummyRhs::Sequence(manual_seq)) => {
+                    assert_eq!(
+                        auto_seq.len(),
+                        manual_seq.len(),
+                        "Parse table mismatch for non-terminal: {:?}, terminal: {:?}. Auto sequence length: {}, Manual sequence length: {}",
+                        nt,
+                        lt,
+                        auto_seq.len(),
+                        manual_seq.len()
+                    );
+                    for (auto_symbol, manual_symbol) in auto_seq.iter().zip(manual_seq.iter()) {
+                        match (auto_symbol, manual_symbol) {
+                            (
+                                grammar::Symbol::NonTerminal(auto_nt),
+                                DummySymbolType::DummyNonTerminal(manual_nt),
+                            ) => {
+                                let manual_nt_variant_name = match manual_nt {
+                                                DummyNonTerminalType::S => "S",
+                                                DummyNonTerminalType::DeclarativeSentence => "DeclarativeSentence",
+                                                DummyNonTerminalType::InterrogativeSentence => "InterrogativeSentence",
+                                                DummyNonTerminalType::PostModifiedMtaEvent => "PostModifiedMtaEvent",
+                                                DummyNonTerminalType::PostMtaEventExpression => "PostMtaEventExpression",
+                                                DummyNonTerminalType::ModalityExpression => "ModalityExpression",
+                                                DummyNonTerminalType::ModalityWithAgent => "ModalityWithAgent",
+                                                DummyNonTerminalType::ModifiedModality => "ModifiedModality",
+                                                DummyNonTerminalType::ModalityAgent => "ModalityAgent",
+                                                DummyNonTerminalType::TenseExpression => "TenseExpression",
+                                                DummyNonTerminalType::ModifiedTense => "ModifiedTense",
+                                                DummyNonTerminalType::AspectExpression => "AspectExpression",
+                                                DummyNonTerminalType::ModifiedAspect => "ModifiedAspect",
+                                                DummyNonTerminalType::MtaEvent => "MtaEvent",
+                                                DummyNonTerminalType::TaEvent => "TaEvent",
+                                                DummyNonTerminalType::AEvent => "AEvent",
+                                                DummyNonTerminalType::Event => "Event",
+                                                DummyNonTerminalType::PostModifiedBinaryPredicatePhrase => "PostModifiedBinaryPredicatePhrase",
+                                                DummyNonTerminalType::PostBinaryPredicatePhraseExpression => "PostBinaryPredicatePhraseExpression",
+                                                DummyNonTerminalType::BinaryPredicatePhrase => "BinaryPredicatePhrase",
+                                                DummyNonTerminalType::ArgumentPhrase => "ArgumentPhrase",
+                                                DummyNonTerminalType::ArgumentPhraseOrEpsilon => "ArgumentPhraseOrEpsilon",
+                                                DummyNonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => "DeterminedArgumentRetrievalBinaryPredicate",
+                                                DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => "ArticlizedArgumentRetrievalBinaryPredicate",
+                                                DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => "ArgumentRetrievalBinaryPredicate",
+                                                DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => "ArgumentRetrievalWithArgumentPhrase",
+                                                DummyNonTerminalType::Quantification => "Quantification",
+                                                DummyNonTerminalType::Article => "Article"
                                             };
-                                    assert_eq!(
-                                        auto_nt.0, manual_nt_variant_name,
-                                        "Parse table mismatch for non-terminal: {nt:?}, terminal: {lt:?}. Auto: {auto_nt:?}, Manual: {manual_nt:?}",
-                                    );
-                                }
-                                (
-                                    grammar::Symbol::Terminal(auto_t),
-                                    SymbolType::Terminal(manual_t),
-                                ) => {
-                                    let manual_nt_variant_name = match manual_t {
-                                        TerminalType::InterrogativeMarker(_) => {
-                                            "InterrogativeMarker"
-                                        }
-                                        TerminalType::Modality(_) => "Modality",
-                                        TerminalType::Tense(_) => "Tense",
-                                        TerminalType::Aspect(_) => "Aspect",
-                                        TerminalType::ModalityNegationBegin(_) => {
-                                            "ModalityNegationBegin"
-                                        }
-                                        TerminalType::TenseNegationBegin(_) => "TenseNegationBegin",
-                                        TerminalType::AspectNegationBegin(_) => {
-                                            "AspectNegationBegin"
-                                        }
-                                        TerminalType::Negation(_) => "Negation",
-                                        TerminalType::BinaryPredicate(_) => "BinaryPredicate",
-                                        TerminalType::Argument(_) => "Argument",
-                                        TerminalType::ArgumentPhraseSeparator(_) => {
-                                            "ArgumentPhraseSeparator"
-                                        }
-                                        TerminalType::ArgumentPhraseTransposer(_) => {
-                                            "ArgumentPhraseTransposer"
-                                        }
-                                        TerminalType::BinaryOperator(_) => "BinaryOperator",
-                                        TerminalType::ArgumentRetriever(_) => "ArgumentRetriever",
-                                        TerminalType::Quantifier(_) => "Quantifier",
-                                        TerminalType::Articlizer(_) => "Articlizer",
-                                        TerminalType::MtaEventToArgumentPhraseConverter(_) => {
-                                            "MtaEventToArgumentPhraseConverter"
-                                        }
-                                        TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => {
-                                            "MtaEventToArgumentPhraseConverterEnd"
-                                        }
-                                        TerminalType::PostMtaEventModifier(_) => {
-                                            "PostMtaEventModifier"
-                                        }
-                                        TerminalType::PostBinaryPredicatePhraseModifier(_) => {
-                                            "PostBinaryPredicatePhraseModifier"
-                                        }
-                                        TerminalType::PostArgumentPhraseModifier(_) => {
-                                            "PostArgumentPhraseModifier"
-                                        }
-                                        _ => self::panic!("Unknown terminal type: maybe Eos"),
-                                    };
-                                    assert_eq!(
-                                        auto_t.0, manual_nt_variant_name,
-                                        "Parse table mismatch for terminal: {nt:?}, terminal: {lt:?}. Auto: {auto_t:?}, Manual: {manual_t:?}",
-                                    );
-                                }
-                                _ => {
-                                    self::panic!(
-                                        "Unexpected symbol type in parse table for non-terminal: {:?}, terminal: {:?}",
-                                        nt,
-                                        lt
-                                    );
-                                }
+                                assert_eq!(
+                                    auto_nt.0, manual_nt_variant_name,
+                                    "Parse table mismatch for non-terminal: {nt:?}, terminal: {lt:?}. Auto: {auto_nt:?}, Manual: {manual_nt:?}",
+                                );
+                            }
+                            (
+                                grammar::Symbol::Terminal(auto_t),
+                                DummySymbolType::DummyTerminal(manual_t),
+                            ) => {
+                                let manual_nt_variant_name = match manual_t {
+                                    DummyTerminalType::InterrogativeMarker => "InterrogativeMarker",
+                                    DummyTerminalType::Modality => "Modality",
+                                    DummyTerminalType::Tense => "Tense",
+                                    DummyTerminalType::Aspect => "Aspect",
+                                    DummyTerminalType::ModalityNegationBegin => {
+                                        "ModalityNegationBegin"
+                                    }
+                                    DummyTerminalType::TenseNegationBegin => "TenseNegationBegin",
+                                    DummyTerminalType::AspectNegationBegin => "AspectNegationBegin",
+                                    DummyTerminalType::Negation => "Negation",
+                                    DummyTerminalType::BinaryPredicate => "BinaryPredicate",
+                                    DummyTerminalType::Argument => "Argument",
+                                    DummyTerminalType::ArgumentPhraseSeparator => {
+                                        "ArgumentPhraseSeparator"
+                                    }
+                                    DummyTerminalType::ArgumentPhraseTransposer => {
+                                        "ArgumentPhraseTransposer"
+                                    }
+                                    DummyTerminalType::BinaryOperator => "BinaryOperator",
+                                    DummyTerminalType::ArgumentRetriever => "ArgumentRetriever",
+                                    DummyTerminalType::Quantifier => "Quantifier",
+                                    DummyTerminalType::Articlizer => "Articlizer",
+                                    DummyTerminalType::MtaEventToArgumentPhraseConverter => {
+                                        "MtaEventToArgumentPhraseConverter"
+                                    }
+                                    DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => {
+                                        "MtaEventToArgumentPhraseConverterEnd"
+                                    }
+                                    DummyTerminalType::PostMtaEventModifier => {
+                                        "PostMtaEventModifier"
+                                    }
+                                    DummyTerminalType::PostBinaryPredicatePhraseModifier => {
+                                        "PostBinaryPredicatePhraseModifier"
+                                    }
+                                    DummyTerminalType::PostArgumentPhraseModifier => {
+                                        "PostArgumentPhraseModifier"
+                                    }
+                                    _ => self::panic!("Unknown terminal type: maybe Eos"),
+                                };
+                                assert_eq!(
+                                    auto_t.0, manual_nt_variant_name,
+                                    "Parse table mismatch for terminal: {nt:?}, terminal: {lt:?}. Auto: {auto_t:?}, Manual: {manual_t:?}",
+                                );
+                            }
+                            _ => {
+                                self::panic!(
+                                    "Unexpected symbol type in parse table for non-terminal: {:?}, terminal: {:?}",
+                                    nt,
+                                    lt
+                                );
                             }
                         }
                     }
-                    _ => {
-                        self::panic!(
-                            "Parse table mismatch for non-terminal: {:?}, terminal: {:?}. Auto: {:?}, Manual: {:?}",
-                            nt,
-                            lt,
-                            auto_result,
-                            manual_result
-                        );
-                    }
                 }
-            }
+                _ => {
+                    self::panic!(
+                        "Parse table mismatch for non-terminal: {:?}, terminal: {:?}. Auto: {:?}, Manual: {:?}",
+                        nt,
+                        lt,
+                        auto_result,
+                        manual_result
+                    );
+                }
+            },
             (None, Err(_)) => {}
             (Some(_auto_result), Err(_)) => {
                 self::panic!(
