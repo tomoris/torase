@@ -243,7 +243,7 @@ fn get_semantic_token_type(token: &TerminalType) -> SemanticTokenType {
         TerminalType::BinaryPredicate(_) => SemanticTokenType::FUNCTION,
         TerminalType::Argument(_) => SemanticTokenType::VARIABLE,
         TerminalType::ArgumentPhraseSeparator(_) => SemanticTokenType::KEYWORD,
-        TerminalType::Eos => SemanticTokenType::KEYWORD,
+        TerminalType::Eos(_) => SemanticTokenType::KEYWORD,
         _ => SemanticTokenType::KEYWORD,
     }
 }
