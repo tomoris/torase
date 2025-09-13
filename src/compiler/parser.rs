@@ -18,12 +18,12 @@ pub fn parse(tokens: Vec<TerminalType>) -> Result<Ast, IncompleteAst> {
     let top = parse_node(&mut stack, &tokens, &mut current_token_index)?;
     if let SymbolType::NonTerminal(NonTerminalType::S(s)) = top {
         let eos = parse_node(&mut stack, &tokens, &mut current_token_index)?;
-        if let SymbolType::Terminal(TerminalType::Eos) = eos {
+        if let SymbolType::Terminal(TerminalType::Eos(inner_eos)) = eos {
             if stack.is_empty() && current_token_index == tokens.len() {
                 Ok(Ast { s })
             } else {
                 Err(IncompleteAst {
-                    error_token: TerminalType::Eos,
+                    error_token: TerminalType::Eos(inner_eos),
                     error_top: ErrorTop::SymbolType(SymbolType::NonTerminal(NonTerminalType::S(s))),
                     error_message: format!(
                         "Expected end of stream, but stack is not empty or current token index is not at the end: stack: {stack:?}, current_token_index: {current_token_index:}",
@@ -32,14 +32,14 @@ pub fn parse(tokens: Vec<TerminalType>) -> Result<Ast, IncompleteAst> {
             }
         } else {
             Err(IncompleteAst {
-                error_token: TerminalType::Eos,
+                error_token: TerminalType::Eos(Eos::new_omitted_token()),
                 error_top: ErrorTop::SymbolType(SymbolType::NonTerminal(NonTerminalType::S(s))),
                 error_message: format!("Expected Eos as the last token, found: {eos:?}"),
             })
         }
     } else {
         Err(IncompleteAst {
-            error_token: TerminalType::Eos,
+            error_token: TerminalType::Eos(Eos::new_omitted_token()),
             error_top: ErrorTop::SymbolType(top.clone()),
             error_message: format!("Expected S as the root non-terminal, found: {top:?}"),
         })
@@ -57,7 +57,9 @@ fn parse_node(
     match top_symbol {
         DummySymbolType::DummyTerminal(terminal) => match terminal {
             DummyTerminalType::Eos => {
-                if discriminant(&TerminalType::Eos) == discriminant(current_token) {
+                if discriminant(&TerminalType::Eos(Eos::new_omitted_token()))
+                    == discriminant(current_token)
+                {
                     *current_token_index += 1;
                     Ok(SymbolType::Terminal(*current_token))
                 } else {

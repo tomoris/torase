@@ -121,7 +121,10 @@ pub fn tokenize(input: &str) -> Vec<TerminalType> {
                     end: token.2,
                 }),
             ),
-            "eos" => result.push(TerminalType::Eos),
+            "eos" => result.push(TerminalType::Eos(Eos {
+                start: token.1,
+                end: token.2,
+            })),
             _ => panic!("Unknown"),
         }
     }
@@ -178,7 +181,7 @@ pub enum TerminalType {
     PostMtaEventModifier(PostMtaEventModifier),
     PostBinaryPredicatePhraseModifier(PostBinaryPredicatePhraseModifier),
     PostArgumentPhraseModifier(PostArgumentPhraseModifier),
-    Eos,
+    Eos(Eos),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -238,7 +241,7 @@ pub fn get_dummy_terminal_type(terminal: &TerminalType) -> DummyTerminalType {
         TerminalType::PostArgumentPhraseModifier(_) => {
             DummyTerminalType::PostArgumentPhraseModifier
         }
-        TerminalType::Eos => DummyTerminalType::Eos,
+        TerminalType::Eos(_) => DummyTerminalType::Eos,
     }
 }
 
@@ -268,7 +271,7 @@ impl TerminalType {
             TerminalType::PostMtaEventModifier(modifier) => modifier.start,
             TerminalType::PostBinaryPredicatePhraseModifier(modifier) => modifier.start,
             TerminalType::PostArgumentPhraseModifier(modifier) => modifier.start,
-            TerminalType::Eos => usize::MAX, // Eos does not have a start position
+            TerminalType::Eos(eos) => eos.start,
         }
     }
     pub fn end(&self) -> usize {
@@ -294,7 +297,7 @@ impl TerminalType {
             TerminalType::PostMtaEventModifier(modifier) => modifier.end,
             TerminalType::PostBinaryPredicatePhraseModifier(modifier) => modifier.end,
             TerminalType::PostArgumentPhraseModifier(modifier) => modifier.end,
-            TerminalType::Eos => usize::MAX, // Eos does not have an end position
+            TerminalType::Eos(eos) => eos.end,
         }
     }
 }
@@ -423,4 +426,19 @@ pub struct PostBinaryPredicatePhraseModifier {
 pub struct PostArgumentPhraseModifier {
     start: usize,
     end: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Eos {
+    start: usize,
+    end: usize,
+}
+
+impl Eos {
+    pub fn new_omitted_token() -> Self {
+        Eos {
+            start: usize::MAX,
+            end: usize::MAX,
+        }
+    }
 }
