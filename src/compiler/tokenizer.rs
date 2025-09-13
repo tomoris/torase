@@ -2,91 +2,90 @@
 #![allow(unused_variables)]
 
 use core::panic;
+use std::mem::discriminant;
 
-pub fn tokenize(input: &str) -> Vec<TerminalType> {
+pub fn tokenize(input: &str) -> Vec<Vec<TerminalType>> {
     let tokens = split_with_utf8_ranges(input);
 
-    let mut result = Vec::new();
+    let mut doc = Vec::new();
     for token in &tokens {
         match token.0 {
-            "?" => result.push(TerminalType::InterrogativeMarker(InterrogativeMarker {
+            "?" => doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker {
                 start: token.1,
                 end: token.2,
             })),
-            "modal" => result.push(TerminalType::Modality(Modality {
+            "modal" => doc.push(TerminalType::Modality(Modality {
                 start: token.1,
                 end: token.2,
             })),
-            "tense" => result.push(TerminalType::Tense(Tense {
+            "tense" => doc.push(TerminalType::Tense(Tense {
                 start: token.1,
                 end: token.2,
             })),
-            "aspect" => result.push(TerminalType::Aspect(Aspect {
+            "aspect" => doc.push(TerminalType::Aspect(Aspect {
                 start: token.1,
                 end: token.2,
             })),
             "modality_negation_begin" => {
-                result.push(TerminalType::ModalityNegationBegin(ModalityNegationBegin {
+                doc.push(TerminalType::ModalityNegationBegin(ModalityNegationBegin {
                     start: token.1,
                     end: token.2,
                 }))
             }
             "tense_negation_begin" => {
-                result.push(TerminalType::TenseNegationBegin(TenseNegationBegin {
+                doc.push(TerminalType::TenseNegationBegin(TenseNegationBegin {
                     start: token.1,
                     end: token.2,
                 }))
             }
             "aspect_negation_begin" => {
-                result.push(TerminalType::AspectNegationBegin(AspectNegationBegin {
+                doc.push(TerminalType::AspectNegationBegin(AspectNegationBegin {
                     start: token.1,
                     end: token.2,
                 }))
             }
-            "negation" => result.push(TerminalType::Negation(Negation {
+            "negation" => doc.push(TerminalType::Negation(Negation {
                 start: token.1,
                 end: token.2,
             })),
-            "binary_predicate" => result.push(TerminalType::BinaryPredicate(BinaryPredicate {
+            "binary_predicate" => doc.push(TerminalType::BinaryPredicate(BinaryPredicate {
                 start: token.1,
                 end: token.2,
             })),
-            "argument" => result.push(TerminalType::Argument(Argument {
+            "argument" => doc.push(TerminalType::Argument(Argument {
                 start: token.1,
                 end: token.2,
             })),
-            "argument_phrase_separator" => result.push(TerminalType::ArgumentPhraseSeparator(
+            "argument_phrase_separator" => doc.push(TerminalType::ArgumentPhraseSeparator(
                 ArgumentPhraseSeparator {
                     start: token.1,
                     end: token.2,
                 },
             )),
-            "argument_phrase_transposer" => result.push(TerminalType::ArgumentPhraseTransposer(
+            "argument_phrase_transposer" => doc.push(TerminalType::ArgumentPhraseTransposer(
                 ArgumentPhraseTransposer {
                     start: token.1,
                     end: token.2,
                 },
             )),
-            "binary_operator" => result.push(TerminalType::BinaryOperator(BinaryOperator {
+            "binary_operator" => doc.push(TerminalType::BinaryOperator(BinaryOperator {
                 start: token.1,
                 end: token.2,
             })),
-            "argument_retriever" => {
-                result.push(TerminalType::ArgumentRetriever(ArgumentRetriever {
-                    start: token.1,
-                    end: token.2,
-                }))
-            }
-            "quantifier" => result.push(TerminalType::Quantifier(Quantifier {
+            "argument_retriever" => doc.push(TerminalType::ArgumentRetriever(ArgumentRetriever {
                 start: token.1,
                 end: token.2,
             })),
-            "articlizer" => result.push(TerminalType::Articlizer(Articlizer {
+            "quantifier" => doc.push(TerminalType::Quantifier(Quantifier {
+                start: token.1,
+                end: token.2,
+            })),
+            "articlizer" => doc.push(TerminalType::Articlizer(Articlizer {
                 start: token.1,
                 end: token.2,
             })),
             "mta_event_to_argument_phrase_converter" => {
-                result.push(TerminalType::MtaEventToArgumentPhraseConverter(
+                doc.push(TerminalType::MtaEventToArgumentPhraseConverter(
                     MtaEventToArgumentPhraseConverter {
                         start: token.1,
                         end: token.2,
@@ -94,7 +93,7 @@ pub fn tokenize(input: &str) -> Vec<TerminalType> {
                 ))
             }
             "mta_event_to_argument_phrase_converter_end" => {
-                result.push(TerminalType::MtaEventToArgumentPhraseConverterEnd(
+                doc.push(TerminalType::MtaEventToArgumentPhraseConverterEnd(
                     MtaEventToArgumentPhraseConverterEnd {
                         start: token.1,
                         end: token.2,
@@ -102,26 +101,26 @@ pub fn tokenize(input: &str) -> Vec<TerminalType> {
                 ))
             }
             "post_mta_event_modifier" => {
-                result.push(TerminalType::PostMtaEventModifier(PostMtaEventModifier {
+                doc.push(TerminalType::PostMtaEventModifier(PostMtaEventModifier {
                     start: token.1,
                     end: token.2,
                 }))
             }
             "post_binary_predicate_phrase_modifier" => {
-                result.push(TerminalType::PostBinaryPredicatePhraseModifier(
+                doc.push(TerminalType::PostBinaryPredicatePhraseModifier(
                     PostBinaryPredicatePhraseModifier {
                         start: token.1,
                         end: token.2,
                     },
                 ))
             }
-            "post_argument_phrase_modifier" => result.push(
-                TerminalType::PostArgumentPhraseModifier(PostArgumentPhraseModifier {
+            "post_argument_phrase_modifier" => doc.push(TerminalType::PostArgumentPhraseModifier(
+                PostArgumentPhraseModifier {
                     start: token.1,
                     end: token.2,
-                }),
-            ),
-            "eos" => result.push(TerminalType::Eos(Eos {
+                },
+            )),
+            "eos" => doc.push(TerminalType::Eos(Eos {
                 start: token.1,
                 end: token.2,
             })),
@@ -129,7 +128,11 @@ pub fn tokenize(input: &str) -> Vec<TerminalType> {
         }
     }
 
-    result
+    doc.split_inclusive(|&x| {
+        discriminant(&TerminalType::Eos(Eos::new_omitted_token())) == discriminant(&x) // eosで文分割
+    })
+    .map(|chunk| chunk.to_vec())
+    .collect()
 }
 
 fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize)> {
@@ -440,5 +443,27 @@ impl Eos {
             start: usize::MAX,
             end: usize::MAX,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_1文のトークン分割が成功する() {
+        let input = "binary_predicate argument argument_phrase_separator argument eos";
+        let sentences = tokenize(input);
+        assert_eq!(sentences.len(), 1);
+        assert_eq!(sentences[0].len(), 5);
+    }
+
+    #[test]
+    fn test_2文のトークン分割が成功する() {
+        let input = "binary_predicate argument argument_phrase_separator argument eos binary_predicate argument argument_phrase_separator argument eos";
+        let sentences = tokenize(input);
+        assert_eq!(sentences.len(), 2);
+        assert_eq!(sentences[0].len(), 5);
+        assert_eq!(sentences[1].len(), 5);
     }
 }
