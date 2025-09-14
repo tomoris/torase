@@ -42,7 +42,7 @@ impl LanguageServer for Backend {
             server_info: None,
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::INCREMENTAL,
+                    TextDocumentSyncKind::FULL,
                 )),
                 completion_provider: Some(CompletionOptions {
                     resolve_provider: Some(false),
@@ -185,25 +185,29 @@ impl LanguageServer for Backend {
         let uri = params.text_document.uri;
         let semantic_tokens = || -> Option<Vec<SemanticToken>> {
             let text = self.document_map.get(&uri)?;
-            let sentences = compiler::tokenizer::tokenize(&text);
+            let tokenize_result = compiler::tokenizer::tokenize(&text);
+            if tokenize_result.is_err() {
+                return None;
+            }
+            let sentences = compiler::tokenizer::add_eos_to_last_sentence(tokenize_result.unwrap());
             let mut semantic_tokens = Vec::new();
+            let mut pre_line = 0;
+            let mut pre_start = 0;
             for sentence in sentences {
                 let mut im_complete_tokens = sentence.clone();
                 im_complete_tokens.sort_by_key(|t| t.start());
-                let mut pre_line = 0;
-                let mut pre_start = 0;
                 let tmp_semantic_tokens = im_complete_tokens
                     .iter()
                     .filter_map(|token| {
-                        let line = 0_u32;
-                        let start = token.start() as u32;
+                        let line = token.start().line() as u32;
+                        let start = token.start().character() as u32;
                         let delta_line = line - pre_line;
                         let delta_start = if delta_line == 0 {
                             start - pre_start
                         } else {
                             start
                         };
-                        let length = (token.end() - token.start()) as u32;
+                        let length = (token.end().diff_length(token.start())) as u32;
                         let semantic_token_type = get_semantic_token_type(token);
                         let ret = Some(SemanticToken {
                             delta_line,
@@ -237,9 +241,77 @@ impl LanguageServer for Backend {
 impl Backend {
     async fn on_change<'a>(&self, params: TextDocumentItem<'a>) {
         dbg!(&params.version);
+        let url = params.uri.clone();
         self.document_map
-            .insert(params.uri, params.text.to_string());
+            .insert(url.clone(), params.text.to_string());
+        self.diagnose(url.clone(), params.version).await;
         _ = self.client.semantic_tokens_refresh().await;
+    }
+    async fn diagnose(&self, url: Url, version: Option<i32>) {
+        let text = self.document_map.get(&url).unwrap();
+
+        // tokenizing
+        let tokenize_result = compiler::tokenizer::tokenize(&text);
+        if let Err(e) = tokenize_result {
+            let diagnostics = vec![Diagnostic {
+                range: Range {
+                    start: Position {
+                        line: e.start().line() as u32,
+                        character: e.start().character() as u32,
+                    },
+                    end: Position {
+                        line: e.end().line() as u32,
+                        character: e.end().character() as u32,
+                    },
+                },
+                severity: Some(DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: None,
+                message: "tokenize failed".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            }];
+            self.client
+                .publish_diagnostics(url, diagnostics, version)
+                .await;
+            return;
+        }
+
+        // parsing
+        let sentences = compiler::tokenizer::add_eos_to_last_sentence(tokenize_result.unwrap());
+        let mut diagnostics = Vec::new();
+        for sentence in sentences {
+            let parse_result = compiler::parser::parse(sentence.clone());
+            if let Err(e) = parse_result {
+                let diagnostics_item = Diagnostic {
+                    range: Range {
+                        start: Position {
+                            line: e.error_token.start().line() as u32,
+                            character: e.error_token.start().character() as u32,
+                        },
+                        end: Position {
+                            line: e.error_token.end().line() as u32,
+                            character: e.error_token.end().character() as u32,
+                        },
+                    },
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: format!("parse error: {}", e.error_message),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                };
+                diagnostics.push(diagnostics_item);
+            }
+        }
+
+        self.client
+            .publish_diagnostics(url, diagnostics, version)
+            .await;
     }
 }
 
