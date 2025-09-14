@@ -286,9 +286,9 @@ pub struct Ast {
 
 #[derive(Debug)]
 pub struct IncompleteAst {
-    error_token: TerminalType,
-    error_top: ErrorTop,
-    error_message: String,
+    pub error_token: TerminalType,
+    pub error_top: ErrorTop,
+    pub error_message: String,
 }
 
 #[derive(Debug)]
@@ -2836,7 +2836,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let input = "binary_predicate argument argument_phrase_separator argument eos";
-        let sentences = tokenize(input);
+        let sentences = tokenize(input).unwrap();
         let _ = parse(sentences[0].clone());
     }
 }
