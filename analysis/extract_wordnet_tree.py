@@ -181,7 +181,7 @@ sort_children(root, by="token")
 
 # show_tree(root, max_level=1)
 # print(show_category_count(root))
-show_tree(get_or_create_node(wn.synset("group.n.01")), max_level=1)
+show_tree(get_or_create_node(wn.synset("instrumentality.n.03")), max_level=1)
 # p, t, k, s, h
 # b, d, g, m, n, r
 # a, i, u, e, o
@@ -196,8 +196,7 @@ show_tree(get_or_create_node(wn.synset("group.n.01")), max_level=1)
 # be entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> living_thing.n.01 -> organism.n.01 -> plant.n.02 (3908)
 # bi entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> living_thing.n.01 -> organism.n.01 -> animal.n.01 (3218)
 # bu entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> living_thing.n.01 ->  * (organism.n.01 -> person.n.01, organism.n.01 -> plant.n.02, organism.n.01 -> animal.n.01 以外) (14074 - 6266 - 3908 - 3218 = 682)
-# da entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> artifact.n.01 -> instrumentality.n.03 -> device.n.01 (2137)
-# de entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> artifact.n.01 -> instrumentality.n.03 -> * (device.n.01 以外) (4096 - 2137 = 1959)
+# da entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> artifact.n.01 -> instrumentality.n.03 (4625) 4096超えたけど1カテゴリとした
 # di entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> artifact.n.01 -> structure.n.01 (1123)
 # du entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> artifact.n.01 -> * (instrumentality.n.03, structure.n.01 以外) (9142 - 4625 - 1123 = 3394)
 # na entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> * (living_thing.n.01, artifact.n.01 以外) (24147 - 14074 - 9142 = 931)
