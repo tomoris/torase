@@ -372,21 +372,21 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
     let mut result = Vec::new();
     let mut in_word = false;
     let mut start_idx = 0;
-    let mut start_line = 0;
+    let mut start_row = 0;
     let mut start_col = 0;
 
-    let mut line = 0;
+    let mut row = 0;
     let mut col = 0;
 
     for (i, c) in input.char_indices() {
         if c.is_whitespace() {
             if in_word {
-                result.push((&input[start_idx..i], start_line, start_col, line, col));
+                result.push((&input[start_idx..i], start_row, start_col, row, col));
                 in_word = false;
             }
 
             if c == '\n' {
-                line += 1;
+                row += 1;
                 col = 0;
             } else {
                 col += 1;
@@ -394,7 +394,7 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
         } else {
             if !in_word {
                 start_idx = i;
-                start_line = line;
+                start_row = row;
                 start_col = col;
                 in_word = true;
             }
@@ -403,7 +403,7 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
     }
 
     if in_word {
-        result.push((&input[start_idx..], start_line, start_col, line, col));
+        result.push((&input[start_idx..], start_row, start_col, row, col));
     }
 
     result
