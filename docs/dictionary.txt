@@ -2,44 +2,82 @@ https://frequencylist.com/
 
 まずは名詞のみ
 一時的に機能語を_とする
+https://ja.wikibooks.org/wiki/%E3%83%AD%E3%82%B8%E3%83%90%E3%83%B3/%E7%B5%B1%E8%AA%9E%E8%AB%96/selbri#NU%EF%BC%9A_%E5%91%BD%E9%A1%8C%E3%81%AE%E4%B8%AD%E8%BA%AB%E3%82%92%E6%8A%BD%E8%B1%A1%E5%8C%96%E3%81%99%E3%82%8B
+
+1. x1(b)の説明をするもの。名詞
+2. x1(概念)の説明するもの。名詞
+3. x1(b)がx2(b,d,n)を対象に取り働かきかける。動詞
+  - x2(b,d,n) pa
+  - x2(b) pe
+  - x2(d) pi
+  - x2(n) po
+  - x2(b,d or d,n or n,b) pu
+4. x1(b)がx2(概念)に関わる動作をする。動詞
+  - x2(概念) ka
 
 bahomo _ gumare
 guy
 
-rutime
+1. gumare
+x1: ??格、人(動物, ba)
+male
+
+4. katime
+x1はx2の時間を計測する。
 time
 
-dusinaga
+??
 thing
 
 bahomo _ gumare
 man
 
-gehahi
-way
+2. gumesoda
+x1という方法だ。
+way(method)
 
-rudahi
+2. rudahi
+x1は日付の内、年や月ではなく日を示すものだ。
 day
 
-複数形 bahumo
+複数形 bahomo
 people
 
-親(動詞で対応) _ gumare
+3. petirada
+x1はx2の子である
+child
+
+3. 逆 petirada
+parent
+
+逆 petirada _ gumare
 dad
 
-動詞で対応
+3. pefarinada
+x1はx2と友達である。
 friend
 
-動詞で対応
-kid
+2. ruhage
+x1は年齢的な成熟度を表すものだ。
+age
 
-bahomo _ 男 _ 年齢小さい
+2.  resamara
+x1は小さい
+small
+
+ruhage _ resamara
+x1は若い。
+young
+
+bahomo _ gumare _ ruhage _ resamara
 boy
 
-runita
+2. runita
+x1は夜だ。
 night
 
-ruhera
+2. ruhera
+x1は日付の内、年を示すものだ。
 year
 
 bimare
@@ -48,103 +86,142 @@ bimare
 gumare
 心理的な男
 
-親(動詞で対応) _ 女
+逆 petirada _ guhemare
 mom
 
-burihe
-lite
+4. kaharibe
+x1はx2という概念で生きている
+alive
 
-gukinada
-kind
+4. kakateforize
+x1はx2をあるラベル集合に分類する
+categorize
 
-bahomo _ 年齢とても小さい
+逆 kakateforize
+kind(class, subset)
+
+bahomo _ ruhage _ resamara _ 程度を強める
 baby
 
-bahomo _ guhemare _ 年齢小さい
+bahomo _ 程度を強める guhemare
 girl
 
 bahomo _ guhemare
 woman
 
-bihemare
-生物学的なメス
-
-guhemare
-心理的な女
-
 後回し
 lot
 
-nehome
+2. rahome
+x1: 主格、g
+x1は概念的な家/故郷だ。
 home
 
-guhera
-hell
-
-ruminute
-minute
-
-nepalase
-place
-
-rimonehi
-money
-
-bahomo
-person
-
-dihome
+1. dihome
 house
 
-disakola
+後回し
+hell
+
+2. ruminute
+x1: ??格、概念
+x1は日付の内、分を示すものだ。
+minute
+
+2. neparase
+x1: ??格、場所
+x1という場所である。
+place
+
+2. rumonehi
+x1: ??格、概念
+x1はお金(硬貨や紙幣といった具体物ではない)だ。
+money
+
+1. bahomo
+person
+
+1. disakola
 school
 
-dakara
+1. dakara
 car
 
-guhideha
-idea
+2. guminada
+x1というアイデア/概念/思考だ。
+idea(mind)
 
-ruheka
+2. ruheka
+x1: ??格、概念
+x1は日付の内、週を示すものだ。
 week
 
-gadoba
-job
+4. kahoraka
+x1: 主格、人(動物, b)
+x2: 対格、概念
+x1はx2という仕事をする。
+job(work)
 
-gahuna
-fun
+2. kahapahi
+x1: 主格、人(動物, b)
+x2: 対格、概念
+x1はx2について楽しむ/喜ぶ/幸せに感じるだ。
+fun(enjoy,happy)
 
-raparobarema
+2. raparobarema
+x1: 対格、概念
+x1という問題だ。
 problem
 
-muhorada
+後回し
 world
 
-guparati
-party
+4. kahorada
+x1: 主格、人(動物, b)
+x2: 対格、概念
+x1はx2という会合を開催する。
+hold
 
-diroma
+逆 kahorada
+x1: 主格、人(動物, b)
+x2: 対格、概念
+x1はx2という会合を開催する。
+patry
+
+1. diroma
 room
 
-muhamiri
+3. pehamiri
+x1: 主格、、人(動物, b)
+x2: 対格？、人(動物, b)
+x1はx2の家族である
 family
 
-gesinaga
+後回し
 stuff
 
-逆 親(動詞で対応) _ gumare
+petirada _ gumare
 son
 
-riname
+2. riname
+x1: ??格、概念
+x1という名前だ。
 name
 
-動詞で対応
+3. petirada
+x1: 主格、、人(動物, b)
+x2: 対格？、人(動物, b)
+x1はx2の子である。
 child
 
 dukorase
+後回し
 course
 
-gagame
+4. kagame
+x1: 主格、人(動物, b)
+x2: 対格、概念
+x1はx2というゲームをする。
 game
 
 badokatora
@@ -165,41 +242,150 @@ honey
 resekasa
 sex
 
-neheda
+1. nuheda
 head
 
-dumobi
+1. dumobi
 movie
 
-ruhora
+2. ruhora
 hour
 
 親(動詞で対応) _ guhemare
 mother
 
-rihorada
+2. rihorada
 word
 
 親(動詞で対応) _ gumare
 father
 
-rosatori
+2. rosatori
+x1: 主格、人(動物, b)
+x1というストーリー。
 story
 
-riparata
+2. riparata
 part
 
 bahomo _ guhemare
 lady
 
-runumabera
+2. runumabera
 number
 
-rumoraninaga
+2. rumoraninaga
 morning
 
-rutomoroha
+2. rutomoroha
 tomorrow
 
-dahone
+1. dahone
 phone
+
+1. nuhehi
+eye
+
+配偶者の述語 _ guhemare
+wife
+
+1. duboka
+book
+
+2. nodinera
+dinner
+
+1. nuhanada
+hand
+
+1. daterebisina
+television
+
+1. netohana
+town
+
+2. rudate
+date
+
+1. dihohise
+office
+
+1. nohoda
+food
+
+2. ronehasa
+news
+
+2. gabusunesa
+business
+
+2. rukopare
+couple
+
+1. didora
+door
+
+2. rumonasa
+month
+
+兄弟姉妹の述語 _ gumare
+
+gahoraka
+work
+
+スキップ
+other
+
+1. dabara
+ball
+
+スキップ
+line
+
+1. nuherata
+heart
+
+スキップ
+class
+
+1. dupikature
+picture
+
+3. guside
+x1はx2の側面である
+side
+
+3. parobe
+x1はx2を愛す
+love
+
+2. guminada
+x1というアイデア/概念/思考だ。
+mind
+
+1. nuhara
+x1は髪だ
+hair
+
+3. pemarige
+x1はx2と結婚する
+wedding(marriage)
+
+2. guresona
+reason
+
+3. paroka
+x1はx2を見る
+look
+
+1. dibeda
+x1はベッドだ
+bed
+
+1. dapapera
+x1は紙だ
+paper
+
+1. nuhase
+x1は顔だ
+face
