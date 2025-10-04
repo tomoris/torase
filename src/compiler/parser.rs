@@ -55,30 +55,31 @@ fn parse_node(
     let top_symbol = stack.pop().unwrap();
 
     match top_symbol {
-        DummySymbolType::DummyTerminal(terminal) => match terminal {
+        DummySymbolType::DummyTerminal(ref terminal) => match terminal {
             DummyTerminalType::Eos => {
                 if discriminant(&TerminalType::Eos(Eos::new_omitted_token()))
                     == discriminant(current_token)
                 {
                     *current_token_index += 1;
-                    Ok(SymbolType::Terminal(*current_token))
+                    Ok(SymbolType::Terminal(current_token.clone()))
                 } else {
                     Err(IncompleteAst {
-                        error_token: *current_token,
+                        error_token: current_token.clone(),
                         error_top: ErrorTop::DummySymbolType(top_symbol),
                         error_message: "Expected end of stream".to_string(),
                     })
                 }
             }
             _ => {
-                if discriminant(&terminal) == discriminant(&get_dummy_terminal_type(current_token))
+                if discriminant(terminal)
+                    == discriminant(&get_dummy_terminal_type(current_token.clone()))
                 {
                     *current_token_index += 1;
-                    Ok(SymbolType::Terminal(*current_token))
+                    Ok(SymbolType::Terminal(current_token.clone()))
                 } else {
                     Err(IncompleteAst {
-                        error_token: *current_token,
-                        error_top: ErrorTop::DummySymbolType(top_symbol),
+                        error_token: current_token.clone(),
+                        error_top: ErrorTop::DummySymbolType(top_symbol.clone()),
                         error_message: format!(
                             "Expected token: {terminal:?}, found: {current_token:?}"
                         ),
@@ -87,8 +88,8 @@ fn parse_node(
             }
         },
         DummySymbolType::DummyNonTerminal(dummy_non_terminal) => {
-            let dummy_rhs = parse_table(dummy_non_terminal.clone(), get_dummy_terminal_type(current_token)).map_err(|_| IncompleteAst {
-                error_token: *current_token,
+            let dummy_rhs = parse_table(dummy_non_terminal.clone(), get_dummy_terminal_type(current_token.clone())).map_err(|_| IncompleteAst {
+                error_token: current_token.clone(),
                 error_top: ErrorTop::DummySymbolType(DummySymbolType::DummyNonTerminal(dummy_non_terminal.clone())),
                 error_message: format!(
                     "No production rule for non-terminal: {dummy_non_terminal:?} with token: {current_token:?}"
@@ -107,7 +108,7 @@ fn parse_node(
                             }
                             Err(e) => {
                                 return Err(IncompleteAst {
-                                    error_token: *current_token,
+                                    error_token: current_token.clone(),
                                     error_top: ErrorTop::DummySymbolType(
                                         DummySymbolType::DummyNonTerminal(dummy_non_terminal),
                                     ),
