@@ -27,19 +27,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
     let mut doc = Vec::new();
 
     for token in &tokens {
-        if token.0 == "ku" {
-            doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+        if InterrogativeMarker::is_match(token.0) {
+            doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if Modality::is_match(token.0) {
             doc.push(TerminalType::Modality(Modality::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -76,174 +67,56 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if token.0 == "si" {
+        } else if ArgumentPhraseSeparator::is_match(token.0) {
             doc.push(TerminalType::ArgumentPhraseSeparator(
-                ArgumentPhraseSeparator {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                },
+                ArgumentPhraseSeparator::new(token.0, token.1, token.2, token.3, token.4),
             ));
-        } else if token.0 == "re" {
+        } else if ArgumentPhraseTransposer::is_match(token.0) {
             doc.push(TerminalType::ArgumentPhraseTransposer(
-                ArgumentPhraseTransposer {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                },
+                ArgumentPhraseTransposer::new(token.0, token.1, token.2, token.3, token.4),
             ));
-        } else if token.0 == "binary_operator" {
-            doc.push(TerminalType::BinaryOperator(BinaryOperator {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
-        } else if token.0 == "ro" {
-            doc.push(TerminalType::ArgumentRetriever(ArgumentRetriever {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
-        } else if token.0 == "quantifier" {
-            doc.push(TerminalType::Quantifier(Quantifier {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
-        } else if token.0 == "articlizer" {
-            doc.push(TerminalType::Articlizer(Articlizer {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
-        } else if token.0 == "se" {
+        } else if BinaryOperator::is_match(token.0) {
+            doc.push(TerminalType::BinaryOperator(BinaryOperator::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if ArgumentRetriever::is_match(token.0) {
+            doc.push(TerminalType::ArgumentRetriever(ArgumentRetriever::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if Quantifier::is_match(token.0) {
+            doc.push(TerminalType::Quantifier(Quantifier::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if Articlizer::is_match(token.0) {
+            doc.push(TerminalType::Articlizer(Articlizer::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if MtaEventToArgumentPhraseConverter::is_match(token.0) {
             doc.push(TerminalType::MtaEventToArgumentPhraseConverter(
-                MtaEventToArgumentPhraseConverter {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                },
+                MtaEventToArgumentPhraseConverter::new(token.0, token.1, token.2, token.3, token.4),
             ));
-        } else if token.0 == "so" {
+        } else if MtaEventToArgumentPhraseConverterEnd::is_match(token.0) {
             doc.push(TerminalType::MtaEventToArgumentPhraseConverterEnd(
-                MtaEventToArgumentPhraseConverterEnd {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                },
+                MtaEventToArgumentPhraseConverterEnd::new(
+                    token.0, token.1, token.2, token.3, token.4,
+                ),
             ));
-        } else if token.0 == "da" {
-            doc.push(TerminalType::PostMtaEventModifier(PostMtaEventModifier {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
-        } else if token.0 == "di" {
+        } else if PostMtaEventModifier::is_match(token.0) {
+            doc.push(TerminalType::PostMtaEventModifier(
+                PostMtaEventModifier::new(token.0, token.1, token.2, token.3, token.4),
+            ));
+        } else if PostBinaryPredicatePhraseModifier::is_match(token.0) {
             doc.push(TerminalType::PostBinaryPredicatePhraseModifier(
-                PostBinaryPredicatePhraseModifier {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                },
+                PostBinaryPredicatePhraseModifier::new(token.0, token.1, token.2, token.3, token.4),
             ));
-        } else if token.0 == "du" {
+        } else if PostArgumentPhraseModifier::is_match(token.0) {
             doc.push(TerminalType::PostArgumentPhraseModifier(
-                PostArgumentPhraseModifier {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                },
+                PostArgumentPhraseModifier::new(token.0, token.1, token.2, token.3, token.4),
             ));
-        } else if token.0 == "eos" {
-            doc.push(TerminalType::Eos(Eos {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+        } else if Eos::is_match(token.0) {
+            doc.push(TerminalType::Eos(Eos::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else {
             return Err(IncompleteToken {
                 string: token.0.to_string(),
@@ -683,6 +556,35 @@ pub struct Eos {
     range: Range,
 }
 
+impl InterrogativeMarker {
+    fn is_match(string: &str) -> bool {
+        string == "ku"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid interrogative marker surface: {}", string);
+        }
+        InterrogativeMarker {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
 impl Modality {
     fn is_match(string: &str) -> bool {
         let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|h[eo]|pa)$").unwrap();
@@ -1000,6 +902,334 @@ impl Argument {
     }
 }
 
+impl ArgumentPhraseSeparator {
+    fn is_match(string: &str) -> bool {
+        string == "si"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid argument phrase separator surface: {}", string);
+        }
+        ArgumentPhraseSeparator {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl ArgumentPhraseTransposer {
+    fn is_match(string: &str) -> bool {
+        string == "re"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid argument phrase transposer surface: {}", string);
+        }
+        ArgumentPhraseTransposer {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl BinaryOperator {
+    fn is_match(string: &str) -> bool {
+        string == "binary_operator"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid binary operator surface: {}", string);
+        }
+        BinaryOperator {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl ArgumentRetriever {
+    fn is_match(string: &str) -> bool {
+        string == "ro"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid argument retriever surface: {}", string);
+        }
+        ArgumentRetriever {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl Quantifier {
+    fn is_match(string: &str) -> bool {
+        string == "quantifier"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid quantifier surface: {}", string);
+        }
+        Quantifier {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl Articlizer {
+    fn is_match(string: &str) -> bool {
+        string == "articlizer"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid articlizer surface: {}", string);
+        }
+        Articlizer {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl MtaEventToArgumentPhraseConverter {
+    fn is_match(string: &str) -> bool {
+        string == "se"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!(
+                "Invalid mta event to argument phrase converter surface: {}",
+                string
+            );
+        }
+        MtaEventToArgumentPhraseConverter {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl MtaEventToArgumentPhraseConverterEnd {
+    fn is_match(string: &str) -> bool {
+        string == "so"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!(
+                "Invalid mta event to argument phrase converter end surface: {}",
+                string
+            );
+        }
+        MtaEventToArgumentPhraseConverterEnd {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl PostMtaEventModifier {
+    fn is_match(string: &str) -> bool {
+        string == "da"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid post mta event modifier surface: {}", string);
+        }
+        PostMtaEventModifier {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl PostBinaryPredicatePhraseModifier {
+    fn is_match(string: &str) -> bool {
+        string == "di"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!(
+                "Invalid post binary predicate phrase modifier surface: {}",
+                string
+            );
+        }
+        PostBinaryPredicatePhraseModifier {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
+impl PostArgumentPhraseModifier {
+    fn is_match(string: &str) -> bool {
+        string == "du"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid post argument phrase modifier surface: {}", string);
+        }
+        PostArgumentPhraseModifier {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+}
+
 impl Eos {
     pub fn new_omitted_token() -> Self {
         Eos {
@@ -1011,6 +1241,32 @@ impl Eos {
                 end: Position {
                     line: usize::MAX,
                     character: usize::MAX,
+                },
+            },
+        }
+    }
+    fn is_match(string: &str) -> bool {
+        string == "eos"
+    }
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid eos surface: {}", string);
+        }
+        Eos {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
                 },
             },
         }
@@ -1085,18 +1341,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][2],
-            TerminalType::ArgumentPhraseSeparator(ArgumentPhraseSeparator {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 10
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 12
-                    },
-                }
-            })
+            TerminalType::ArgumentPhraseSeparator(ArgumentPhraseSeparator::new("si", 0, 10, 0, 12))
         );
         assert_eq!(
             sentences[0][3],
@@ -1104,18 +1349,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][4],
-            TerminalType::Eos(Eos {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 16
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 19
-                    },
-                }
-            })
+            TerminalType::Eos(Eos::new("eos", 0, 16, 0, 19))
         );
     }
 
