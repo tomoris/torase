@@ -43,16 +43,16 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Aspect(Aspect::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if ModalityNegationBegin::is_match(token.0) {
-            doc.push(TerminalType::ModalityNegationBegin(
-                ModalityNegationBegin::new(token.0, token.1, token.2, token.3, token.4),
-            ));
-        } else if TenseNegationBegin::is_match(token.0) {
-            doc.push(TerminalType::TenseNegationBegin(TenseNegationBegin::new(
+        } else if ModalityNegation::is_match(token.0) {
+            doc.push(TerminalType::ModalityNegation(ModalityNegation::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if AspectNegationBegin::is_match(token.0) {
-            doc.push(TerminalType::AspectNegationBegin(AspectNegationBegin::new(
+        } else if TenseNegation::is_match(token.0) {
+            doc.push(TerminalType::TenseNegation(TenseNegation::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if AspectNegation::is_match(token.0) {
+            doc.push(TerminalType::AspectNegation(AspectNegation::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if Negation::is_match(token.0) {
@@ -219,9 +219,9 @@ pub enum TerminalType {
     Modality(Modality),
     Tense(Tense),
     Aspect(Aspect),
-    ModalityNegationBegin(ModalityNegationBegin),
-    TenseNegationBegin(TenseNegationBegin),
-    AspectNegationBegin(AspectNegationBegin),
+    ModalityNegation(ModalityNegation),
+    TenseNegation(TenseNegation),
+    AspectNegation(AspectNegation),
     Negation(Negation),
     BinaryPredicate(BinaryPredicate),
     Argument(Argument),
@@ -245,9 +245,9 @@ pub enum DummyTerminalType {
     Modality,
     Tense,
     Aspect,
-    ModalityNegationBegin,
-    TenseNegationBegin,
-    AspectNegationBegin,
+    ModalityNegation,
+    TenseNegation,
+    AspectNegation,
     Negation,
     BinaryPredicate,
     Argument,
@@ -271,9 +271,9 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::Modality(_) => DummyTerminalType::Modality,
         TerminalType::Tense(_) => DummyTerminalType::Tense,
         TerminalType::Aspect(_) => DummyTerminalType::Aspect,
-        TerminalType::ModalityNegationBegin(_) => DummyTerminalType::ModalityNegationBegin,
-        TerminalType::TenseNegationBegin(_) => DummyTerminalType::TenseNegationBegin,
-        TerminalType::AspectNegationBegin(_) => DummyTerminalType::AspectNegationBegin,
+        TerminalType::ModalityNegation(_) => DummyTerminalType::ModalityNegation,
+        TerminalType::TenseNegation(_) => DummyTerminalType::TenseNegation,
+        TerminalType::AspectNegation(_) => DummyTerminalType::AspectNegation,
         TerminalType::Negation(_) => DummyTerminalType::Negation,
         TerminalType::BinaryPredicate(_) => DummyTerminalType::BinaryPredicate,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
@@ -307,9 +307,9 @@ impl TerminalType {
             TerminalType::Modality(modality) => modality.range.start.clone(),
             TerminalType::Tense(tense) => tense.range.start.clone(),
             TerminalType::Aspect(aspect) => aspect.range.start.clone(),
-            TerminalType::ModalityNegationBegin(negation) => negation.range.start.clone(),
-            TerminalType::TenseNegationBegin(negation) => negation.range.start.clone(),
-            TerminalType::AspectNegationBegin(negation) => negation.range.start.clone(),
+            TerminalType::ModalityNegation(negation) => negation.range.start.clone(),
+            TerminalType::TenseNegation(negation) => negation.range.start.clone(),
+            TerminalType::AspectNegation(negation) => negation.range.start.clone(),
             TerminalType::Negation(negation) => negation.range.start.clone(),
             TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
@@ -339,9 +339,9 @@ impl TerminalType {
             TerminalType::Modality(modality) => modality.range.end.clone(),
             TerminalType::Tense(tense) => tense.range.end.clone(),
             TerminalType::Aspect(aspect) => aspect.range.end.clone(),
-            TerminalType::ModalityNegationBegin(negation) => negation.range.end.clone(),
-            TerminalType::TenseNegationBegin(negation) => negation.range.end.clone(),
-            TerminalType::AspectNegationBegin(negation) => negation.range.end.clone(),
+            TerminalType::ModalityNegation(negation) => negation.range.end.clone(),
+            TerminalType::TenseNegation(negation) => negation.range.end.clone(),
+            TerminalType::AspectNegation(negation) => negation.range.end.clone(),
             TerminalType::Negation(negation) => negation.range.end.clone(),
             TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
@@ -423,7 +423,7 @@ enum AspectKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ModalityNegationBegin {
+pub struct ModalityNegation {
     range: Range,
     kind: ModalityNegationKind,
 }
@@ -435,7 +435,7 @@ enum ModalityNegationKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TenseNegationBegin {
+pub struct TenseNegation {
     range: Range,
     kind: TenseNegationKind,
 }
@@ -447,7 +447,7 @@ enum TenseNegationKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AspectNegationBegin {
+pub struct AspectNegation {
     range: Range,
     kind: AspectNegationKind,
 }
@@ -700,7 +700,7 @@ impl Aspect {
     }
 }
 
-impl ModalityNegationBegin {
+impl ModalityNegation {
     fn is_match(string: &str) -> bool {
         let re_modality_negation = Regex::new(r"^(?:ha)(?:n[eo])$").unwrap();
         re_modality_negation.is_match(string)
@@ -717,7 +717,7 @@ impl ModalityNegationBegin {
             "hano" => ModalityNegationKind::Hano,
             _ => panic!("Invalid modality negation surface: {}", string),
         };
-        ModalityNegationBegin {
+        ModalityNegation {
             range: Range {
                 start: Position {
                     line: start_line,
@@ -733,7 +733,7 @@ impl ModalityNegationBegin {
     }
 }
 
-impl TenseNegationBegin {
+impl TenseNegation {
     fn is_match(string: &str) -> bool {
         let re_tense_negation = Regex::new(r"^(?:hi)(?:n[eo])$").unwrap();
         re_tense_negation.is_match(string)
@@ -750,7 +750,7 @@ impl TenseNegationBegin {
             "hino" => TenseNegationKind::Hino,
             _ => panic!("Invalid tense negation surface: {}", string),
         };
-        TenseNegationBegin {
+        TenseNegation {
             range: Range {
                 start: Position {
                     line: start_line,
@@ -766,7 +766,7 @@ impl TenseNegationBegin {
     }
 }
 
-impl AspectNegationBegin {
+impl AspectNegation {
     fn is_match(string: &str) -> bool {
         let re_aspect_negation = Regex::new(r"^(?:hu)(?:n[eo])$").unwrap();
         re_aspect_negation.is_match(string)
@@ -783,7 +783,7 @@ impl AspectNegationBegin {
             "huno" => AspectNegationKind::Huno,
             _ => panic!("Invalid tense negation surface: {}", string),
         };
-        AspectNegationBegin {
+        AspectNegation {
             range: Range {
                 start: Position {
                     line: start_line,
