@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use core::panic;
 use std::mem::discriminant;
+
+use regex::Regex;
 
 #[derive(Debug)]
 pub struct IncompleteToken {
@@ -22,9 +25,21 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
     let tokens = split_with_utf8_ranges(input);
 
     let mut doc = Vec::new();
+
+    let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[aiu]|h[eo]|pa)$")
+        .map_err(|e| panic!("Failed to create regex: {}", e))?;
+    let re_tense = Regex::new(r"^(?:hi)(?:t[aiu])$").unwrap();
+    let re_aspect = Regex::new(r"^(?:hu)|(?:d[aeou])|(?:did[aiu])$").unwrap();
+    let re_modality_negation = Regex::new(r"^(?:ha)(?:n[eo])$").unwrap();
+    let re_tense_negation = Regex::new(r"^(?:hi)(?:n[eo])$").unwrap();
+    let re_aspect_negation = Regex::new(r"^(?:hu)(?:n[eo])$").unwrap();
+    let re_negation = Regex::new(r"^(?:n[eo])$").unwrap();
+    let re_binary_predicate =
+        Regex::new(r"^(?:[bdgmnr][aeiuo]|[pk]a)(?:[ptkshbdgmnr][aeiuo])+$").unwrap();
+    let re_argument = Regex::new(r"^(?:m[aiue])|(?:b[aue])|(?:g[iue])$").unwrap();
     for token in &tokens {
-        match token.0 {
-            "?" => doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker {
+        if token.0 == "ku" {
+            doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -35,8 +50,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "modal" => doc.push(TerminalType::Modality(Modality {
+            }));
+        } else if re_modality.is_match(token.0) {
+            doc.push(TerminalType::Modality(Modality {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -47,8 +63,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "tense" => doc.push(TerminalType::Tense(Tense {
+            }));
+        } else if re_tense.is_match(token.0) {
+            doc.push(TerminalType::Tense(Tense {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -59,8 +76,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "aspect" => doc.push(TerminalType::Aspect(Aspect {
+            }));
+        } else if re_aspect.is_match(token.0) {
+            doc.push(TerminalType::Aspect(Aspect {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -71,50 +89,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "modality_negation_begin" => {
-                doc.push(TerminalType::ModalityNegationBegin(ModalityNegationBegin {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                }))
-            }
-            "tense_negation_begin" => {
-                doc.push(TerminalType::TenseNegationBegin(TenseNegationBegin {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                }))
-            }
-            "aspect_negation_begin" => {
-                doc.push(TerminalType::AspectNegationBegin(AspectNegationBegin {
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
-                    },
-                }))
-            }
-            "negation" => doc.push(TerminalType::Negation(Negation {
+            }));
+        } else if re_modality_negation.is_match(token.0) {
+            doc.push(TerminalType::ModalityNegationBegin(ModalityNegationBegin {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -125,8 +102,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "binary_predicate" => doc.push(TerminalType::BinaryPredicate(BinaryPredicate {
+            }));
+        } else if re_tense_negation.is_match(token.0) {
+            doc.push(TerminalType::TenseNegationBegin(TenseNegationBegin {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -137,8 +115,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "argument" => doc.push(TerminalType::Argument(Argument {
+            }));
+        } else if re_aspect_negation.is_match(token.0) {
+            doc.push(TerminalType::AspectNegationBegin(AspectNegationBegin {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -149,8 +128,48 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "argument_phrase_separator" => doc.push(TerminalType::ArgumentPhraseSeparator(
+            }));
+        } else if re_negation.is_match(token.0) {
+            doc.push(TerminalType::Negation(Negation {
+                range: Range {
+                    start: Position {
+                        line: token.1,
+                        character: token.2,
+                    },
+                    end: Position {
+                        line: token.3,
+                        character: token.4,
+                    },
+                },
+            }));
+        } else if re_binary_predicate.is_match(token.0) {
+            doc.push(TerminalType::BinaryPredicate(BinaryPredicate {
+                range: Range {
+                    start: Position {
+                        line: token.1,
+                        character: token.2,
+                    },
+                    end: Position {
+                        line: token.3,
+                        character: token.4,
+                    },
+                },
+            }));
+        } else if re_argument.is_match(token.0) {
+            doc.push(TerminalType::Argument(Argument {
+                range: Range {
+                    start: Position {
+                        line: token.1,
+                        character: token.2,
+                    },
+                    end: Position {
+                        line: token.3,
+                        character: token.4,
+                    },
+                },
+            }));
+        } else if token.0 == "si" {
+            doc.push(TerminalType::ArgumentPhraseSeparator(
                 ArgumentPhraseSeparator {
                     range: Range {
                         start: Position {
@@ -163,8 +182,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         },
                     },
                 },
-            )),
-            "argument_phrase_transposer" => doc.push(TerminalType::ArgumentPhraseTransposer(
+            ));
+        } else if token.0 == "re" {
+            doc.push(TerminalType::ArgumentPhraseTransposer(
                 ArgumentPhraseTransposer {
                     range: Range {
                         start: Position {
@@ -177,8 +197,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         },
                     },
                 },
-            )),
-            "binary_operator" => doc.push(TerminalType::BinaryOperator(BinaryOperator {
+            ));
+        } else if token.0 == "binary_operator" {
+            doc.push(TerminalType::BinaryOperator(BinaryOperator {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -189,8 +210,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "argument_retriever" => doc.push(TerminalType::ArgumentRetriever(ArgumentRetriever {
+            }));
+        } else if token.0 == "ro" {
+            doc.push(TerminalType::ArgumentRetriever(ArgumentRetriever {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -201,8 +223,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "quantifier" => doc.push(TerminalType::Quantifier(Quantifier {
+            }));
+        } else if token.0 == "quantifier" {
+            doc.push(TerminalType::Quantifier(Quantifier {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -213,8 +236,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "articlizer" => doc.push(TerminalType::Articlizer(Articlizer {
+            }));
+        } else if token.0 == "articlizer" {
+            doc.push(TerminalType::Articlizer(Articlizer {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -225,41 +249,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            "mta_event_to_argument_phrase_converter" => {
-                doc.push(TerminalType::MtaEventToArgumentPhraseConverter(
-                    MtaEventToArgumentPhraseConverter {
-                        range: Range {
-                            start: Position {
-                                line: token.1,
-                                character: token.2,
-                            },
-                            end: Position {
-                                line: token.3,
-                                character: token.4,
-                            },
-                        },
-                    },
-                ))
-            }
-            "mta_event_to_argument_phrase_converter_end" => {
-                doc.push(TerminalType::MtaEventToArgumentPhraseConverterEnd(
-                    MtaEventToArgumentPhraseConverterEnd {
-                        range: Range {
-                            start: Position {
-                                line: token.1,
-                                character: token.2,
-                            },
-                            end: Position {
-                                line: token.3,
-                                character: token.4,
-                            },
-                        },
-                    },
-                ))
-            }
-            "post_mta_event_modifier" => {
-                doc.push(TerminalType::PostMtaEventModifier(PostMtaEventModifier {
+            }));
+        } else if token.0 == "se" {
+            doc.push(TerminalType::MtaEventToArgumentPhraseConverter(
+                MtaEventToArgumentPhraseConverter {
                     range: Range {
                         start: Position {
                             line: token.1,
@@ -270,25 +263,53 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                             character: token.4,
                         },
                     },
-                }))
-            }
-            "post_binary_predicate_phrase_modifier" => {
-                doc.push(TerminalType::PostBinaryPredicatePhraseModifier(
-                    PostBinaryPredicatePhraseModifier {
-                        range: Range {
-                            start: Position {
-                                line: token.1,
-                                character: token.2,
-                            },
-                            end: Position {
-                                line: token.3,
-                                character: token.4,
-                            },
+                },
+            ));
+        } else if token.0 == "so" {
+            doc.push(TerminalType::MtaEventToArgumentPhraseConverterEnd(
+                MtaEventToArgumentPhraseConverterEnd {
+                    range: Range {
+                        start: Position {
+                            line: token.1,
+                            character: token.2,
+                        },
+                        end: Position {
+                            line: token.3,
+                            character: token.4,
                         },
                     },
-                ))
-            }
-            "post_argument_phrase_modifier" => doc.push(TerminalType::PostArgumentPhraseModifier(
+                },
+            ));
+        } else if token.0 == "da" {
+            doc.push(TerminalType::PostMtaEventModifier(PostMtaEventModifier {
+                range: Range {
+                    start: Position {
+                        line: token.1,
+                        character: token.2,
+                    },
+                    end: Position {
+                        line: token.3,
+                        character: token.4,
+                    },
+                },
+            }));
+        } else if token.0 == "di" {
+            doc.push(TerminalType::PostBinaryPredicatePhraseModifier(
+                PostBinaryPredicatePhraseModifier {
+                    range: Range {
+                        start: Position {
+                            line: token.1,
+                            character: token.2,
+                        },
+                        end: Position {
+                            line: token.3,
+                            character: token.4,
+                        },
+                    },
+                },
+            ));
+        } else if token.0 == "du" {
+            doc.push(TerminalType::PostArgumentPhraseModifier(
                 PostArgumentPhraseModifier {
                     range: Range {
                         start: Position {
@@ -301,8 +322,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         },
                     },
                 },
-            )),
-            "eos" => doc.push(TerminalType::Eos(Eos {
+            ));
+        } else if token.0 == "eos" {
+            doc.push(TerminalType::Eos(Eos {
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -313,22 +335,21 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
-            })),
-            _ => {
-                return Err(IncompleteToken {
-                    string: token.0.to_string(),
-                    range: Range {
-                        start: Position {
-                            line: token.1,
-                            character: token.2,
-                        },
-                        end: Position {
-                            line: token.3,
-                            character: token.4,
-                        },
+            }));
+        } else {
+            return Err(IncompleteToken {
+                string: token.0.to_string(),
+                range: Range {
+                    start: Position {
+                        line: token.1,
+                        character: token.2,
                     },
-                });
-            }
+                    end: Position {
+                        line: token.3,
+                        character: token.4,
+                    },
+                },
+            });
         }
     }
 
@@ -411,7 +432,7 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
 
 // terminal types
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TerminalType {
     InterrogativeMarker(InterrogativeMarker),
     Modality(Modality),
@@ -557,112 +578,112 @@ impl TerminalType {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InterrogativeMarker {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Modality {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Tense {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Aspect {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ModalityNegationBegin {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TenseNegationBegin {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AspectNegationBegin {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Negation {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BinaryPredicate {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Argument {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ArgumentPhraseSeparator {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ArgumentPhraseTransposer {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BinaryOperator {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ArgumentRetriever {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Quantifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Articlizer {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MtaEventToArgumentPhraseConverter {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MtaEventToArgumentPhraseConverterEnd {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PostMtaEventModifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PostBinaryPredicatePhraseModifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PostArgumentPhraseModifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Eos {
     range: Range,
 }
@@ -684,7 +705,7 @@ impl Eos {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Range {
     start: Position,
     end: Position,
@@ -737,29 +758,209 @@ mod tests {
 
     #[test]
     fn test_1文のトークン分割が成功する() {
-        let input = "binary_predicate argument argument_phrase_separator argument eos";
+        let input = "parobe ma si ba eos";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 1);
         assert_eq!(sentences[0].len(), 5);
+        assert_eq!(
+            sentences[0][0],
+            TerminalType::BinaryPredicate(BinaryPredicate {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 0
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 6
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][1],
+            TerminalType::Argument(Argument {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 7
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 9
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][2],
+            TerminalType::ArgumentPhraseSeparator(ArgumentPhraseSeparator {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 10
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 12
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][3],
+            TerminalType::Argument(Argument {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 13
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 15
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][4],
+            TerminalType::Eos(Eos {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 16
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 19
+                    },
+                }
+            })
+        );
     }
 
     #[test]
     fn test_eosなし1文のトークン分割が成功する() {
-        let input = "binary_predicate argument argument_phrase_separator argument";
+        let input = "hahe hita hudidi parobe me si gi";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 1);
-        assert_eq!(sentences[0].len(), 5);
+        assert_eq!(sentences[0].len(), 8);
+        assert_eq!(
+            sentences[0][0],
+            TerminalType::Modality(Modality {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 0
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 4
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][1],
+            TerminalType::Tense(Tense {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 5
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 9
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][2],
+            TerminalType::Aspect(Aspect {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 10
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 16
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][3],
+            TerminalType::BinaryPredicate(BinaryPredicate {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 17
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 23
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][4],
+            TerminalType::Argument(Argument {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 24
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 26
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][5],
+            TerminalType::ArgumentPhraseSeparator(ArgumentPhraseSeparator {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 27
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 29
+                    },
+                }
+            })
+        );
+        assert_eq!(
+            sentences[0][6],
+            TerminalType::Argument(Argument {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 30
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 32
+                    },
+                }
+            })
+        );
     }
 
     #[test]
     fn test_2文のトークン分割が成功する() {
-        let input = "binary_predicate argument argument_phrase_separator argument eos binary_predicate argument argument_phrase_separator argument eos";
+        let input = "parobe me si ba eos ro parobe bu si gu";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 2);
         assert_eq!(sentences[0].len(), 5);
-        assert_eq!(sentences[1].len(), 5);
+        assert_eq!(sentences[1].len(), 6);
     }
 }
