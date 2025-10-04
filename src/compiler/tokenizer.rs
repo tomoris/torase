@@ -64,57 +64,21 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if re_modality_negation.is_match(token.0) {
-            doc.push(TerminalType::ModalityNegationBegin(ModalityNegationBegin {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::ModalityNegationBegin(
+                ModalityNegationBegin::new(token.0, token.1, token.2, token.3, token.4),
+            ));
         } else if re_tense_negation.is_match(token.0) {
-            doc.push(TerminalType::TenseNegationBegin(TenseNegationBegin {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::TenseNegationBegin(TenseNegationBegin::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if re_aspect_negation.is_match(token.0) {
-            doc.push(TerminalType::AspectNegationBegin(AspectNegationBegin {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::AspectNegationBegin(AspectNegationBegin::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if re_negation.is_match(token.0) {
-            doc.push(TerminalType::Negation(Negation {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::Negation(Negation::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if re_binary_predicate.is_match(token.0) {
             doc.push(TerminalType::BinaryPredicate(BinaryPredicate::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -599,21 +563,49 @@ enum AspectKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModalityNegationBegin {
     range: Range,
+    kind: ModalityNegationKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ModalityNegationKind {
+    Hane, // 否定
+    Hano, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TenseNegationBegin {
     range: Range,
+    kind: TenseNegationKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TenseNegationKind {
+    Hine, // 否定
+    Hino, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AspectNegationBegin {
     range: Range,
+    kind: AspectNegationKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum AspectNegationKind {
+    Hune, // 否定
+    Huno, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Negation {
     range: Range,
+    kind: NegationKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum NegationKind {
+    Ne, // 否定
+    No, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -790,6 +782,122 @@ impl Aspect {
             _ => panic!("Invalid aspect surface: {}", string),
         };
         Aspect {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+}
+
+impl ModalityNegationBegin {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "hane" => ModalityNegationKind::Hane,
+            "hano" => ModalityNegationKind::Hano,
+            _ => panic!("Invalid modality negation surface: {}", string),
+        };
+        ModalityNegationBegin {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+}
+
+impl TenseNegationBegin {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "hine" => TenseNegationKind::Hine,
+            "hino" => TenseNegationKind::Hino,
+            _ => panic!("Invalid tense negation surface: {}", string),
+        };
+        TenseNegationBegin {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+}
+
+impl AspectNegationBegin {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "hune" => AspectNegationKind::Hune,
+            "huno" => AspectNegationKind::Huno,
+            _ => panic!("Invalid tense negation surface: {}", string),
+        };
+        AspectNegationBegin {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+}
+
+impl Negation {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "ne" => NegationKind::Ne,
+            "no" => NegationKind::No,
+            _ => panic!("Invalid tense negation surface: {}", string),
+        };
+        Negation {
             range: Range {
                 start: Position {
                     line: start_line,
