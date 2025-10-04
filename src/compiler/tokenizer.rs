@@ -14,10 +14,10 @@ pub struct IncompleteToken {
 
 impl IncompleteToken {
     pub fn start(&self) -> Position {
-        self.range.start
+        self.range.start.clone()
     }
     pub fn end(&self) -> Position {
-        self.range.end
+        self.range.end.clone()
     }
 }
 
@@ -26,7 +26,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
 
     let mut doc = Vec::new();
 
-    let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[aiu]|h[eo]|pa)$")
+    let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|h[eo]|pa)$")
         .map_err(|e| panic!("Failed to create regex: {}", e))?;
     let re_tense = Regex::new(r"^(?:hi)(?:t[aiu])$").unwrap();
     let re_aspect = Regex::new(r"^(?:hu)|(?:d[aeou])|(?:did[aiu])$").unwrap();
@@ -52,44 +52,17 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                 },
             }));
         } else if re_modality.is_match(token.0) {
-            doc.push(TerminalType::Modality(Modality {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::Modality(Modality::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if re_tense.is_match(token.0) {
-            doc.push(TerminalType::Tense(Tense {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::Tense(Tense::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if re_aspect.is_match(token.0) {
-            doc.push(TerminalType::Aspect(Aspect {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::Aspect(Aspect::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if re_modality_negation.is_match(token.0) {
             doc.push(TerminalType::ModalityNegationBegin(ModalityNegationBegin {
                 range: Range {
@@ -143,31 +116,13 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                 },
             }));
         } else if re_binary_predicate.is_match(token.0) {
-            doc.push(TerminalType::BinaryPredicate(BinaryPredicate {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::BinaryPredicate(BinaryPredicate::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if re_argument.is_match(token.0) {
-            doc.push(TerminalType::Argument(Argument {
-                range: Range {
-                    start: Position {
-                        line: token.1,
-                        character: token.2,
-                    },
-                    end: Position {
-                        line: token.3,
-                        character: token.4,
-                    },
-                },
-            }));
+            doc.push(TerminalType::Argument(Argument::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if token.0 == "si" {
             doc.push(TerminalType::ArgumentPhraseSeparator(
                 ArgumentPhraseSeparator {
@@ -354,7 +309,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
     }
 
     let sentences = doc
-        .split_inclusive(|&x| {
+        .split_inclusive(|x| {
             discriminant(&TerminalType::Eos(Eos::new_omitted_token())) == discriminant(&x) // eosで文分割
         })
         .map(|chunk| chunk.to_vec())
@@ -379,7 +334,7 @@ pub fn add_eos_to_last_sentence(sentences: Vec<Vec<TerminalType>>) -> Vec<Vec<Te
                         character: 0,
                     }
                 };
-                let end = start;
+                let end = start.clone();
                 last_sentence.push(TerminalType::Eos(Eos {
                     range: Range { start, end },
                 }));
@@ -432,7 +387,7 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
 
 // terminal types
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TerminalType {
     InterrogativeMarker(InterrogativeMarker),
     Modality(Modality),
@@ -458,7 +413,7 @@ pub enum TerminalType {
     Eos(Eos),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum DummyTerminalType {
     InterrogativeMarker,
     Modality,
@@ -484,7 +439,7 @@ pub enum DummyTerminalType {
     Eos,
 }
 
-pub fn get_dummy_terminal_type(terminal: &TerminalType) -> DummyTerminalType {
+pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
     match terminal {
         TerminalType::InterrogativeMarker(_) => DummyTerminalType::InterrogativeMarker,
         TerminalType::Modality(_) => DummyTerminalType::Modality,
@@ -522,170 +477,393 @@ pub fn get_dummy_terminal_type(terminal: &TerminalType) -> DummyTerminalType {
 impl TerminalType {
     pub fn start(&self) -> Position {
         match self {
-            TerminalType::InterrogativeMarker(marker) => marker.range.start,
-            TerminalType::Modality(modality) => modality.range.start,
-            TerminalType::Tense(tense) => tense.range.start,
-            TerminalType::Aspect(aspect) => aspect.range.start,
-            TerminalType::ModalityNegationBegin(negation) => negation.range.start,
-            TerminalType::TenseNegationBegin(negation) => negation.range.start,
-            TerminalType::AspectNegationBegin(negation) => negation.range.start,
-            TerminalType::Negation(negation) => negation.range.start,
-            TerminalType::BinaryPredicate(predicate) => predicate.range.start,
-            TerminalType::Argument(argument) => argument.range.start,
-            TerminalType::ArgumentPhraseSeparator(separator) => separator.range.start,
-            TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.start,
-            TerminalType::BinaryOperator(operator) => operator.range.start,
-            TerminalType::ArgumentRetriever(retriever) => retriever.range.start,
-            TerminalType::Quantifier(quantifier) => quantifier.range.start,
-            TerminalType::Articlizer(articlizer) => articlizer.range.start,
-            TerminalType::MtaEventToArgumentPhraseConverter(converter) => converter.range.start,
-            TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
-                converter_end.range.start
+            TerminalType::InterrogativeMarker(marker) => marker.range.start.clone(),
+            TerminalType::Modality(modality) => modality.range.start.clone(),
+            TerminalType::Tense(tense) => tense.range.start.clone(),
+            TerminalType::Aspect(aspect) => aspect.range.start.clone(),
+            TerminalType::ModalityNegationBegin(negation) => negation.range.start.clone(),
+            TerminalType::TenseNegationBegin(negation) => negation.range.start.clone(),
+            TerminalType::AspectNegationBegin(negation) => negation.range.start.clone(),
+            TerminalType::Negation(negation) => negation.range.start.clone(),
+            TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
+            TerminalType::Argument(argument) => argument.range.start.clone(),
+            TerminalType::ArgumentPhraseSeparator(separator) => separator.range.start.clone(),
+            TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.start.clone(),
+            TerminalType::BinaryOperator(operator) => operator.range.start.clone(),
+            TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
+            TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
+            TerminalType::Articlizer(articlizer) => articlizer.range.start.clone(),
+            TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
+                converter.range.start.clone()
             }
-            TerminalType::PostMtaEventModifier(modifier) => modifier.range.start,
-            TerminalType::PostBinaryPredicatePhraseModifier(modifier) => modifier.range.start,
-            TerminalType::PostArgumentPhraseModifier(modifier) => modifier.range.start,
-            TerminalType::Eos(eos) => eos.range.start,
+            TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
+                converter_end.range.start.clone()
+            }
+            TerminalType::PostMtaEventModifier(modifier) => modifier.range.start.clone(),
+            TerminalType::PostBinaryPredicatePhraseModifier(modifier) => {
+                modifier.range.start.clone()
+            }
+            TerminalType::PostArgumentPhraseModifier(modifier) => modifier.range.start.clone(),
+            TerminalType::Eos(eos) => eos.range.start.clone(),
         }
     }
     pub fn end(&self) -> Position {
         match self {
-            TerminalType::InterrogativeMarker(marker) => marker.range.end,
-            TerminalType::Modality(modality) => modality.range.end,
-            TerminalType::Tense(tense) => tense.range.end,
-            TerminalType::Aspect(aspect) => aspect.range.end,
-            TerminalType::ModalityNegationBegin(negation) => negation.range.end,
-            TerminalType::TenseNegationBegin(negation) => negation.range.end,
-            TerminalType::AspectNegationBegin(negation) => negation.range.end,
-            TerminalType::Negation(negation) => negation.range.end,
-            TerminalType::BinaryPredicate(predicate) => predicate.range.end,
-            TerminalType::Argument(argument) => argument.range.end,
-            TerminalType::ArgumentPhraseSeparator(separator) => separator.range.end,
-            TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.end,
-            TerminalType::BinaryOperator(operator) => operator.range.end,
-            TerminalType::ArgumentRetriever(retriever) => retriever.range.end,
-            TerminalType::Quantifier(quantifier) => quantifier.range.end,
-            TerminalType::Articlizer(articlizer) => articlizer.range.end,
-            TerminalType::MtaEventToArgumentPhraseConverter(converter) => converter.range.end,
-            TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
-                converter_end.range.end
+            TerminalType::InterrogativeMarker(marker) => marker.range.end.clone(),
+            TerminalType::Modality(modality) => modality.range.end.clone(),
+            TerminalType::Tense(tense) => tense.range.end.clone(),
+            TerminalType::Aspect(aspect) => aspect.range.end.clone(),
+            TerminalType::ModalityNegationBegin(negation) => negation.range.end.clone(),
+            TerminalType::TenseNegationBegin(negation) => negation.range.end.clone(),
+            TerminalType::AspectNegationBegin(negation) => negation.range.end.clone(),
+            TerminalType::Negation(negation) => negation.range.end.clone(),
+            TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
+            TerminalType::Argument(argument) => argument.range.end.clone(),
+            TerminalType::ArgumentPhraseSeparator(separator) => separator.range.end.clone(),
+            TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.end.clone(),
+            TerminalType::BinaryOperator(operator) => operator.range.end.clone(),
+            TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
+            TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
+            TerminalType::Articlizer(articlizer) => articlizer.range.end.clone(),
+            TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
+                converter.range.end.clone()
             }
-            TerminalType::PostMtaEventModifier(modifier) => modifier.range.end,
-            TerminalType::PostBinaryPredicatePhraseModifier(modifier) => modifier.range.end,
-            TerminalType::PostArgumentPhraseModifier(modifier) => modifier.range.end,
-            TerminalType::Eos(eos) => eos.range.end,
+            TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
+                converter_end.range.end.clone()
+            }
+            TerminalType::PostMtaEventModifier(modifier) => modifier.range.end.clone(),
+            TerminalType::PostBinaryPredicatePhraseModifier(modifier) => modifier.range.end.clone(),
+            TerminalType::PostArgumentPhraseModifier(modifier) => modifier.range.end.clone(),
+            TerminalType::Eos(eos) => eos.range.end.clone(),
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InterrogativeMarker {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Modality {
     range: Range,
+    kind: ModalityKind,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ModalityKind {
+    Haka, // 命令、しなさい
+    Haki, // 勧誘、しませんか
+    Haku, // 許可、してよい
+    Hame, // 事実性高い
+    Hamo, // 事実性普通
+    Hasa, // 義務、すべき
+    Hasi, // 許可、してよい
+    Hake, // 能力、できる
+    Hako, // 可能、ありうる
+    Hahe, // 願望、したい
+    Hata, // 意志、しよう
+    Hapa, // 必然
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Tense {
     range: Range,
+    kind: TenseKind,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TenseKind {
+    Hita, // 未来
+    Hiti, // 現在
+    Hitu, // 過去
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Aspect {
     range: Range,
+    kind: AspectKind,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum AspectKind {
+    Huda,   // 未然
+    Hude,   // 開始
+    Hudida, // 進行
+    Hudidi, // 習慣
+    Hudidu, // 反復
+    Hudo,   // 終了
+    Hudu,   // 事後
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModalityNegationBegin {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TenseNegationBegin {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AspectNegationBegin {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Negation {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BinaryPredicate {
     range: Range,
+    string: String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Argument {
     range: Range,
+    kind: ArgumentKind,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ArgumentKind {
+    Ma, // 私たち(あなたを含む)
+    Mi, // 私
+    Mu, // 私たち(あなたを含まない)
+    Me, // これ
+    Ba, // あなた
+    Bu, // あなたたち
+    Be, // それ
+    Gi, // 彼、彼女
+    Gu, // 彼ら
+    Ge, // あれ
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArgumentPhraseSeparator {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArgumentPhraseTransposer {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BinaryOperator {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArgumentRetriever {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quantifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Articlizer {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MtaEventToArgumentPhraseConverter {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MtaEventToArgumentPhraseConverterEnd {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PostMtaEventModifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PostBinaryPredicatePhraseModifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PostArgumentPhraseModifier {
     range: Range,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Eos {
     range: Range,
+}
+
+impl Modality {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "haka" => ModalityKind::Haka,
+            "haki" => ModalityKind::Haki,
+            "haku" => ModalityKind::Haku,
+            "hame" => ModalityKind::Hame,
+            "hamo" => ModalityKind::Hamo,
+            "hasa" => ModalityKind::Hasa,
+            "hasi" => ModalityKind::Hasi,
+            "hake" => ModalityKind::Hake,
+            "hako" => ModalityKind::Hako,
+            "hahe" => ModalityKind::Hahe,
+            "hata" => ModalityKind::Hata,
+            "hapa" => ModalityKind::Hapa,
+            _ => panic!("Invalid modality surface: {}", string),
+        };
+        Modality {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+}
+
+impl Tense {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "hita" => TenseKind::Hita,
+            "hiti" => TenseKind::Hiti,
+            "hitu" => TenseKind::Hitu,
+            _ => panic!("Invalid tense surface: {}", string),
+        };
+        Tense {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+}
+
+impl Aspect {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "huda" => AspectKind::Huda,
+            "hude" => AspectKind::Hude,
+            "hudida" => AspectKind::Hudida,
+            "hudidi" => AspectKind::Hudidi,
+            "hudidu" => AspectKind::Hudidu,
+            "hudo" => AspectKind::Hudo,
+            "hudu" => AspectKind::Hudu,
+            _ => panic!("Invalid aspect surface: {}", string),
+        };
+        Aspect {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+}
+
+impl BinaryPredicate {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        BinaryPredicate {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            string: string.to_string(),
+        }
+    }
+}
+
+impl Argument {
+    pub fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "ma" => ArgumentKind::Ma,
+            "mi" => ArgumentKind::Mi,
+            "mu" => ArgumentKind::Mu,
+            "me" => ArgumentKind::Me,
+            "ba" => ArgumentKind::Ba,
+            "bu" => ArgumentKind::Bu,
+            "be" => ArgumentKind::Be,
+            "gi" => ArgumentKind::Gi,
+            "gu" => ArgumentKind::Gu,
+            "ge" => ArgumentKind::Ge,
+            _ => panic!("Invalid argument surface: {}", string),
+        };
+        Argument {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
 }
 
 impl Eos {
@@ -705,7 +883,7 @@ impl Eos {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Range {
     start: Position,
     end: Position,
@@ -713,7 +891,7 @@ pub struct Range {
 
 // 並び順は、フィールドの順番に従う。
 // つまり、lineが同じならcharacterの順番に従う。
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Position {
     line: usize,
     character: usize,
@@ -765,33 +943,11 @@ mod tests {
         assert_eq!(sentences[0].len(), 5);
         assert_eq!(
             sentences[0][0],
-            TerminalType::BinaryPredicate(BinaryPredicate {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 0
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 6
-                    },
-                }
-            })
+            TerminalType::BinaryPredicate(BinaryPredicate::new("parobe", 0, 0, 0, 6))
         );
         assert_eq!(
             sentences[0][1],
-            TerminalType::Argument(Argument {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 7
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 9
-                    },
-                }
-            })
+            TerminalType::Argument(Argument::new("ma", 0, 7, 0, 9))
         );
         assert_eq!(
             sentences[0][2],
@@ -810,18 +966,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][3],
-            TerminalType::Argument(Argument {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 13
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 15
-                    },
-                }
-            })
+            TerminalType::Argument(Argument::new("ba", 0, 13, 0, 15))
         );
         assert_eq!(
             sentences[0][4],
@@ -849,78 +994,23 @@ mod tests {
         assert_eq!(sentences[0].len(), 8);
         assert_eq!(
             sentences[0][0],
-            TerminalType::Modality(Modality {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 0
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 4
-                    },
-                }
-            })
+            TerminalType::Modality(Modality::new("hahe", 0, 0, 0, 4))
         );
         assert_eq!(
             sentences[0][1],
-            TerminalType::Tense(Tense {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 5
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 9
-                    },
-                }
-            })
+            TerminalType::Tense(Tense::new("hita", 0, 5, 0, 9))
         );
         assert_eq!(
             sentences[0][2],
-            TerminalType::Aspect(Aspect {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 10
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 16
-                    },
-                }
-            })
+            TerminalType::Aspect(Aspect::new("hudidi", 0, 10, 0, 16))
         );
         assert_eq!(
             sentences[0][3],
-            TerminalType::BinaryPredicate(BinaryPredicate {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 17
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 23
-                    },
-                }
-            })
+            TerminalType::BinaryPredicate(BinaryPredicate::new("parobe", 0, 17, 0, 23))
         );
         assert_eq!(
             sentences[0][4],
-            TerminalType::Argument(Argument {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 24
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 26
-                    },
-                }
-            })
+            TerminalType::Argument(Argument::new("me", 0, 24, 0, 26))
         );
         assert_eq!(
             sentences[0][5],
@@ -939,18 +1029,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][6],
-            TerminalType::Argument(Argument {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 30
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 32
-                    },
-                }
-            })
+            TerminalType::Argument(Argument::new("gi", 0, 30, 0, 32))
         );
     }
 
