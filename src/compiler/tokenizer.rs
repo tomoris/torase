@@ -560,7 +560,7 @@ impl InterrogativeMarker {
     fn is_match(string: &str) -> bool {
         string == "ku"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -590,7 +590,7 @@ impl Modality {
         let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|h[eo]|pa)$").unwrap();
         re_modality.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -633,7 +633,7 @@ impl Tense {
         let re_tense = Regex::new(r"^(?:hi)(?:t[aiu])$").unwrap();
         re_tense.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -667,7 +667,7 @@ impl Aspect {
         let re_aspect = Regex::new(r"^(?:hu)|(?:d[aeou])|(?:did[aiu])$").unwrap();
         re_aspect.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -705,7 +705,7 @@ impl ModalityNegationBegin {
         let re_modality_negation = Regex::new(r"^(?:ha)(?:n[eo])$").unwrap();
         re_modality_negation.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -738,7 +738,7 @@ impl TenseNegationBegin {
         let re_tense_negation = Regex::new(r"^(?:hi)(?:n[eo])$").unwrap();
         re_tense_negation.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -771,7 +771,7 @@ impl AspectNegationBegin {
         let re_aspect_negation = Regex::new(r"^(?:hu)(?:n[eo])$").unwrap();
         re_aspect_negation.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -804,7 +804,7 @@ impl Negation {
         let re_negation = Regex::new(r"^(?:n[eo])$").unwrap();
         re_negation.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -838,7 +838,7 @@ impl BinaryPredicate {
             Regex::new(r"^(?:[bdgmnr][aeiuo]|[pk]a)(?:[ptkshbdgmnr][aeiuo])+$").unwrap();
         re_binary_predicate.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -866,7 +866,7 @@ impl Argument {
         let re_argument = Regex::new(r"^(?:m[aiue])|(?:b[aue])|(?:g[iue])$").unwrap();
         re_argument.is_match(string)
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -906,7 +906,7 @@ impl ArgumentPhraseSeparator {
     fn is_match(string: &str) -> bool {
         string == "si"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -935,7 +935,7 @@ impl ArgumentPhraseTransposer {
     fn is_match(string: &str) -> bool {
         string == "re"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -964,7 +964,7 @@ impl BinaryOperator {
     fn is_match(string: &str) -> bool {
         string == "binary_operator"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -993,7 +993,7 @@ impl ArgumentRetriever {
     fn is_match(string: &str) -> bool {
         string == "ro"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1022,7 +1022,7 @@ impl Quantifier {
     fn is_match(string: &str) -> bool {
         string == "quantifier"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1051,7 +1051,7 @@ impl Articlizer {
     fn is_match(string: &str) -> bool {
         string == "articlizer"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1080,7 +1080,7 @@ impl MtaEventToArgumentPhraseConverter {
     fn is_match(string: &str) -> bool {
         string == "se"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1112,7 +1112,7 @@ impl MtaEventToArgumentPhraseConverterEnd {
     fn is_match(string: &str) -> bool {
         string == "so"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1144,7 +1144,7 @@ impl PostMtaEventModifier {
     fn is_match(string: &str) -> bool {
         string == "da"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1173,7 +1173,7 @@ impl PostBinaryPredicatePhraseModifier {
     fn is_match(string: &str) -> bool {
         string == "di"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1205,7 +1205,7 @@ impl PostArgumentPhraseModifier {
     fn is_match(string: &str) -> bool {
         string == "du"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
@@ -1248,7 +1248,7 @@ impl Eos {
     fn is_match(string: &str) -> bool {
         string == "eos"
     }
-    pub fn new(
+    fn new(
         string: &str,
         start_line: usize,
         start_character: usize,
