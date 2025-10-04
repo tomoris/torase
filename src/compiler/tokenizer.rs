@@ -26,17 +26,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
 
     let mut doc = Vec::new();
 
-    let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|h[eo]|pa)$")
-        .map_err(|e| panic!("Failed to create regex: {}", e))?;
-    let re_tense = Regex::new(r"^(?:hi)(?:t[aiu])$").unwrap();
-    let re_aspect = Regex::new(r"^(?:hu)|(?:d[aeou])|(?:did[aiu])$").unwrap();
-    let re_modality_negation = Regex::new(r"^(?:ha)(?:n[eo])$").unwrap();
-    let re_tense_negation = Regex::new(r"^(?:hi)(?:n[eo])$").unwrap();
-    let re_aspect_negation = Regex::new(r"^(?:hu)(?:n[eo])$").unwrap();
-    let re_negation = Regex::new(r"^(?:n[eo])$").unwrap();
-    let re_binary_predicate =
-        Regex::new(r"^(?:[bdgmnr][aeiuo]|[pk]a)(?:[ptkshbdgmnr][aeiuo])+$").unwrap();
-    let re_argument = Regex::new(r"^(?:m[aiue])|(?:b[aue])|(?:g[iue])$").unwrap();
     for token in &tokens {
         if token.0 == "ku" {
             doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker {
@@ -51,39 +40,39 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                     },
                 },
             }));
-        } else if re_modality.is_match(token.0) {
+        } else if Modality::is_match(token.0) {
             doc.push(TerminalType::Modality(Modality::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if re_tense.is_match(token.0) {
+        } else if Tense::is_match(token.0) {
             doc.push(TerminalType::Tense(Tense::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if re_aspect.is_match(token.0) {
+        } else if Aspect::is_match(token.0) {
             doc.push(TerminalType::Aspect(Aspect::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if re_modality_negation.is_match(token.0) {
+        } else if ModalityNegationBegin::is_match(token.0) {
             doc.push(TerminalType::ModalityNegationBegin(
                 ModalityNegationBegin::new(token.0, token.1, token.2, token.3, token.4),
             ));
-        } else if re_tense_negation.is_match(token.0) {
+        } else if TenseNegationBegin::is_match(token.0) {
             doc.push(TerminalType::TenseNegationBegin(TenseNegationBegin::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if re_aspect_negation.is_match(token.0) {
+        } else if AspectNegationBegin::is_match(token.0) {
             doc.push(TerminalType::AspectNegationBegin(AspectNegationBegin::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if re_negation.is_match(token.0) {
+        } else if Negation::is_match(token.0) {
             doc.push(TerminalType::Negation(Negation::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if re_binary_predicate.is_match(token.0) {
+        } else if BinaryPredicate::is_match(token.0) {
             doc.push(TerminalType::BinaryPredicate(BinaryPredicate::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if re_argument.is_match(token.0) {
+        } else if Argument::is_match(token.0) {
             doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
@@ -695,6 +684,10 @@ pub struct Eos {
 }
 
 impl Modality {
+    fn is_match(string: &str) -> bool {
+        let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|h[eo]|pa)$").unwrap();
+        re_modality.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -734,6 +727,10 @@ impl Modality {
 }
 
 impl Tense {
+    fn is_match(string: &str) -> bool {
+        let re_tense = Regex::new(r"^(?:hi)(?:t[aiu])$").unwrap();
+        re_tense.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -764,6 +761,10 @@ impl Tense {
 }
 
 impl Aspect {
+    fn is_match(string: &str) -> bool {
+        let re_aspect = Regex::new(r"^(?:hu)|(?:d[aeou])|(?:did[aiu])$").unwrap();
+        re_aspect.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -798,6 +799,10 @@ impl Aspect {
 }
 
 impl ModalityNegationBegin {
+    fn is_match(string: &str) -> bool {
+        let re_modality_negation = Regex::new(r"^(?:ha)(?:n[eo])$").unwrap();
+        re_modality_negation.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -827,6 +832,10 @@ impl ModalityNegationBegin {
 }
 
 impl TenseNegationBegin {
+    fn is_match(string: &str) -> bool {
+        let re_tense_negation = Regex::new(r"^(?:hi)(?:n[eo])$").unwrap();
+        re_tense_negation.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -856,6 +865,10 @@ impl TenseNegationBegin {
 }
 
 impl AspectNegationBegin {
+    fn is_match(string: &str) -> bool {
+        let re_aspect_negation = Regex::new(r"^(?:hu)(?:n[eo])$").unwrap();
+        re_aspect_negation.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -885,6 +898,10 @@ impl AspectNegationBegin {
 }
 
 impl Negation {
+    fn is_match(string: &str) -> bool {
+        let re_negation = Regex::new(r"^(?:n[eo])$").unwrap();
+        re_negation.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -914,6 +931,11 @@ impl Negation {
 }
 
 impl BinaryPredicate {
+    fn is_match(string: &str) -> bool {
+        let re_binary_predicate =
+            Regex::new(r"^(?:[bdgmnr][aeiuo]|[pk]a)(?:[ptkshbdgmnr][aeiuo])+$").unwrap();
+        re_binary_predicate.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
@@ -938,6 +960,10 @@ impl BinaryPredicate {
 }
 
 impl Argument {
+    fn is_match(string: &str) -> bool {
+        let re_argument = Regex::new(r"^(?:m[aiue])|(?:b[aue])|(?:g[iue])$").unwrap();
+        re_argument.is_match(string)
+    }
     pub fn new(
         string: &str,
         start_line: usize,
