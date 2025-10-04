@@ -551,17 +551,17 @@ impl NonTerminal for S {
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            DummyTerminalType::ModalityNegationBegin => {
+            DummyTerminalType::ModalityNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            DummyTerminalType::TenseNegationBegin => {
+            DummyTerminalType::TenseNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            DummyTerminalType::AspectNegationBegin => {
+            DummyTerminalType::AspectNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
@@ -633,17 +633,17 @@ impl NonTerminal for DeclarativeSentence {
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            DummyTerminalType::ModalityNegationBegin => {
+            DummyTerminalType::ModalityNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            DummyTerminalType::TenseNegationBegin => {
+            DummyTerminalType::TenseNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            DummyTerminalType::AspectNegationBegin => {
+            DummyTerminalType::AspectNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
@@ -743,15 +743,15 @@ impl NonTerminal for PostModifiedMtaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
@@ -841,13 +841,13 @@ impl NonTerminal for ModalityExpression {
             }
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ModalityNegationBegin => {
+            DummyTerminalType::ModalityNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ModalityWithAgent,
                 )]))
             }
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
@@ -883,7 +883,7 @@ impl NonTerminal for ModalityWithAgent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityAgent),
             ])),
-            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityAgent),
             ])),
@@ -922,9 +922,8 @@ impl NonTerminal for ModifiedModality {
                     DummyTerminalType::Modality,
                 )]))
             }
-            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityNegationBegin),
-                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityNegation),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
             ])),
             _ => Err(()),
@@ -938,9 +937,8 @@ impl NonTerminal for ModifiedModality {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [SymbolType::Terminal(TerminalType::Modality(child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::ModalityNegationBegin(child1)),
-                    SymbolType::Terminal(TerminalType::Negation(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child3)),
+                    SymbolType::Terminal(TerminalType::ModalityNegation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -961,8 +959,8 @@ impl NonTerminal for ModalityAgent {
         match current_token {
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
@@ -1005,12 +1003,12 @@ impl NonTerminal for TenseExpression {
                 )]))
             }
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegationBegin => {
+            DummyTerminalType::TenseNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ModifiedTense,
                 )]))
             }
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
@@ -1045,9 +1043,8 @@ impl NonTerminal for ModifiedTense {
                     DummyTerminalType::Tense,
                 )]))
             }
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::TenseNegationBegin),
-                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::TenseNegation),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedTense),
             ])),
             _ => Err(()),
@@ -1061,9 +1058,8 @@ impl NonTerminal for ModifiedTense {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [SymbolType::Terminal(TerminalType::Tense(child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::TenseNegationBegin(child1)),
-                    SymbolType::Terminal(TerminalType::Negation(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child3)),
+                    SymbolType::Terminal(TerminalType::TenseNegation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1087,7 +1083,7 @@ impl NonTerminal for AspectExpression {
                     DummyNonTerminalType::ModifiedAspect,
                 )]))
             }
-            DummyTerminalType::AspectNegationBegin => {
+            DummyTerminalType::AspectNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ModifiedAspect,
                 )]))
@@ -1126,9 +1122,8 @@ impl NonTerminal for ModifiedAspect {
                     DummyTerminalType::Aspect,
                 )]))
             }
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::AspectNegationBegin),
-                DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::AspectNegation),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedAspect),
             ])),
             _ => Err(()),
@@ -1142,9 +1137,8 @@ impl NonTerminal for ModifiedAspect {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [SymbolType::Terminal(TerminalType::Aspect(child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::AspectNegationBegin(child1)),
-                    SymbolType::Terminal(TerminalType::Negation(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child3)),
+                    SymbolType::Terminal(TerminalType::AspectNegation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1175,15 +1169,15 @@ impl NonTerminal for MtaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            DummyTerminalType::ModalityNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
@@ -1241,11 +1235,11 @@ impl NonTerminal for TaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
@@ -1299,7 +1293,7 @@ impl NonTerminal for AEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
@@ -1468,8 +1462,8 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
         match current_token {
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
@@ -1885,8 +1879,8 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
         match current_token {
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegationBegin => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegationBegin => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
@@ -2210,22 +2204,22 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let modality_negation_begin = grammar::Terminal(
-            type_name::<ModalityNegationBegin>()
+        let modality_negation_ = grammar::Terminal(
+            type_name::<ModalityNegation>()
                 .split("::")
                 .last()
                 .unwrap()
                 .to_string(),
         );
-        let tense_negation_begin = grammar::Terminal(
-            type_name::<TenseNegationBegin>()
+        let tense_negation_ = grammar::Terminal(
+            type_name::<TenseNegation>()
                 .split("::")
                 .last()
                 .unwrap()
                 .to_string(),
         );
-        let aspect_negation_begin = grammar::Terminal(
-            type_name::<AspectNegationBegin>()
+        let aspect_negation_ = grammar::Terminal(
+            type_name::<AspectNegation>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2394,8 +2388,7 @@ mod tests {
             vec![
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(modality.clone())]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(modality_negation_begin.clone()),
-                    grammar::Symbol::Terminal(negation.clone()),
+                    grammar::Symbol::Terminal(modality_negation_.clone()),
                     grammar::Symbol::NonTerminal(modified_modality.clone()),
                 ]),
             ],
@@ -2422,8 +2415,7 @@ mod tests {
             vec![
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(tense.clone())]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(tense_negation_begin.clone()),
-                    grammar::Symbol::Terminal(negation.clone()),
+                    grammar::Symbol::Terminal(tense_negation_.clone()),
                     grammar::Symbol::NonTerminal(modified_tense.clone()),
                 ]),
             ],
@@ -2440,8 +2432,7 @@ mod tests {
             vec![
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(aspect.clone())]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(aspect_negation_begin.clone()),
-                    grammar::Symbol::Terminal(negation.clone()),
+                    grammar::Symbol::Terminal(aspect_negation_.clone()),
                     grammar::Symbol::NonTerminal(modified_aspect.clone()),
                 ]),
             ],
@@ -2608,9 +2599,9 @@ mod tests {
                     "Modality" => DummyTerminalType::Modality,
                     "Tense" => DummyTerminalType::Tense,
                     "Aspect" => DummyTerminalType::Aspect,
-                    "ModalityNegationBegin" => DummyTerminalType::ModalityNegationBegin,
-                    "TenseNegationBegin" => DummyTerminalType::TenseNegationBegin,
-                    "AspectNegationBegin" => DummyTerminalType::AspectNegationBegin,
+                    "ModalityNegation" => DummyTerminalType::ModalityNegation,
+                    "TenseNegation" => DummyTerminalType::TenseNegation,
+                    "AspectNegation" => DummyTerminalType::AspectNegation,
                     "Negation" => DummyTerminalType::Negation,
                     "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
                     "Argument" => DummyTerminalType::Argument,
@@ -2756,11 +2747,9 @@ mod tests {
                                     DummyTerminalType::Modality => "Modality",
                                     DummyTerminalType::Tense => "Tense",
                                     DummyTerminalType::Aspect => "Aspect",
-                                    DummyTerminalType::ModalityNegationBegin => {
-                                        "ModalityNegationBegin"
-                                    }
-                                    DummyTerminalType::TenseNegationBegin => "TenseNegationBegin",
-                                    DummyTerminalType::AspectNegationBegin => "AspectNegationBegin",
+                                    DummyTerminalType::ModalityNegation => "ModalityNegation",
+                                    DummyTerminalType::TenseNegation => "TenseNegation",
+                                    DummyTerminalType::AspectNegation => "AspectNegation",
                                     DummyTerminalType::Negation => "Negation",
                                     DummyTerminalType::BinaryPredicate => "BinaryPredicate",
                                     DummyTerminalType::Argument => "Argument",
