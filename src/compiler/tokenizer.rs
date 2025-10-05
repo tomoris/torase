@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use core::panic;
 use std::mem::discriminant;
 
@@ -8,7 +5,6 @@ use regex::Regex;
 
 #[derive(Debug)]
 pub struct IncompleteToken {
-    pub string: String,
     pub range: Range,
 }
 
@@ -119,7 +115,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             )));
         } else {
             return Err(IncompleteToken {
-                string: token.0.to_string(),
                 range: Range {
                     start: Position {
                         line: token.1,
@@ -136,7 +131,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
 
     let sentences = doc
         .split_inclusive(|x| {
-            discriminant(&TerminalType::Eos(Eos::new_omitted_token())) == discriminant(&x) // eosで文分割
+            discriminant(&TerminalType::Eos(Eos::new_omitted_token())) == discriminant(x) // eosで文分割
         })
         .map(|chunk| chunk.to_vec())
         .collect();

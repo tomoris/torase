@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-#![allow(unused_variables)]
+#![allow(clippy::result_large_err)]
 
 mod grammar;
 
@@ -120,106 +120,103 @@ fn parse_node(
                     Ok(SymbolType::NonTerminal(new_non_terminal(
                         &dummy_non_terminal,
                         Rhs::Sequence(child_nodes),
-                    )?))
+                    )))
                 }
                 DummyRhs::Epsilon => Ok(SymbolType::NonTerminal(new_non_terminal(
                     &dummy_non_terminal,
                     Rhs::Epsilon,
-                )?)),
+                ))),
             }
         }
     }
 }
 
-fn new_non_terminal(
-    dummy_non_terminal: &DummyNonTerminalType,
-    rhs: Rhs,
-) -> Result<NonTerminalType, IncompleteAst> {
+fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonTerminalType {
     match dummy_non_terminal {
-        DummyNonTerminalType::S => Ok(NonTerminalType::S(S::new(rhs))),
-        DummyNonTerminalType::DeclarativeSentence => Ok(NonTerminalType::DeclarativeSentence(
-            DeclarativeSentence::new(rhs),
-        )),
-        DummyNonTerminalType::InterrogativeSentence => Ok(NonTerminalType::InterrogativeSentence(
-            InterrogativeSentence::new(rhs),
-        )),
-        DummyNonTerminalType::PostModifiedMtaEvent => Ok(NonTerminalType::PostModifiedMtaEvent(
-            PostModifiedMtaEvent::new(rhs),
-        )),
-        DummyNonTerminalType::PostMtaEventExpression => Ok(
-            NonTerminalType::PostMtaEventExpression(PostMtaEventExpression::new(rhs)),
-        ),
-        DummyNonTerminalType::ModalityExpression => Ok(NonTerminalType::ModalityExpression(
-            ModalityExpression::new(rhs),
-        )),
-        DummyNonTerminalType::ModalityWithAgent => Ok(NonTerminalType::ModalityWithAgent(
-            ModalityWithAgent::new(rhs),
-        )),
-        DummyNonTerminalType::ModifiedModality => Ok(NonTerminalType::ModifiedModality(
-            ModifiedModality::new(rhs),
-        )),
+        DummyNonTerminalType::S => NonTerminalType::S(S::new(rhs)),
+        DummyNonTerminalType::DeclarativeSentence => {
+            NonTerminalType::DeclarativeSentence(DeclarativeSentence::new(rhs))
+        }
+        DummyNonTerminalType::InterrogativeSentence => {
+            NonTerminalType::InterrogativeSentence(InterrogativeSentence::new(rhs))
+        }
+        DummyNonTerminalType::PostModifiedMtaEvent => {
+            NonTerminalType::PostModifiedMtaEvent(PostModifiedMtaEvent::new(rhs))
+        }
+        DummyNonTerminalType::PostMtaEventExpression => {
+            NonTerminalType::PostMtaEventExpression(PostMtaEventExpression::new(rhs))
+        }
+        DummyNonTerminalType::ModalityExpression => {
+            NonTerminalType::ModalityExpression(ModalityExpression::new(rhs))
+        }
+        DummyNonTerminalType::ModalityWithAgent => {
+            NonTerminalType::ModalityWithAgent(ModalityWithAgent::new(rhs))
+        }
+        DummyNonTerminalType::ModifiedModality => {
+            NonTerminalType::ModifiedModality(ModifiedModality::new(rhs))
+        }
         DummyNonTerminalType::ModalityAgent => {
-            Ok(NonTerminalType::ModalityAgent(ModalityAgent::new(rhs)))
+            NonTerminalType::ModalityAgent(ModalityAgent::new(rhs))
         }
         DummyNonTerminalType::TenseExpression => {
-            Ok(NonTerminalType::TenseExpression(TenseExpression::new(rhs)))
+            NonTerminalType::TenseExpression(TenseExpression::new(rhs))
         }
         DummyNonTerminalType::ModifiedTense => {
-            Ok(NonTerminalType::ModifiedTense(ModifiedTense::new(rhs)))
+            NonTerminalType::ModifiedTense(ModifiedTense::new(rhs))
         }
-        DummyNonTerminalType::AspectExpression => Ok(NonTerminalType::AspectExpression(
-            AspectExpression::new(rhs),
-        )),
+        DummyNonTerminalType::AspectExpression => {
+            NonTerminalType::AspectExpression(AspectExpression::new(rhs))
+        }
         DummyNonTerminalType::ModifiedAspect => {
-            Ok(NonTerminalType::ModifiedAspect(ModifiedAspect::new(rhs)))
+            NonTerminalType::ModifiedAspect(ModifiedAspect::new(rhs))
         }
-        DummyNonTerminalType::MtaEvent => Ok(NonTerminalType::MtaEvent(MtaEvent::new(rhs))),
-        DummyNonTerminalType::TaEvent => Ok(NonTerminalType::TaEvent(TaEvent::new(rhs))),
-        DummyNonTerminalType::AEvent => Ok(NonTerminalType::AEvent(AEvent::new(rhs))),
-        DummyNonTerminalType::Event => Ok(NonTerminalType::Event(Event::new(rhs))),
+        DummyNonTerminalType::MtaEvent => NonTerminalType::MtaEvent(MtaEvent::new(rhs)),
+        DummyNonTerminalType::TaEvent => NonTerminalType::TaEvent(TaEvent::new(rhs)),
+        DummyNonTerminalType::AEvent => NonTerminalType::AEvent(AEvent::new(rhs)),
+        DummyNonTerminalType::Event => NonTerminalType::Event(Event::new(rhs)),
         DummyNonTerminalType::PostModifiedBinaryPredicatePhrase => {
-            Ok(NonTerminalType::PostModifiedBinaryPredicatePhrase(
+            NonTerminalType::PostModifiedBinaryPredicatePhrase(
                 PostModifiedBinaryPredicatePhrase::new(rhs),
-            ))
+            )
         }
         DummyNonTerminalType::PostBinaryPredicatePhraseExpression => {
-            Ok(NonTerminalType::PostBinaryPredicatePhraseExpression(
+            NonTerminalType::PostBinaryPredicatePhraseExpression(
                 PostBinaryPredicatePhraseExpression::new(rhs),
-            ))
+            )
         }
-        DummyNonTerminalType::BinaryPredicatePhrase => Ok(NonTerminalType::BinaryPredicatePhrase(
-            BinaryPredicatePhrase::new(rhs),
-        )),
+        DummyNonTerminalType::BinaryPredicatePhrase => {
+            NonTerminalType::BinaryPredicatePhrase(BinaryPredicatePhrase::new(rhs))
+        }
         DummyNonTerminalType::ArgumentPhrase => {
-            Ok(NonTerminalType::ArgumentPhrase(ArgumentPhrase::new(rhs)))
+            NonTerminalType::ArgumentPhrase(ArgumentPhrase::new(rhs))
         }
-        DummyNonTerminalType::ArgumentPhraseOrEpsilon => Ok(
-            NonTerminalType::ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon::new(rhs)),
-        ),
+        DummyNonTerminalType::ArgumentPhraseOrEpsilon => {
+            NonTerminalType::ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon::new(rhs))
+        }
         DummyNonTerminalType::DeterminedArgumentRetrievalBinaryPredicate => {
-            Ok(NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(
+            NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(
                 DeterminedArgumentRetrievalBinaryPredicate::new(rhs),
-            ))
+            )
         }
         DummyNonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate => {
-            Ok(NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(
+            NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(
                 ArticlizedArgumentRetrievalBinaryPredicate::new(rhs),
-            ))
+            )
         }
         DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
-            Ok(NonTerminalType::ArgumentRetrievalBinaryPredicate(
+            NonTerminalType::ArgumentRetrievalBinaryPredicate(
                 ArgumentRetrievalBinaryPredicate::new(rhs),
-            ))
+            )
         }
         DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => {
-            Ok(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(
+            NonTerminalType::ArgumentRetrievalWithArgumentPhrase(
                 ArgumentRetrievalWithArgumentPhrase::new(rhs),
-            ))
+            )
         }
         DummyNonTerminalType::Quantification => {
-            Ok(NonTerminalType::Quantification(Quantification::new(rhs)))
+            NonTerminalType::Quantification(Quantification::new(rhs))
         }
-        DummyNonTerminalType::Article => Ok(NonTerminalType::Article(Article::new(rhs))),
+        DummyNonTerminalType::Article => NonTerminalType::Article(Article::new(rhs)),
     }
 }
 
@@ -595,10 +592,10 @@ impl NonTerminal for S {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(child1))] => {
+                [SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(_child1))] => {
                     Self { rhs }
                 }
-                [SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(child1))] => {
+                [SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(_child1))] => {
                     Self { rhs }
                 }
                 _ => {
@@ -677,7 +674,7 @@ impl NonTerminal for DeclarativeSentence {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child1))] => {
+                [SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(_child1))] => {
                     Self { rhs }
                 }
                 _ => {
@@ -711,8 +708,8 @@ impl NonTerminal for InterrogativeSentence {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::InterrogativeMarker(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child2)),
+                    SymbolType::Terminal(TerminalType::InterrogativeMarker(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -781,8 +778,8 @@ impl NonTerminal for PostModifiedMtaEvent {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -816,8 +813,8 @@ impl NonTerminal for PostMtaEventExpression {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostMtaEventModifier(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
+                    SymbolType::Terminal(TerminalType::PostMtaEventModifier(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -861,7 +858,7 @@ impl NonTerminal for ModalityExpression {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(child1))] => {
+                [SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(_child1))] => {
                     Self { rhs }
                 }
                 _ => {
@@ -897,8 +894,8 @@ impl NonTerminal for ModalityWithAgent {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModalityAgent(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModalityAgent(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -935,10 +932,10 @@ impl NonTerminal for ModifiedModality {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Modality(child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Modality(_child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::ModalityNegation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child2)),
+                    SymbolType::Terminal(TerminalType::ModalityNegation(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -979,8 +976,8 @@ impl NonTerminal for ModalityAgent {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1022,7 +1019,7 @@ impl NonTerminal for TenseExpression {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child1))] => Self { rhs },
+                [SymbolType::NonTerminal(NonTerminalType::ModifiedTense(_child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1056,10 +1053,10 @@ impl NonTerminal for ModifiedTense {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Tense(child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Tense(_child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::TenseNegation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child2)),
+                    SymbolType::Terminal(TerminalType::TenseNegation(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedTense(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1101,7 +1098,7 @@ impl NonTerminal for AspectExpression {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child1))] => Self { rhs },
+                [SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(_child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1135,10 +1132,10 @@ impl NonTerminal for ModifiedAspect {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Aspect(child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Aspect(_child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::AspectNegation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child2)),
+                    SymbolType::Terminal(TerminalType::AspectNegation(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1207,8 +1204,8 @@ impl NonTerminal for MtaEvent {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::ModalityExpression(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::TaEvent(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ModalityExpression(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::TaEvent(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1269,8 +1266,8 @@ impl NonTerminal for TaEvent {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::TenseExpression(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::AEvent(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::TenseExpression(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::AEvent(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1323,8 +1320,8 @@ impl NonTerminal for AEvent {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::AspectExpression(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::Event(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::AspectExpression(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::Event(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1382,10 +1379,10 @@ impl NonTerminal for Event {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(
-                        child1,
+                        _child1,
                     )),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(child3)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(_child3)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1438,9 +1435,9 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child1)),
                     SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(
-                        child2,
+                        _child2,
                     )),
                 ] => Self { rhs },
                 _ => {
@@ -1492,8 +1489,8 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostBinaryPredicatePhraseModifier(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                    SymbolType::Terminal(TerminalType::PostBinaryPredicatePhraseModifier(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1538,18 +1535,18 @@ impl NonTerminal for BinaryPredicatePhrase {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::Negation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                    SymbolType::Terminal(TerminalType::Negation(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
                 ] => Self { rhs },
-                [SymbolType::Terminal(TerminalType::BinaryPredicate(child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::BinaryPredicate(_child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                    SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
                 ] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child3)),
+                    SymbolType::Terminal(TerminalType::BinaryOperator(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child3)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1607,26 +1604,26 @@ impl NonTerminal for ArgumentPhrase {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::Negation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                    SymbolType::Terminal(TerminalType::Negation(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
                 ] => Self { rhs },
-                [SymbolType::Terminal(TerminalType::Argument(child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Argument(_child1))] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
+                    SymbolType::Terminal(TerminalType::BinaryOperator(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child3)),
                 ] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::ArgumentRetriever(child1)),
+                    SymbolType::Terminal(TerminalType::ArgumentRetriever(_child1)),
                     SymbolType::NonTerminal(
-                        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(child2),
+                        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(_child2),
                     ),
                 ] => Self { rhs },
                 [
-                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
+                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(_child2)),
                     SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverterEnd(
-                        child3,
+                        _child3,
                     )),
                 ] => Self { rhs },
                 _ => {
@@ -1663,8 +1660,8 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                    SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1727,9 +1724,9 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::Quantification(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::Quantification(_child1)),
                     SymbolType::NonTerminal(
-                        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(child2),
+                        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(_child2),
                     ),
                 ] => Self { rhs },
                 _ => {
@@ -1789,9 +1786,9 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::Article(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::Article(_child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(
-                        child2,
+                        _child2,
                     )),
                 ] => Self { rhs },
                 _ => {
@@ -1854,10 +1851,10 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(
-                        child1,
+                        _child1,
                     )),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(
-                        child2,
+                        _child2,
                     )),
                 ] => Self { rhs },
                 _ => {
@@ -1906,8 +1903,8 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
                 ] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1943,7 +1940,7 @@ impl NonTerminal for Quantification {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Quantifier(child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Quantifier(_child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1977,7 +1974,7 @@ impl NonTerminal for Article {
     {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Articlizer(child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Articlizer(_child1))] => Self { rhs },
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
