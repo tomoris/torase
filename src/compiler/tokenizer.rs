@@ -395,9 +395,9 @@ pub struct Tense {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum TenseKind {
-    Hita, // 未来
+    Hita, // 過去
     Hiti, // 現在
-    Hitu, // 過去
+    Hitu, // 未来
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1350,7 +1350,7 @@ mod tests {
 
     #[test]
     fn test_eosなし1文のトークン分割が成功する() {
-        let input = "hahe hita hudidi parobe me si gi";
+        let input = "hahe hitu hudidi parobe me si gi";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 1);

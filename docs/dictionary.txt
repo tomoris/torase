@@ -435,13 +435,13 @@ haho
 hapa
 
 tense
-未来
+過去
 hita
 
 現在
 hiti
 
-過去
+未来
 hitu
 
 aspect
