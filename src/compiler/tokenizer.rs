@@ -377,14 +377,15 @@ enum ModalityKind {
     Haki, // 勧誘、しませんか
     Haku, // 許可、してよい
     Hame, // 事実性高い
-    Hamo, // 事実性普通
+    Hamo, // 事実性低い
     Hasa, // 義務、すべき
     Hasi, // 許可、してよい
     Hake, // 能力、できる
     Hako, // 可能、ありうる
-    Hahe, // 願望、したい
-    Hata, // 意志、しよう
-    Hapa, // 必然
+    Hate, // 願望、したい
+    Hato, // 意志、しよう
+    Hape, // 必然
+    Hapo, // 不可能
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -426,7 +427,6 @@ pub struct ModalityNegation {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ModalityNegationKind {
     Hane, // 否定
-    Hano, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -438,7 +438,6 @@ pub struct TenseNegation {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum TenseNegationKind {
     Hine, // 否定
-    Hino, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -450,7 +449,6 @@ pub struct AspectNegation {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum AspectNegationKind {
     Hune, // 否定
-    Huno, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -602,9 +600,10 @@ impl Modality {
             "hasi" => ModalityKind::Hasi,
             "hake" => ModalityKind::Hake,
             "hako" => ModalityKind::Hako,
-            "hahe" => ModalityKind::Hahe,
-            "hata" => ModalityKind::Hata,
-            "hapa" => ModalityKind::Hapa,
+            "hate" => ModalityKind::Hate,
+            "hato" => ModalityKind::Hato,
+            "hape" => ModalityKind::Hape,
+            "hapo" => ModalityKind::Hapo,
             _ => panic!("Invalid modality surface: {}", string),
         };
         Modality {
@@ -709,7 +708,6 @@ impl ModalityNegation {
     ) -> Self {
         let kind = match string {
             "hane" => ModalityNegationKind::Hane,
-            "hano" => ModalityNegationKind::Hano,
             _ => panic!("Invalid modality negation surface: {}", string),
         };
         ModalityNegation {
@@ -742,7 +740,6 @@ impl TenseNegation {
     ) -> Self {
         let kind = match string {
             "hine" => TenseNegationKind::Hine,
-            "hino" => TenseNegationKind::Hino,
             _ => panic!("Invalid tense negation surface: {}", string),
         };
         TenseNegation {
@@ -775,7 +772,6 @@ impl AspectNegation {
     ) -> Self {
         let kind = match string {
             "hune" => AspectNegationKind::Hune,
-            "huno" => AspectNegationKind::Huno,
             _ => panic!("Invalid tense negation surface: {}", string),
         };
         AspectNegation {
@@ -1350,18 +1346,18 @@ mod tests {
 
     #[test]
     fn test_eosなし1文のトークン分割が成功する() {
-        let input = "hahe hitu hudidi parobe me si gi";
+        let input = "hate hitu hudidi parobe me si gi";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 1);
         assert_eq!(sentences[0].len(), 8);
         assert_eq!(
             sentences[0][0],
-            TerminalType::Modality(Modality::new("hahe", 0, 0, 0, 4))
+            TerminalType::Modality(Modality::new("hate", 0, 0, 0, 4))
         );
         assert_eq!(
             sentences[0][1],
-            TerminalType::Tense(Tense::new("hita", 0, 5, 0, 9))
+            TerminalType::Tense(Tense::new("hitu", 0, 5, 0, 9))
         );
         assert_eq!(
             sentences[0][2],
