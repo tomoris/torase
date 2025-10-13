@@ -295,15 +295,6 @@ pub enum ErrorTop {
     DummySymbolType(DummySymbolType),
 }
 
-trait NonTerminal {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized;
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized;
-}
-
 #[derive(Clone, Debug)]
 pub enum SymbolType {
     Terminal(TerminalType),
@@ -522,7 +513,7 @@ pub struct Article {
     rhs: Rhs,
 }
 
-impl NonTerminal for S {
+impl S {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -609,7 +600,7 @@ impl NonTerminal for S {
     }
 }
 
-impl NonTerminal for DeclarativeSentence {
+impl DeclarativeSentence {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -688,7 +679,7 @@ impl NonTerminal for DeclarativeSentence {
     }
 }
 
-impl NonTerminal for InterrogativeSentence {
+impl InterrogativeSentence {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -722,7 +713,7 @@ impl NonTerminal for InterrogativeSentence {
     }
 }
 
-impl NonTerminal for PostModifiedMtaEvent {
+impl PostModifiedMtaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -792,7 +783,7 @@ impl NonTerminal for PostModifiedMtaEvent {
     }
 }
 
-impl NonTerminal for PostMtaEventExpression {
+impl PostMtaEventExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -825,7 +816,7 @@ impl NonTerminal for PostMtaEventExpression {
     }
 }
 
-impl NonTerminal for ModalityExpression {
+impl ModalityExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -870,7 +861,7 @@ impl NonTerminal for ModalityExpression {
     }
 }
 
-impl NonTerminal for ModalityWithAgent {
+impl ModalityWithAgent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -908,7 +899,7 @@ impl NonTerminal for ModalityWithAgent {
     }
 }
 
-impl NonTerminal for ModifiedModality {
+impl ModifiedModality {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -948,7 +939,7 @@ impl NonTerminal for ModifiedModality {
     }
 }
 
-impl NonTerminal for ModalityAgent {
+impl ModalityAgent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -988,7 +979,7 @@ impl NonTerminal for ModalityAgent {
     }
 }
 
-impl NonTerminal for TenseExpression {
+impl TenseExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1029,7 +1020,7 @@ impl NonTerminal for TenseExpression {
     }
 }
 
-impl NonTerminal for ModifiedTense {
+impl ModifiedTense {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1069,7 +1060,7 @@ impl NonTerminal for ModifiedTense {
     }
 }
 
-impl NonTerminal for AspectExpression {
+impl AspectExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1108,7 +1099,7 @@ impl NonTerminal for AspectExpression {
     }
 }
 
-impl NonTerminal for ModifiedAspect {
+impl ModifiedAspect {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1148,7 +1139,7 @@ impl NonTerminal for ModifiedAspect {
     }
 }
 
-impl NonTerminal for MtaEvent {
+impl MtaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1218,7 +1209,7 @@ impl NonTerminal for MtaEvent {
     }
 }
 
-impl NonTerminal for TaEvent {
+impl TaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1280,7 +1271,7 @@ impl NonTerminal for TaEvent {
     }
 }
 
-impl NonTerminal for AEvent {
+impl AEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1334,7 +1325,7 @@ impl NonTerminal for AEvent {
     }
 }
 
-impl NonTerminal for Event {
+impl Event {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1395,7 +1386,7 @@ impl NonTerminal for Event {
     }
 }
 
-impl NonTerminal for PostModifiedBinaryPredicatePhrase {
+impl PostModifiedBinaryPredicatePhrase {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1451,7 +1442,7 @@ impl NonTerminal for PostModifiedBinaryPredicatePhrase {
     }
 }
 
-impl NonTerminal for PostBinaryPredicatePhraseExpression {
+impl PostBinaryPredicatePhraseExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1501,7 +1492,7 @@ impl NonTerminal for PostBinaryPredicatePhraseExpression {
     }
 }
 
-impl NonTerminal for BinaryPredicatePhrase {
+impl BinaryPredicatePhrase {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1559,7 +1550,7 @@ impl NonTerminal for BinaryPredicatePhrase {
     }
 }
 
-impl NonTerminal for ArgumentPhrase {
+impl ArgumentPhrase {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1637,7 +1628,7 @@ impl NonTerminal for ArgumentPhrase {
     }
 }
 
-impl NonTerminal for ArgumentPhraseOrEpsilon {
+impl ArgumentPhraseOrEpsilon {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1672,7 +1663,7 @@ impl NonTerminal for ArgumentPhraseOrEpsilon {
     }
 }
 
-impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
+impl DeterminedArgumentRetrievalBinaryPredicate {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1740,7 +1731,7 @@ impl NonTerminal for DeterminedArgumentRetrievalBinaryPredicate {
     }
 }
 
-impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
+impl ArticlizedArgumentRetrievalBinaryPredicate {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1802,7 +1793,7 @@ impl NonTerminal for ArticlizedArgumentRetrievalBinaryPredicate {
     }
 }
 
-impl NonTerminal for ArgumentRetrievalBinaryPredicate {
+impl ArgumentRetrievalBinaryPredicate {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1868,7 +1859,7 @@ impl NonTerminal for ArgumentRetrievalBinaryPredicate {
     }
 }
 
-impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
+impl ArgumentRetrievalWithArgumentPhrase {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1915,7 +1906,7 @@ impl NonTerminal for ArgumentRetrievalWithArgumentPhrase {
     }
 }
 
-impl NonTerminal for Quantification {
+impl Quantification {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
@@ -1950,7 +1941,7 @@ impl NonTerminal for Quantification {
     }
 }
 
-impl NonTerminal for Article {
+impl Article {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
     where
         Self: Sized,
