@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![allow(clippy::result_large_err)]
+#![allow(clippy::large_enum_variant)]
 
 mod grammar;
 
@@ -374,150 +375,186 @@ pub enum DummyNonTerminalType {
 // non-terminal types
 
 #[derive(Clone, Debug)]
-pub struct S {
-    rhs: Rhs,
+pub enum S {
+    One(DeclarativeSentence),
+    Two(InterrogativeSentence),
 }
 
 #[derive(Clone, Debug)]
-pub struct DeclarativeSentence {
-    rhs: Rhs,
+pub enum DeclarativeSentence {
+    One(PostModifiedMtaEvent),
 }
 
 #[derive(Clone, Debug)]
-pub struct InterrogativeSentence {
-    rhs: Rhs,
+pub enum InterrogativeSentence {
+    One(InterrogativeMarker, PostModifiedMtaEvent),
 }
 
 #[derive(Clone, Debug)]
-pub struct PostModifiedMtaEvent {
-    rhs: Rhs,
+pub enum PostModifiedMtaEvent {
+    One(MtaEvent, PostMtaEventExpression),
 }
 
 #[derive(Clone, Debug)]
-pub struct PostMtaEventExpression {
-    rhs: Rhs,
+pub enum PostMtaEventExpression {
+    One(PostMtaEventModifier, MtaEvent),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct ModalityExpression {
-    rhs: Rhs,
+pub enum ModalityExpression {
+    One(ModalityWithAgent),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct ModalityWithAgent {
-    rhs: Rhs,
+pub enum ModalityWithAgent {
+    One(ModifiedModality, ModalityAgent),
 }
 
 #[derive(Clone, Debug)]
-pub struct ModifiedModality {
-    rhs: Rhs,
+pub enum ModifiedModality {
+    One(Modality),
+    Two(ModalityNegation, Box<ModifiedModality>),
 }
 
 #[derive(Clone, Debug)]
-pub struct ModalityAgent {
-    rhs: Rhs,
+pub enum ModalityAgent {
+    One(PostArgumentPhraseModifier, ArgumentPhrase),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct TenseExpression {
-    rhs: Rhs,
+pub enum TenseExpression {
+    One(ModifiedTense),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct ModifiedTense {
-    rhs: Rhs,
+pub enum ModifiedTense {
+    One(Tense),
+    Two(TenseNegation, Box<ModifiedTense>),
 }
 
 #[derive(Clone, Debug)]
-pub struct AspectExpression {
-    rhs: Rhs,
+pub enum AspectExpression {
+    One(ModifiedAspect),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct ModifiedAspect {
-    rhs: Rhs,
+pub enum ModifiedAspect {
+    One(Aspect),
+    Two(AspectNegation, Box<ModifiedAspect>),
 }
 
 #[derive(Clone, Debug)]
-pub struct MtaEvent {
-    rhs: Rhs,
+pub enum MtaEvent {
+    One(ModalityExpression, TaEvent),
 }
 
 #[derive(Clone, Debug)]
-pub struct TaEvent {
-    rhs: Rhs,
+pub enum TaEvent {
+    One(TenseExpression, AEvent),
 }
 
 #[derive(Clone, Debug)]
-pub struct AEvent {
-    rhs: Rhs,
+pub enum AEvent {
+    One(AspectExpression, Event),
 }
 
 #[derive(Clone, Debug)]
-pub struct Event {
-    rhs: Rhs,
+pub enum Event {
+    One(
+        PostModifiedBinaryPredicatePhrase,
+        ArgumentPhrase,
+        ArgumentPhraseOrEpsilon,
+    ),
 }
 
 #[derive(Clone, Debug)]
-pub struct PostModifiedBinaryPredicatePhrase {
-    rhs: Rhs,
+pub enum PostModifiedBinaryPredicatePhrase {
+    One(BinaryPredicatePhrase, PostBinaryPredicatePhraseExpression),
 }
 
 #[derive(Clone, Debug)]
-pub struct PostBinaryPredicatePhraseExpression {
-    rhs: Rhs,
+pub enum PostBinaryPredicatePhraseExpression {
+    One(PostBinaryPredicatePhraseModifier, BinaryPredicatePhrase),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct BinaryPredicatePhrase {
-    rhs: Rhs,
+pub enum BinaryPredicatePhrase {
+    One(BinaryPredicate),
+    Two(Negation, Box<BinaryPredicatePhrase>),
+    Three(ArgumentPhraseTransposer, Box<BinaryPredicatePhrase>),
+    Four(
+        BinaryOperator,
+        Box<BinaryPredicatePhrase>,
+        Box<BinaryPredicatePhrase>,
+    ),
 }
 
 #[derive(Clone, Debug)]
-pub struct ArgumentPhrase {
-    rhs: Rhs,
+pub enum ArgumentPhrase {
+    One(Argument),
+    Two(Negation, Box<ArgumentPhrase>),
+    Three(BinaryOperator, Box<ArgumentPhrase>, Box<ArgumentPhrase>),
+    Four(
+        ArgumentRetriever,
+        DeterminedArgumentRetrievalBinaryPredicate,
+    ),
+    Five(
+        MtaEventToArgumentPhraseConverter,
+        Box<MtaEvent>,
+        MtaEventToArgumentPhraseConverterEnd,
+    ),
 }
 
 #[derive(Clone, Debug)]
-pub struct ArgumentPhraseOrEpsilon {
-    rhs: Rhs,
+pub enum ArgumentPhraseOrEpsilon {
+    One(ArgumentPhraseSeparator, ArgumentPhrase),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct DeterminedArgumentRetrievalBinaryPredicate {
-    rhs: Rhs,
+pub enum DeterminedArgumentRetrievalBinaryPredicate {
+    One(Quantification, ArticlizedArgumentRetrievalBinaryPredicate),
 }
 
 #[derive(Clone, Debug)]
-pub struct ArticlizedArgumentRetrievalBinaryPredicate {
-    rhs: Rhs,
+pub enum ArticlizedArgumentRetrievalBinaryPredicate {
+    One(Article, ArgumentRetrievalBinaryPredicate),
 }
 
 #[derive(Clone, Debug)]
-pub struct ArgumentRetrievalBinaryPredicate {
-    rhs: Rhs,
+pub enum ArgumentRetrievalBinaryPredicate {
+    One(
+        PostModifiedBinaryPredicatePhrase,
+        ArgumentRetrievalWithArgumentPhrase,
+    ),
 }
 
 #[derive(Clone, Debug)]
-pub struct ArgumentRetrievalWithArgumentPhrase {
-    rhs: Rhs,
+pub enum ArgumentRetrievalWithArgumentPhrase {
+    One(PostArgumentPhraseModifier, Box<ArgumentPhrase>),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct Quantification {
-    rhs: Rhs,
+pub enum Quantification {
+    One(Quantifier),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
-pub struct Article {
-    rhs: Rhs,
+pub enum Article {
+    One(Articlizer),
+    Epsilon,
 }
 
 impl S {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::InterrogativeMarker => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
@@ -577,17 +614,14 @@ impl S {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(_child1))] => {
-                    Self { rhs }
+                [SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(child1))] => {
+                    Self::One(child1.clone())
                 }
-                [SymbolType::NonTerminal(NonTerminalType::DeclarativeSentence(_child1))] => {
-                    Self { rhs }
+                [SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(child1))] => {
+                    Self::Two(child1.clone())
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -601,10 +635,7 @@ impl S {
 }
 
 impl DeclarativeSentence {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Modality => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
@@ -659,14 +690,11 @@ impl DeclarativeSentence {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(_child1))] => {
-                    Self { rhs }
+                [SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child1))] => {
+                    Self::One(child1.clone())
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -680,10 +708,7 @@ impl DeclarativeSentence {
 }
 
 impl InterrogativeSentence {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::InterrogativeMarker => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::InterrogativeMarker),
@@ -692,16 +717,13 @@ impl InterrogativeSentence {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::InterrogativeMarker(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::InterrogativeMarker(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -714,10 +736,7 @@ impl InterrogativeSentence {
 }
 
 impl PostModifiedMtaEvent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
@@ -762,16 +781,13 @@ impl PostModifiedMtaEvent {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(_child2)),
-                ] => Self { rhs },
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -784,10 +800,7 @@ impl PostModifiedMtaEvent {
 }
 
 impl PostMtaEventExpression {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::PostMtaEventModifier),
@@ -797,30 +810,24 @@ impl PostMtaEventExpression {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostMtaEventModifier(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::PostMtaEventModifier(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl ModalityExpression {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Modality => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
@@ -843,29 +850,23 @@ impl ModalityExpression {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(_child1))] => {
-                    Self { rhs }
+                [SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(child1))] => {
+                    Self::One(child1.clone())
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl ModalityWithAgent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
@@ -878,16 +879,13 @@ impl ModalityWithAgent {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModalityAgent(_child2)),
-                ] => Self { rhs },
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModalityAgent(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -900,10 +898,7 @@ impl ModalityWithAgent {
 }
 
 impl ModifiedModality {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Modality => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
@@ -917,17 +912,14 @@ impl ModifiedModality {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Modality(_child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Modality(child1))] => Self::One(child1.clone()),
                 [
-                    SymbolType::Terminal(TerminalType::ModalityNegation(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::ModalityNegation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child2)),
+                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -940,10 +932,7 @@ impl ModifiedModality {
 }
 
 impl ModalityAgent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
@@ -960,30 +949,24 @@ impl ModalityAgent {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl TenseExpression {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Tense => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
@@ -1004,27 +987,23 @@ impl TenseExpression {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModifiedTense(_child1))] => Self { rhs },
+                [SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child1))] => {
+                    Self::One(child1.clone())
+                }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl ModifiedTense {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Tense => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
@@ -1038,17 +1017,14 @@ impl ModifiedTense {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Tense(_child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Tense(child1))] => Self::One(child1.clone()),
                 [
-                    SymbolType::Terminal(TerminalType::TenseNegation(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedTense(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::TenseNegation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child2)),
+                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1061,10 +1037,7 @@ impl ModifiedTense {
 }
 
 impl AspectExpression {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Aspect => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
@@ -1083,27 +1056,23 @@ impl AspectExpression {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(_child1))] => Self { rhs },
+                [SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child1))] => {
+                    Self::One(child1.clone())
+                }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl ModifiedAspect {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Aspect => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
@@ -1117,17 +1086,14 @@ impl ModifiedAspect {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Aspect(_child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Aspect(child1))] => Self::One(child1.clone()),
                 [
-                    SymbolType::Terminal(TerminalType::AspectNegation(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::AspectNegation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child2)),
+                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1140,10 +1106,7 @@ impl ModifiedAspect {
 }
 
 impl MtaEvent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
@@ -1188,16 +1151,13 @@ impl MtaEvent {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::ModalityExpression(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::TaEvent(_child2)),
-                ] => Self { rhs },
+                    SymbolType::NonTerminal(NonTerminalType::ModalityExpression(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::TaEvent(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1210,10 +1170,7 @@ impl MtaEvent {
 }
 
 impl TaEvent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Tense => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
@@ -1250,16 +1207,13 @@ impl TaEvent {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::TenseExpression(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::AEvent(_child2)),
-                ] => Self { rhs },
+                    SymbolType::NonTerminal(NonTerminalType::TenseExpression(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::AEvent(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1272,10 +1226,7 @@ impl TaEvent {
 }
 
 impl AEvent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
@@ -1304,16 +1255,13 @@ impl AEvent {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::AspectExpression(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::Event(_child2)),
-                ] => Self { rhs },
+                    SymbolType::NonTerminal(NonTerminalType::AspectExpression(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::Event(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1326,10 +1274,7 @@ impl AEvent {
 }
 
 impl Event {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(
@@ -1362,19 +1307,16 @@ impl Event {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(
-                        _child1,
+                        child1,
                     )),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(_child3)),
-                ] => Self { rhs },
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(child3)),
+                ] => Self::One(child1.clone(), child2.clone(), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1387,10 +1329,7 @@ impl Event {
 }
 
 impl PostModifiedBinaryPredicatePhrase {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
@@ -1419,18 +1358,15 @@ impl PostModifiedBinaryPredicatePhrase {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child1)),
                     SymbolType::NonTerminal(NonTerminalType::PostBinaryPredicatePhraseExpression(
-                        _child2,
+                        child2,
                     )),
-                ] => Self { rhs },
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1443,10 +1379,7 @@ impl PostModifiedBinaryPredicatePhrase {
 }
 
 impl PostBinaryPredicatePhraseExpression {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
@@ -1473,30 +1406,24 @@ impl PostBinaryPredicatePhraseExpression {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostBinaryPredicatePhraseModifier(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::PostBinaryPredicatePhraseModifier(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl BinaryPredicatePhrase {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
@@ -1519,26 +1446,29 @@ impl BinaryPredicatePhrase {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::Negation(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
-                ] => Self { rhs },
-                [SymbolType::Terminal(TerminalType::BinaryPredicate(_child1))] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::Negation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
+                [SymbolType::Terminal(TerminalType::BinaryPredicate(child1))] => {
+                    Self::One(child1.clone())
+                }
                 [
-                    SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                ] => Self::Three(child1.clone(), Box::new(child2.clone())),
                 [
-                    SymbolType::Terminal(TerminalType::BinaryOperator(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child2)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(_child3)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child3)),
+                ] => Self::Four(
+                    child1.clone(),
+                    Box::new(child2.clone()),
+                    Box::new(child3.clone()),
+                ),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1551,10 +1481,7 @@ impl BinaryPredicatePhrase {
 }
 
 impl ArgumentPhrase {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
@@ -1588,35 +1515,36 @@ impl ArgumentPhrase {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::Negation(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
-                ] => Self { rhs },
-                [SymbolType::Terminal(TerminalType::Argument(_child1))] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::Negation(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
+                [SymbolType::Terminal(TerminalType::Argument(child1))] => Self::One(child1.clone()),
                 [
-                    SymbolType::Terminal(TerminalType::BinaryOperator(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child3)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
+                ] => Self::Three(
+                    child1.clone(),
+                    Box::new(child2.clone()),
+                    Box::new(child3.clone()),
+                ),
                 [
-                    SymbolType::Terminal(TerminalType::ArgumentRetriever(_child1)),
+                    SymbolType::Terminal(TerminalType::ArgumentRetriever(child1)),
                     SymbolType::NonTerminal(
-                        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(_child2),
+                        NonTerminalType::DeterminedArgumentRetrievalBinaryPredicate(child2),
                     ),
-                ] => Self { rhs },
+                ] => Self::Four(child1.clone(), child2.clone()),
                 [
-                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(_child2)),
+                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
                     SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverterEnd(
-                        _child3,
+                        child3,
                     )),
-                ] => Self { rhs },
+                ] => Self::Five(child1.clone(), Box::new(child2.clone()), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1629,10 +1557,7 @@ impl ArgumentPhrase {
 }
 
 impl ArgumentPhraseOrEpsilon {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentPhraseSeparator),
@@ -1644,30 +1569,24 @@ impl ArgumentPhraseOrEpsilon {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl DeterminedArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Quantification),
@@ -1708,18 +1627,15 @@ impl DeterminedArgumentRetrievalBinaryPredicate {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::Quantification(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::Quantification(child1)),
                     SymbolType::NonTerminal(
-                        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(_child2),
+                        NonTerminalType::ArticlizedArgumentRetrievalBinaryPredicate(child2),
                     ),
-                ] => Self { rhs },
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1732,10 +1648,7 @@ impl DeterminedArgumentRetrievalBinaryPredicate {
 }
 
 impl ArticlizedArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Article),
@@ -1770,18 +1683,15 @@ impl ArticlizedArgumentRetrievalBinaryPredicate {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::Article(_child1)),
+                    SymbolType::NonTerminal(NonTerminalType::Article(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(
-                        _child2,
+                        child2,
                     )),
-                ] => Self { rhs },
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1794,10 +1704,7 @@ impl ArticlizedArgumentRetrievalBinaryPredicate {
 }
 
 impl ArgumentRetrievalBinaryPredicate {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(
@@ -1834,20 +1741,17 @@ impl ArgumentRetrievalBinaryPredicate {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(
-                        _child1,
+                        child1,
                     )),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalWithArgumentPhrase(
-                        _child2,
+                        child2,
                     )),
-                ] => Self { rhs },
+                ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1860,10 +1764,7 @@ impl ArgumentRetrievalBinaryPredicate {
 }
 
 impl ArgumentRetrievalWithArgumentPhrase {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
@@ -1887,30 +1788,24 @@ impl ArgumentRetrievalWithArgumentPhrase {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(_child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(_child2)),
-                ] => Self { rhs },
+                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
+                ] => Self::One(child1.clone(), Box::new(child2.clone())),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl Quantification {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
@@ -1925,27 +1820,23 @@ impl Quantification {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Quantifier(_child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Quantifier(child1))] => {
+                    Self::One(child1.clone())
+                }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
 
 impl Article {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()>
-    where
-        Self: Sized,
-    {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
@@ -1959,18 +1850,17 @@ impl Article {
             _ => Err(()),
         }
     }
-    fn new(rhs: Rhs) -> Self
-    where
-        Self: Sized,
-    {
+    fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Articlizer(_child1))] => Self { rhs },
+                [SymbolType::Terminal(TerminalType::Articlizer(child1))] => {
+                    Self::One(child1.clone())
+                }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self { rhs },
+            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
