@@ -658,7 +658,7 @@ impl Tense {
 
 impl Aspect {
     fn is_match(string: &str) -> bool {
-        let re_aspect = Regex::new(r"^(?:hu)|(?:d[aeou])|(?:did[aiu])$").unwrap();
+        let re_aspect = Regex::new(r"^(?:hu)(?:d[aeou])|(?:did[aiu])$").unwrap();
         re_aspect.is_match(string)
     }
     fn new(
@@ -821,6 +821,9 @@ impl Negation {
             kind,
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl BinaryPredicate {
@@ -848,6 +851,103 @@ impl BinaryPredicate {
                 },
             },
             string: string.to_string(),
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+    pub(crate) fn get_argument_types(&self) -> (Vec<ArgumentType>, Vec<ArgumentType>) {
+        // 名詞的な命題
+        let b = Regex::new(r"^(?:b)").unwrap();
+        let d = Regex::new(r"^(?:d)").unwrap();
+        let n = Regex::new(r"^(?:n)").unwrap();
+        let g = Regex::new(r"^(?:g)").unwrap();
+        let m = Regex::new(r"^(?:m)").unwrap();
+        let r = Regex::new(r"^(?:r)").unwrap();
+        // 動詞的な命題
+        let pa = Regex::new(r"^(?:pa)").unwrap();
+        let pe = Regex::new(r"^(?:pe)").unwrap();
+        let pi = Regex::new(r"^(?:pi)").unwrap();
+        let po = Regex::new(r"^(?:po)").unwrap();
+        let pu = Regex::new(r"^(?:pu)").unwrap();
+        let ka = Regex::new(r"^(?:ka)").unwrap();
+        let ki = Regex::new(r"^(?:ki)").unwrap();
+        let ku = Regex::new(r"^(?:ku)").unwrap();
+
+        if b.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Epsilon],
+            )
+        } else if d.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
+                vec![ArgumentType::Epsilon],
+            )
+        } else if n.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::NOther)],
+                vec![ArgumentType::Epsilon],
+            )
+        } else if g.is_match(&self.string) || m.is_match(&self.string) || r.is_match(&self.string) {
+            (vec![ArgumentType::Abstraction], vec![ArgumentType::Epsilon])
+        } else if pa.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            )
+        } else if pe.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![
+                    ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                    ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ],
+            )
+        } else if pi.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Epsilon],
+            )
+        } else if po.is_match(&self.string) {
+            (
+                vec![
+                    ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                    ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ],
+                vec![
+                    ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                    ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ],
+            )
+        } else if pu.is_match(&self.string) {
+            (
+                vec![
+                    ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                    ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ],
+                vec![ArgumentType::Epsilon],
+            )
+        } else if ka.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Abstraction],
+            )
+        } else if ki.is_match(&self.string) {
+            (
+                vec![
+                    ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                    ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ],
+                vec![ArgumentType::Abstraction],
+            )
+        } else if ku.is_match(&self.string) {
+            (
+                vec![ArgumentType::Abstraction],
+                vec![ArgumentType::Abstraction],
+            )
+        } else {
+            panic!("Invalid binary predicate surface: {}", self.string);
         }
     }
 }
@@ -889,6 +989,32 @@ impl Argument {
                 },
             },
             kind,
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+    pub(crate) fn get_type(&self) -> Vec<ArgumentType> {
+        match self.kind {
+            ArgumentKind::Ma => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Mi => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Mu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Me => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+            ],
+            ArgumentKind::Ba => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Bu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Be => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+            ],
+            ArgumentKind::Gi => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Gu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Ge => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+            ],
         }
     }
 }
@@ -949,6 +1075,9 @@ impl ArgumentPhraseTransposer {
             },
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl BinaryOperator {
@@ -977,6 +1106,9 @@ impl BinaryOperator {
                 },
             },
         }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
     }
 }
 
@@ -1007,6 +1139,9 @@ impl ArgumentRetriever {
             },
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl Quantifier {
@@ -1036,6 +1171,9 @@ impl Quantifier {
             },
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl Articlizer {
@@ -1064,6 +1202,9 @@ impl Articlizer {
                 },
             },
         }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
     }
 }
 
@@ -1097,6 +1238,9 @@ impl MtaEventToArgumentPhraseConverter {
             },
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl MtaEventToArgumentPhraseConverterEnd {
@@ -1128,6 +1272,9 @@ impl MtaEventToArgumentPhraseConverterEnd {
                 },
             },
         }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
     }
 }
 
@@ -1190,6 +1337,9 @@ impl PostBinaryPredicatePhraseModifier {
             },
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl PostArgumentPhraseModifier {
@@ -1218,6 +1368,9 @@ impl PostArgumentPhraseModifier {
                 },
             },
         }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
     }
 }
 
@@ -1270,6 +1423,18 @@ pub struct Range {
     end: Position,
 }
 
+impl Range {
+    pub fn new(start: Position, end: Position) -> Self {
+        Range { start, end }
+    }
+    pub fn start(&self) -> Position {
+        self.start.clone()
+    }
+    pub fn end(&self) -> Position {
+        self.end.clone()
+    }
+}
+
 // 並び順は、フィールドの順番に従う。
 // つまり、lineが同じならcharacterの順番に従う。
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -1292,6 +1457,20 @@ impl Position {
             0 // 異なる行の場合は0を返す（意味のある差分を計算できないため）
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ArgumentType {
+    PhysicalEntity(PhysicalEntity),
+    Abstraction,
+    Epsilon,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PhysicalEntity {
+    BLivingThing,
+    DArtifact,
+    NOther,
 }
 
 #[cfg(test)]

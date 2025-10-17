@@ -281,6 +281,7 @@ impl Backend {
 
         // parsing
         let sentences = compiler::tokenizer::add_eos_to_last_sentence(tokenize_result.unwrap());
+        let mut asts = Vec::new();
         let mut diagnostics = Vec::new();
         for sentence in sentences {
             let parse_result = compiler::parser::parse(sentence.clone());
@@ -301,6 +302,36 @@ impl Backend {
                     code_description: None,
                     source: None,
                     message: format!("parse error: {}", e.error_message),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                };
+                diagnostics.push(diagnostics_item);
+            } else {
+                asts.push(parse_result.unwrap());
+            }
+        }
+
+        // type checking
+        for ast in asts {
+            let type_check_result = compiler::type_checker::type_check(ast);
+            if let Err(e) = type_check_result {
+                let diagnostics_item = Diagnostic {
+                    range: Range {
+                        start: Position {
+                            line: e.range.start().line() as u32,
+                            character: e.range.start().character() as u32,
+                        },
+                        end: Position {
+                            line: e.range.end().line() as u32,
+                            character: e.range.end().character() as u32,
+                        },
+                    },
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: format!("type error: {}", e.message),
                     related_information: None,
                     tags: None,
                     data: None,
