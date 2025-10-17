@@ -283,6 +283,12 @@ pub struct Ast {
     s: S,
 }
 
+impl Ast {
+    pub fn get_s(&self) -> &S {
+        &self.s
+    }
+}
+
 #[derive(Debug)]
 pub struct IncompleteAst {
     pub error_token: TerminalType,

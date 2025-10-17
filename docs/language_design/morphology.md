@@ -27,7 +27,7 @@ WordNetの階層構造に従い、第一音節が決まり、第一音節の子�
   - entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> living_thing.n.01 -> organism.n.01 -> plant.n.02
 - `bi[CV]+` (動物に関する名詞)
   - entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> living_thing.n.01 -> organism.n.01 -> animal.n.01
-- `bi[CV]+` (その他生物に関する名詞)
+- `bu[CV]+` (その他生物に関する名詞)
   - entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> living_thing.n.01 ->  * (organism.n.01 -> person.n.01, organism.n.01 -> plant.n.02, organism.n.01 -> animal.n.01 以外)
 - `da[CV]+`
   - entity.n.01 -> physical_entity.n.01 -> object.n.01 -> whole.n.02 -> artifact.n.01 -> instrumentality.n.03
@@ -75,16 +75,16 @@ WordNetの階層構造に従い、第一音節が決まり、第一音節の子�
 f(x1)もしくはf(x1, x2)という形式で表され、x1は???をする(自動詞)もしくはx1はx2を対象にとりxxをする(他動詞)という命題を表す。
 x1, x2に取れる項は、名詞を表す述語で用いた第一音節の分類に基づく。
 
-- `pa[CV]+` (生物x1が物理的実体x2をxxxする)
-  - x1: `bV`, x2: `bV|dV|nV`
-- `pe[CV]+` (生物x1をxxxする)
+- `pa[CV]+` (生物x1が生物x2をxxxする)
+  - x1: `bV`, x2: `bV`
+- `pe[CV]+` (生物x1が生物以外の物理的実体x2をxxxする)
+  - x1: `bV`, x2: `dV|nV`
+- `pi[CV]+`, (生物x1がxxxする)
   - x1: `bV`
-- `pi[CV]+`
-  - x1: `dV`
-- `po[CV]+`
-  - x1: `nV`
-- `pu[CV]+` (生物以外の物理的実体x1が物理的実体x2をxxxする)
-  - x1: `dV|nV`, x2: `bV|dV|nV`
+- `po[CV]+` (生物以外の物理的実体x1が生物以外の物理的実体x2をxxxする)
+  - x1: `dV|nV`, x2: `dV|nV`
+- `pu[CV]+`, (生物以外の物理的実体x1がxxxする)
+  - x1: `dV|nV`
 - `ka[CV]+` (生物x1が抽象概念x2をxxxする)
   - x1: `bV`, x2: `gV|mV|rV`
 - `ki[CV]+` (生物以外の物理的実体x1が抽象概念x2をxxxする)
