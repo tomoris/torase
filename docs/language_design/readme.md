@@ -40,4 +40,4 @@
 - [parser](../../src/compiler/parser.rs)
   - [統語論](./syntax.md)
 - [type checker](../../src/compiler/type_checker.rs)
-- reasoner
+- SMT solver
