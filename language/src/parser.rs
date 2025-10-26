@@ -2469,7 +2469,7 @@ mod tests {
             ],
         );
 
-        let g = grammar::LL1Grammar::new(rules);
+        let g = grammar::LL1Grammar::try_new(rules).unwrap();
         let non_terminals = g.get_non_terminals();
         let terminals = g.get_terminals();
         let parse_table = g.get_parse_table();

@@ -1,4 +1,3 @@
-use core::panic;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -55,15 +54,15 @@ pub(super) struct LL1Grammar {
 
 #[allow(dead_code)]
 impl LL1Grammar {
-    pub(super) fn new(rules: HashMap<NonTerminal, Vec<Rhs>>) -> Self {
+    pub(super) fn try_new(rules: HashMap<NonTerminal, Vec<Rhs>>) -> Result<Self, String> {
         let start_symbol = NonTerminal("S".to_string());
-        let non_terminals = LL1Grammar::build_non_terminals(&rules, &start_symbol);
+        let non_terminals = LL1Grammar::build_non_terminals(&rules, &start_symbol)?;
         let terminals = LL1Grammar::build_terminals(&rules);
-        let first_sets = LL1Grammar::build_first_sets(&rules, &non_terminals);
+        let first_sets = LL1Grammar::build_first_sets(&rules, &non_terminals)?;
         let follow_sets =
-            LL1Grammar::build_follow_sets(&start_symbol, &rules, &non_terminals, &first_sets);
-        let parse_table = LL1Grammar::build_parse_table(&rules, &first_sets, &follow_sets);
-        LL1Grammar {
+            LL1Grammar::build_follow_sets(&start_symbol, &rules, &non_terminals, &first_sets)?;
+        let parse_table = LL1Grammar::build_parse_table(&rules, &first_sets, &follow_sets)?;
+        Ok(LL1Grammar {
             start_symbol,
             non_terminals,
             terminals,
@@ -71,21 +70,22 @@ impl LL1Grammar {
             first_sets,
             follow_sets,
             parse_table,
-        }
+        })
     }
 
+    #[allow(clippy::uninlined_format_args)]
     fn build_non_terminals(
         rules: &HashMap<NonTerminal, Vec<Rhs>>,
         start_symbol: &NonTerminal,
-    ) -> HashSet<NonTerminal> {
+    ) -> Result<HashSet<NonTerminal>, String> {
         let non_terminals: HashSet<NonTerminal> = rules.keys().cloned().collect();
         if !non_terminals.contains(start_symbol) {
-            panic!(
+            return Err(format!(
                 "Start symbol {:?} is not defined in the grammar rules",
                 start_symbol
-            );
+            ));
         }
-        non_terminals
+        Ok(non_terminals)
     }
 
     fn build_terminals(rules: &HashMap<NonTerminal, Vec<Rhs>>) -> HashSet<Terminal> {
@@ -110,7 +110,7 @@ impl LL1Grammar {
     fn build_first_sets(
         rules: &HashMap<NonTerminal, Vec<Rhs>>,
         non_terminals: &HashSet<NonTerminal>,
-    ) -> HashMap<NonTerminal, HashSet<FirstElement>> {
+    ) -> Result<HashMap<NonTerminal, HashSet<FirstElement>>, String> {
         let mut first_sets: HashMap<NonTerminal, HashSet<FirstElement>> = HashMap::new();
         for non_terminal in non_terminals {
             first_sets.insert(non_terminal.clone(), HashSet::new());
@@ -122,7 +122,7 @@ impl LL1Grammar {
                 for rhs in rhs_vec {
                     match rhs {
                         Rhs::Sequence(symbols) => {
-                            for first_symbol in LL1Grammar::first(symbols, &first_sets) {
+                            for first_symbol in LL1Grammar::first(symbols, &first_sets)? {
                                 match first_symbol {
                                     FirstElement::Terminal(t) => {
                                         changed |= first_sets
@@ -149,19 +149,20 @@ impl LL1Grammar {
                 }
             }
         }
-        first_sets
+        Ok(first_sets)
     }
 
+    #[allow(clippy::uninlined_format_args)]
     fn first(
         symbols: &[Symbol],
         first_sets: &HashMap<NonTerminal, HashSet<FirstElement>>,
-    ) -> HashSet<FirstElement> {
+    ) -> Result<HashSet<FirstElement>, String> {
         let mut result: HashSet<FirstElement> = HashSet::new();
         for symbol in symbols {
             match symbol {
                 Symbol::Terminal(t) => {
                     result.insert(FirstElement::Terminal(t.clone()));
-                    return result;
+                    return Ok(result);
                 }
                 Symbol::NonTerminal(nt) => match first_sets.get(nt) {
                     Some(first_set) => {
@@ -169,19 +170,19 @@ impl LL1Grammar {
                             result.insert(element.clone());
                         }
                         if !first_set.contains(&FirstElement::Epsilon) {
-                            return result;
+                            return Ok(result);
                         } else {
                             result.remove(&FirstElement::Epsilon);
                         }
                     }
                     None => {
-                        panic!("Non-terminal {:?} not found in first sets", nt);
+                        return Err(format!("Non-terminal {:?} not found in first sets", nt));
                     }
                 },
             }
         }
         result.insert(FirstElement::Epsilon);
-        result
+        Ok(result)
     }
 
     fn build_follow_sets(
@@ -189,7 +190,7 @@ impl LL1Grammar {
         rules: &HashMap<NonTerminal, Vec<Rhs>>,
         non_terminals: &HashSet<NonTerminal>,
         first_sets: &HashMap<NonTerminal, HashSet<FirstElement>>,
-    ) -> HashMap<NonTerminal, HashSet<FollowElement>> {
+    ) -> Result<HashMap<NonTerminal, HashSet<FollowElement>>, String> {
         let mut follow_sets: HashMap<NonTerminal, HashSet<FollowElement>> = HashMap::new();
         for non_terminal in non_terminals {
             follow_sets.insert(non_terminal.clone(), HashSet::new());
@@ -217,7 +218,7 @@ impl LL1Grammar {
                                         }
                                     } else {
                                         let mut first_set =
-                                            LL1Grammar::first(&symbols[i + 1..], first_sets)
+                                            LL1Grammar::first(&symbols[i + 1..], first_sets)?
                                                 .clone();
                                         if first_set.contains(&FirstElement::Epsilon) {
                                             first_set.remove(&FirstElement::Epsilon);
@@ -267,20 +268,20 @@ impl LL1Grammar {
             }
         }
 
-        follow_sets
+        Ok(follow_sets)
     }
 
     fn build_parse_table(
         rules: &HashMap<NonTerminal, Vec<Rhs>>,
         first_sets: &HashMap<NonTerminal, HashSet<FirstElement>>,
         follow_sets: &HashMap<NonTerminal, HashSet<FollowElement>>,
-    ) -> HashMap<(NonTerminal, Lookahead), Rhs> {
+    ) -> Result<HashMap<(NonTerminal, Lookahead), Rhs>, String> {
         let mut parse_table: HashMap<(NonTerminal, Lookahead), Rhs> = HashMap::new();
         for (lhs, rhs_vec) in rules {
             for rhs in rhs_vec {
                 match rhs {
                     Rhs::Sequence(symbols) => {
-                        let first_set = LL1Grammar::first(symbols, first_sets);
+                        let first_set = LL1Grammar::first(symbols, first_sets)?;
                         for first_element in &first_set {
                             match first_element {
                                 FirstElement::Terminal(t) => {
@@ -288,7 +289,7 @@ impl LL1Grammar {
                                         lhs.clone(),
                                         Lookahead::Terminal(t.clone()),
                                     )) {
-                                        panic!(
+                                        return Err(format!(
                                             "Conflict in parse table for lhs={:?}, t={:?},  parse_table[(lhs, t)]={:?} and rhs={:?}",
                                             lhs,
                                             t,
@@ -296,7 +297,7 @@ impl LL1Grammar {
                                                 .get(&(lhs.clone(), Lookahead::Terminal(t.clone())))
                                                 .unwrap(),
                                             rhs
-                                        );
+                                        ));
                                     }
                                     parse_table.insert(
                                         (lhs.clone(), Lookahead::Terminal(t.clone())),
@@ -314,7 +315,7 @@ impl LL1Grammar {
                                             lhs.clone(),
                                             Lookahead::Terminal(t.clone()),
                                         )) {
-                                            panic!(
+                                            return Err(format!(
                                                 "Conflict in parse table for lhs={:?}, t={:?},  parse_table[(lhs, t)]={:?} and rhs={:?}",
                                                 lhs,
                                                 t,
@@ -325,7 +326,7 @@ impl LL1Grammar {
                                                     ))
                                                     .unwrap(),
                                                 rhs
-                                            );
+                                            ));
                                         }
                                         parse_table.insert(
                                             (lhs.clone(), Lookahead::Terminal(t.clone())),
@@ -335,7 +336,7 @@ impl LL1Grammar {
                                     FollowElement::Eos => {
                                         if parse_table.contains_key(&(lhs.clone(), Lookahead::Eos))
                                         {
-                                            panic!(
+                                            return Err(format!(
                                                 "Conflict in parse table for lhs={:?}, t={:?},  parse_table[(lhs, t)]={:?} and rhs={:?}",
                                                 lhs,
                                                 Lookahead::Eos,
@@ -343,7 +344,7 @@ impl LL1Grammar {
                                                     .get(&(lhs.clone(), Lookahead::Eos))
                                                     .unwrap(),
                                                 rhs
-                                            );
+                                            ));
                                         }
                                         parse_table
                                             .insert((lhs.clone(), Lookahead::Eos), rhs.clone());
@@ -360,7 +361,7 @@ impl LL1Grammar {
                                         lhs.clone(),
                                         Lookahead::Terminal(t.clone()),
                                     )) {
-                                        panic!(
+                                        return Err(format!(
                                             "Conflict in parse table for lhs={:?}, t={:?},  parse_table[(lhs, t)]={:?} and rhs={:?}",
                                             lhs,
                                             t,
@@ -368,7 +369,7 @@ impl LL1Grammar {
                                                 .get(&(lhs.clone(), Lookahead::Terminal(t.clone())))
                                                 .unwrap(),
                                             rhs
-                                        );
+                                        ));
                                     }
                                     parse_table.insert(
                                         (lhs.clone(), Lookahead::Terminal(t.clone())),
@@ -377,7 +378,7 @@ impl LL1Grammar {
                                 }
                                 FollowElement::Eos => {
                                     if parse_table.contains_key(&(lhs.clone(), Lookahead::Eos)) {
-                                        panic!(
+                                        return Err(format!(
                                             "Conflict in parse table for lhs={:?}, t={:?},  parse_table[(lhs, t)]={:?} and rhs={:?}",
                                             lhs,
                                             Lookahead::Eos,
@@ -385,7 +386,7 @@ impl LL1Grammar {
                                                 .get(&(lhs.clone(), Lookahead::Eos))
                                                 .unwrap(),
                                             rhs
-                                        );
+                                        ));
                                     }
                                     parse_table.insert((lhs.clone(), Lookahead::Eos), rhs.clone());
                                 }
@@ -395,7 +396,7 @@ impl LL1Grammar {
                 }
             }
         }
-        parse_table
+        Ok(parse_table)
     }
 
     pub(super) fn get_non_terminals(&self) -> &HashSet<NonTerminal> {
@@ -453,7 +454,7 @@ mod tests {
             ],
         );
 
-        let g = LL1Grammar::new(rules);
+        let g = LL1Grammar::try_new(rules).unwrap();
         assert_eq!(
             g.get_parse_table(),
             &HashMap::from([
@@ -529,7 +530,7 @@ mod tests {
             ],
         );
 
-        let g = LL1Grammar::new(rules);
+        let g = LL1Grammar::try_new(rules).unwrap();
         assert_eq!(
             g.first_sets,
             HashMap::from([(
@@ -638,11 +639,10 @@ mod tests {
             ],
         );
 
-        LL1Grammar::new(rules);
+        LL1Grammar::try_new(rules).unwrap();
     }
 
     #[test]
-    #[should_panic]
     fn test_ll1文法でないルールが与えられた場合にparse_tableの生成に失敗する1() {
         // https://www.momoyama-usagi.com/entry/info-compiler4
 
@@ -685,11 +685,10 @@ mod tests {
             ],
         );
 
-        LL1Grammar::new(rules);
+        assert!(LL1Grammar::try_new(rules).is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_ll1文法でないルールが与えられた場合にparse_tableの生成に失敗する2() {
         // https://ja.wikipedia.org/wiki/%E5%B7%A6%E5%86%8D%E5%B8%B0
 
@@ -715,11 +714,10 @@ mod tests {
             ],
         );
 
-        let _g = LL1Grammar::new(rules);
+        assert!(LL1Grammar::try_new(rules).is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_ll1文法でないルールが与えられた場合にparse_tableの生成に失敗する3() {
         // https://youtu.be/5P7ehgZ6EIs?t=340
 
@@ -747,6 +745,6 @@ mod tests {
             ],
         );
 
-        LL1Grammar::new(rules);
+        assert!(LL1Grammar::try_new(rules).is_err());
     }
 }
