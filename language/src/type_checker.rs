@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use crate::compiler::parser::*;
-use crate::compiler::tokenizer::{ArgumentType, PhysicalEntity, Range};
+use crate::parser::*;
+use crate::tokenizer::{ArgumentType, PhysicalEntity, Range};
 
 #[allow(dead_code)]
 pub struct TypeMismatch {
@@ -627,8 +627,8 @@ fn has_intersection<T: Eq + Hash>(vec1: &[T], vec2: &[T]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compiler::parser;
-    use crate::compiler::tokenizer;
+    use crate::parser;
+    use crate::tokenizer;
 
     #[test]
     fn test_型検査が成功する() {

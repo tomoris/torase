@@ -1,5 +1,3 @@
-mod compiler;
-
 // fn main() {
 //     let input = "binary_predicate argument argument_phrase_separator argument eos";
 //     let tokens = compiler::tokenizer::tokenize(input);
@@ -15,7 +13,7 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use compiler::tokenizer::TerminalType;
+use language::tokenizer::TerminalType;
 
 #[derive(Debug)]
 struct Backend {
@@ -185,11 +183,11 @@ impl LanguageServer for Backend {
         let uri = params.text_document.uri;
         let semantic_tokens = || -> Option<Vec<SemanticToken>> {
             let text = self.document_map.get(&uri)?;
-            let tokenize_result = compiler::tokenizer::tokenize(&text);
+            let tokenize_result = language::tokenizer::tokenize(&text);
             if tokenize_result.is_err() {
                 return None;
             }
-            let sentences = compiler::tokenizer::add_eos_to_last_sentence(tokenize_result.unwrap());
+            let sentences = language::tokenizer::add_eos_to_last_sentence(tokenize_result.unwrap());
             let mut semantic_tokens = Vec::new();
             let mut pre_line = 0;
             let mut pre_start = 0;
@@ -251,7 +249,7 @@ impl Backend {
         let text = self.document_map.get(&url).unwrap();
 
         // tokenizing
-        let tokenize_result = compiler::tokenizer::tokenize(&text);
+        let tokenize_result = language::tokenizer::tokenize(&text);
         if let Err(e) = tokenize_result {
             let diagnostics = vec![Diagnostic {
                 range: Range {
@@ -280,11 +278,11 @@ impl Backend {
         }
 
         // parsing
-        let sentences = compiler::tokenizer::add_eos_to_last_sentence(tokenize_result.unwrap());
+        let sentences = language::tokenizer::add_eos_to_last_sentence(tokenize_result.unwrap());
         let mut asts = Vec::new();
         let mut diagnostics = Vec::new();
         for sentence in sentences {
-            let parse_result = compiler::parser::parse(sentence.clone());
+            let parse_result = language::parser::parse(sentence.clone());
             if let Err(e) = parse_result {
                 let diagnostics_item = Diagnostic {
                     range: Range {
@@ -314,7 +312,7 @@ impl Backend {
 
         // type checking
         for ast in asts {
-            let type_check_result = compiler::type_checker::type_check(ast);
+            let type_check_result = language::type_checker::type_check(ast);
             if let Err(e) = type_check_result {
                 let diagnostics_item = Diagnostic {
                     range: Range {
