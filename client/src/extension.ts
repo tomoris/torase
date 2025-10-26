@@ -18,7 +18,7 @@ let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
 	// The server is implemented in node
-	const command = "/Users/suzushi.tomori/work/artificial_language/target/debug/artificial_language";
+	const command = "/Users/suzushi.tomori/work/artificial_language/target/debug/language_server";
 	const run: Executable = {
 		command,
 		options: {
