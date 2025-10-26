@@ -4,7 +4,6 @@ use std::hash::Hash;
 use crate::parser::*;
 use crate::tokenizer::{ArgumentType, PhysicalEntity, Range};
 
-#[allow(dead_code)]
 pub struct TypeMismatch {
     pub range: Range,
     pub actual: Vec<ArgumentType>,
@@ -577,15 +576,6 @@ impl ArgumentRetrievalWithArgumentPhrase {
             ArgumentRetrievalWithArgumentPhrase::Epsilon => Ok(()),
         }
     }
-    // fn get_type(&self) -> Vec<ArgumentType> {
-    //     match self {
-    //         ArgumentRetrievalWithArgumentPhrase::One(
-    //             _post_argument_phrase_modifier,
-    //             argument_phrase,
-    //         ) => argument_phrase.get_type(),
-    //         ArgumentRetrievalWithArgumentPhrase::Epsilon => vec![ArgumentType::Epsilon],
-    //     }
-    // }
     fn get_range(&self) -> Option<Range> {
         match self {
             ArgumentRetrievalWithArgumentPhrase::One(

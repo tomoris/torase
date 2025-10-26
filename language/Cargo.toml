@@ -3,4 +3,4 @@ name = "language"
 edition.workspace = true
 
 [dependencies]
-regex = "1.11.3"
+regex = "1"
