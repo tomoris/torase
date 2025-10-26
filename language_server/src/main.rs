@@ -1,12 +1,3 @@
-// fn main() {
-//     let input = "binary_predicate argument argument_phrase_separator argument eos";
-//     let tokens = compiler::tokenizer::tokenize(input);
-//     println!(
-//         "Testing parse with tokens: {:?}",
-//         compiler::parser::parse(tokens)
-//     );
-// }
-
 use dashmap::DashMap;
 use serde_json::Value;
 use tower_lsp::jsonrpc::Result;
