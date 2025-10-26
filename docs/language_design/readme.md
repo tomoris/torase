@@ -39,5 +39,5 @@
   - [形態論](./morphology.md)
 - [parser](../../src/compiler/parser.rs)
   - [統語論](./syntax.md)
-- type checker
+- [type checker](../../src/compiler/type_checker.rs)
 - reasoner
