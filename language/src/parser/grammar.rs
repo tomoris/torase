@@ -1,11 +1,9 @@
 use core::panic;
 use std::collections::{HashMap, HashSet};
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub(super) struct Terminal(pub(super) String);
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub(super) struct NonTerminal(pub(super) String);
 
