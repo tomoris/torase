@@ -358,6 +358,12 @@ impl TerminalType {
             TerminalType::Eos(eos) => eos.range.end.clone(),
         }
     }
+    pub fn range(&self) -> Range {
+        Range {
+            start: self.start(),
+            end: self.end(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -576,6 +582,9 @@ impl InterrogativeMarker {
             },
         }
     }
+    pub fn get_string(&self) -> String {
+        "ku".to_string()
+    }
 }
 
 impl Modality {
@@ -620,6 +629,23 @@ impl Modality {
             kind,
         }
     }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            ModalityKind::Haka => "haka".to_string(),
+            ModalityKind::Haki => "haki".to_string(),
+            ModalityKind::Haku => "haku".to_string(),
+            ModalityKind::Hame => "hame".to_string(),
+            ModalityKind::Hamo => "hamo".to_string(),
+            ModalityKind::Hasa => "hasa".to_string(),
+            ModalityKind::Hasi => "hasi".to_string(),
+            ModalityKind::Hake => "hake".to_string(),
+            ModalityKind::Hako => "hako".to_string(),
+            ModalityKind::Hate => "hate".to_string(),
+            ModalityKind::Hato => "hato".to_string(),
+            ModalityKind::Hape => "hape".to_string(),
+            ModalityKind::Hapo => "hapo".to_string(),
+        }
+    }
 }
 
 impl Tense {
@@ -652,6 +678,13 @@ impl Tense {
                 },
             },
             kind,
+        }
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            TenseKind::Hita => "hita".to_string(),
+            TenseKind::Hiti => "hiti".to_string(),
+            TenseKind::Hitu => "hitu".to_string(),
         }
     }
 }
@@ -692,6 +725,17 @@ impl Aspect {
             kind,
         }
     }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            AspectKind::Huda => "huda".to_string(),
+            AspectKind::Hude => "hude".to_string(),
+            AspectKind::Hudida => "hudida".to_string(),
+            AspectKind::Hudidi => "hudidi".to_string(),
+            AspectKind::Hudidu => "hudidu".to_string(),
+            AspectKind::Hudo => "hudo".to_string(),
+            AspectKind::Hudu => "hudu".to_string(),
+        }
+    }
 }
 
 impl ModalityNegation {
@@ -722,6 +766,11 @@ impl ModalityNegation {
                 },
             },
             kind,
+        }
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            ModalityNegationKind::Hane => "hane".to_string(),
         }
     }
 }
@@ -756,6 +805,11 @@ impl TenseNegation {
             kind,
         }
     }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            TenseNegationKind::Hine => "hine".to_string(),
+        }
+    }
 }
 
 impl AspectNegation {
@@ -786,6 +840,11 @@ impl AspectNegation {
                 },
             },
             kind,
+        }
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            AspectNegationKind::Hune => "hune".to_string(),
         }
     }
 }
@@ -823,6 +882,12 @@ impl Negation {
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            NegationKind::Ne => "ne".to_string(),
+            NegationKind::No => "no".to_string(),
+        }
     }
 }
 
@@ -950,11 +1015,14 @@ impl BinaryPredicate {
             panic!("Invalid binary predicate surface: {}", self.string);
         }
     }
+    pub fn get_string(&self) -> String {
+        self.string.clone()
+    }
 }
 
 impl Argument {
     fn is_match(string: &str) -> bool {
-        let re_argument = Regex::new(r"^(?:m[aiue])|(?:b[aue])|(?:g[iue])$").unwrap();
+        let re_argument = Regex::new(r"^(:?(?:m[aiue])|(?:b[aue])|(?:g[iue]))$").unwrap();
         re_argument.is_match(string)
     }
     fn new(
@@ -1017,6 +1085,20 @@ impl Argument {
             ],
         }
     }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            ArgumentKind::Ma => "ma".to_string(),
+            ArgumentKind::Mi => "mi".to_string(),
+            ArgumentKind::Mu => "mu".to_string(),
+            ArgumentKind::Me => "me".to_string(),
+            ArgumentKind::Ba => "ba".to_string(),
+            ArgumentKind::Bu => "bu".to_string(),
+            ArgumentKind::Be => "be".to_string(),
+            ArgumentKind::Gi => "gi".to_string(),
+            ArgumentKind::Gu => "gu".to_string(),
+            ArgumentKind::Ge => "ge".to_string(),
+        }
+    }
 }
 
 impl ArgumentPhraseSeparator {
@@ -1045,6 +1127,9 @@ impl ArgumentPhraseSeparator {
                 },
             },
         }
+    }
+    pub fn get_string(&self) -> String {
+        "si".to_string()
     }
 }
 
@@ -1078,6 +1163,9 @@ impl ArgumentPhraseTransposer {
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_string(&self) -> String {
+        "re".to_string()
+    }
 }
 
 impl BinaryOperator {
@@ -1109,6 +1197,9 @@ impl BinaryOperator {
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        "binary_operator".to_string()
     }
 }
 
@@ -1142,6 +1233,9 @@ impl ArgumentRetriever {
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_string(&self) -> String {
+        "ro".to_string()
+    }
 }
 
 impl Quantifier {
@@ -1174,6 +1268,9 @@ impl Quantifier {
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_string(&self) -> String {
+        "quantifier".to_string()
+    }
 }
 
 impl Articlizer {
@@ -1205,6 +1302,9 @@ impl Articlizer {
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        "articlizer".to_string()
     }
 }
 
@@ -1241,6 +1341,9 @@ impl MtaEventToArgumentPhraseConverter {
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_string(&self) -> String {
+        "se".to_string()
+    }
 }
 
 impl MtaEventToArgumentPhraseConverterEnd {
@@ -1276,6 +1379,9 @@ impl MtaEventToArgumentPhraseConverterEnd {
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_string(&self) -> String {
+        "so".to_string()
+    }
 }
 
 impl PostMtaEventModifier {
@@ -1304,6 +1410,9 @@ impl PostMtaEventModifier {
                 },
             },
         }
+    }
+    pub fn get_string(&self) -> String {
+        "da".to_string()
     }
 }
 
@@ -1340,6 +1449,9 @@ impl PostBinaryPredicatePhraseModifier {
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_string(&self) -> String {
+        "di".to_string()
+    }
 }
 
 impl PostArgumentPhraseModifier {
@@ -1371,6 +1483,9 @@ impl PostArgumentPhraseModifier {
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        "du".to_string()
     }
 }
 
