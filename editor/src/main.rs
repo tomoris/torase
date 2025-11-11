@@ -1,6 +1,6 @@
 use std::vec;
 
-use iced::widget::{Space, column, container, row, scrollable, text, text_editor};
+use iced::widget::{Space, button, column, container, row, scrollable, text, text_editor};
 use iced::{Alignment, Element, Task};
 
 use language::parser::*;
@@ -14,11 +14,14 @@ fn main() -> iced::Result {
 #[derive(Debug, Clone)]
 enum Message {
     Edit(text_editor::Action),
+    ToFull,
+    ToCompact,
     Diagnosing(Result<Vec<Ast>, Vec<Diagnostic>>),
 }
 
 enum Viewer {
-    Rich(Vec<Ast>),
+    Full(Vec<Ast>),
+    Compact(Vec<Ast>),
     Error(Vec<Diagnostic>),
 }
 
@@ -33,7 +36,7 @@ impl Editor {
         let asts = diagnose(text.to_string()).unwrap();
         Self {
             content: text_editor::Content::with_text(text),
-            viewer: Viewer::Rich(asts),
+            viewer: Viewer::Compact(asts),
         }
     }
 
@@ -44,13 +47,25 @@ impl Editor {
                 let text = self.content.text();
                 Task::perform(async { diagnose(text) }, Message::Diagnosing)
             }
+            Message::ToFull => {
+                if let Viewer::Compact(asts) = &self.viewer {
+                    self.viewer = Viewer::Full(asts.clone());
+                }
+                Task::none()
+            }
+            Message::ToCompact => {
+                if let Viewer::Full(asts) = &self.viewer {
+                    self.viewer = Viewer::Compact(asts.clone());
+                }
+                Task::none()
+            }
             Message::Diagnosing(diagnostics_result) => match diagnostics_result {
                 Err(diagnostics) => {
                     self.viewer = Viewer::Error(diagnostics);
                     Task::none()
                 }
                 Ok(asts) => {
-                    self.viewer = Viewer::Rich(asts);
+                    self.viewer = Viewer::Compact(asts);
                     Task::none()
                 }
             },
@@ -60,12 +75,30 @@ impl Editor {
     fn view(&self) -> Element<'_, Message> {
         let content = text_editor(&self.content).on_action(Message::Edit);
         let viewer = match &self.viewer {
-            Viewer::Rich(asts) => scrollable(asts[0].view())
-                .direction(scrollable::Direction::Both {
+            Viewer::Full(asts) => column![
+                row![
+                    text("Full View"),
+                    Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
+                    button("Compact View").on_press(Message::ToCompact),
+                ],
+                scrollable(asts[0].view(true)).direction(scrollable::Direction::Both {
                     vertical: scrollable::Scrollbar::new(),
                     horizontal: scrollable::Scrollbar::new(),
-                })
-                .into(),
+                }),
+            ]
+            .into(),
+            Viewer::Compact(asts) => column![
+                row![
+                    button("Full View").on_press(Message::ToFull),
+                    Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
+                    text("Compact View"),
+                ],
+                scrollable(asts[0].view(false)).direction(scrollable::Direction::Both {
+                    vertical: scrollable::Scrollbar::new(),
+                    horizontal: scrollable::Scrollbar::new(),
+                }),
+            ]
+            .into(),
             Viewer::Error(diagnostics) => {
                 let mut error_string = String::new();
                 for diagnostic in diagnostics {
@@ -100,12 +133,6 @@ impl Editor {
         .width(iced::Length::Fill)
         .height(iced::Length::Fill)
         .into()
-        // scrollable(column![
-        //     "Scroll me!",
-        //     Space::new(iced::Length::Fixed(3000.0), iced::Length::Fixed(3000.0)),
-        //     "You did it!",
-        // ])
-        // .into()
     }
 }
 
@@ -154,89 +181,108 @@ where
 }
 
 trait TreeViewer {
-    fn view(&self) -> Element<'static, Message>;
+    fn view(&self, is_full: bool) -> Element<'static, Message>;
+    fn is_empty(&self) -> bool;
 }
 
 impl TreeViewer for Ast {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         let s = self.get_s();
-        container(s.view()).into()
+        container(s.view(is_full)).into()
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for S {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             S::One(declarative_sentence) => {
                 let category = "s".to_string();
-                let content = declarative_sentence.view();
+                let content = declarative_sentence.view(is_full);
                 category_box(category, content)
             }
             S::Two(interrogative_sentence) => {
-                let content = interrogative_sentence.view();
+                let content = interrogative_sentence.view(is_full);
                 category_box("s".to_string(), content)
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        false
+    }
 }
 
 impl TreeViewer for DeclarativeSentence {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             DeclarativeSentence::One(post_modified_mta_event) => {
-                let category = "PostModifiedMtaEvent".to_string();
-                let content = post_modified_mta_event.view();
+                let category = "DeclarativeSentence".to_string();
+                let content = post_modified_mta_event.view(is_full);
                 category_box(category, content)
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        false
+    }
 }
 
 impl TreeViewer for InterrogativeSentence {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             InterrogativeSentence::One(interrogative_marker, post_modified_mta_event) => {
                 let category = "InterrogativeSentence".to_string();
                 let content = row![
                     text(interrogative_marker.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    post_modified_mta_event.view(),
+                    post_modified_mta_event.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
                 category_box(category, content)
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for PostModifiedMtaEvent {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
                 let category = "PostModifiedMtaEvent".to_string();
-                let content = row![
-                    mta_event.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    post_mta_event_expression.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![mta_event.view(is_full),];
+                if is_full || !post_mta_event_expression.is_empty() {
+                    content = content
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ))
+                        .push(post_mta_event_expression.view(is_full))
+                }
+                content = content.align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for PostMtaEventExpression {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             PostMtaEventExpression::One(post_mta_event_modifier, mta_event) => {
                 let category = "PostMtaEventExpression".to_string();
                 let content = row![
                     text(post_mta_event_modifier.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    mta_event.view(),
+                    mta_event.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -249,14 +295,17 @@ impl TreeViewer for PostMtaEventExpression {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, PostMtaEventExpression::Epsilon)
+    }
 }
 
 impl TreeViewer for ModalityExpression {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ModalityExpression::One(modality_with_agent) => {
                 let category = "ModalityExpression".to_string();
-                let content = modality_with_agent.view();
+                let content = modality_with_agent.view(is_full);
                 category_box(category, content)
             }
             ModalityExpression::Epsilon => {
@@ -266,28 +315,37 @@ impl TreeViewer for ModalityExpression {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, ModalityExpression::Epsilon)
+    }
 }
 
 impl TreeViewer for ModalityWithAgent {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ModalityWithAgent::One(modified_modality, modality_agent) => {
                 let category = "ModalityWithAgent".to_string();
-                let content = row![
-                    modified_modality.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    modality_agent.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![modified_modality.view(is_full)];
+                if is_full || !modality_agent.is_empty() {
+                    content = content
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ))
+                        .push(modality_agent.view(is_full));
+                }
+                content = content.align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for ModifiedModality {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
         match self {
             ModifiedModality::One(modality) => {
                 let category = "ModifiedModality".to_string();
@@ -299,7 +357,7 @@ impl TreeViewer for ModifiedModality {
                 let content = row![
                     text(modality_negation.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    modified_modality.view(),
+                    modified_modality.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -307,17 +365,20 @@ impl TreeViewer for ModifiedModality {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        false
+    }
 }
 
 impl TreeViewer for ModalityAgent {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ModalityAgent::One(post_argument_phrase_modifier, argument_phrase) => {
                 let category = "ModalityAgent".to_string();
                 let content = row![
                     text(post_argument_phrase_modifier.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase.view(),
+                    argument_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -330,14 +391,17 @@ impl TreeViewer for ModalityAgent {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, ModalityAgent::Epsilon)
+    }
 }
 
 impl TreeViewer for TenseExpression {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             TenseExpression::One(modified_tense) => {
                 let category = "TenseExpression".to_string();
-                let content = modified_tense.view();
+                let content = modified_tense.view(is_full);
                 category_box(category, content)
             }
             TenseExpression::Epsilon => {
@@ -347,10 +411,13 @@ impl TreeViewer for TenseExpression {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, TenseExpression::Epsilon)
+    }
 }
 
 impl TreeViewer for ModifiedTense {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
         match self {
             ModifiedTense::One(tense) => {
                 let category = "ModifiedTense".to_string();
@@ -362,7 +429,7 @@ impl TreeViewer for ModifiedTense {
                 let content = row![
                     text(tense_negation.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    modified_tense.view(),
+                    modified_tense.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -370,14 +437,17 @@ impl TreeViewer for ModifiedTense {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        false
+    }
 }
 
 impl TreeViewer for AspectExpression {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             AspectExpression::One(modified_aspect) => {
                 let category = "AspectExpression".to_string();
-                let content = modified_aspect.view();
+                let content = modified_aspect.view(is_full);
                 category_box(category, content)
             }
             AspectExpression::Epsilon => {
@@ -387,10 +457,13 @@ impl TreeViewer for AspectExpression {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, AspectExpression::Epsilon)
+    }
 }
 
 impl TreeViewer for ModifiedAspect {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
         match self {
             ModifiedAspect::One(aspect) => {
                 let category = "ModifiedAspect".to_string();
@@ -402,72 +475,98 @@ impl TreeViewer for ModifiedAspect {
                 let content = row![
                     text(aspect_negation.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    modified_aspect.view(),
+                    modified_aspect.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
                 category_box(category, content)
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for MtaEvent {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             MtaEvent::One(modality_expression, ta_event) => {
                 let category = "MtaEvent".to_string();
-                let content = row![
-                    modality_expression.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    ta_event.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![];
+                if is_full || !modality_expression.is_empty() {
+                    content = content
+                        .push(modality_expression.view(is_full))
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ));
+                }
+                content = content
+                    .push(ta_event.view(is_full))
+                    .align_y(Alignment::Center)
+                    .align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for TaEvent {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             TaEvent::One(tense_expression, a_event) => {
                 let category = "TaEvent".to_string();
-                let content = row![
-                    tense_expression.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    a_event.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![];
+                if is_full || !tense_expression.is_empty() {
+                    content = content
+                        .push(tense_expression.view(is_full))
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ));
+                }
+                content = content
+                    .push(a_event.view(is_full))
+                    .align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for AEvent {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             AEvent::One(aspect_expression, event) => {
                 let category = "AEvent".to_string();
-                let content = row![
-                    aspect_expression.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    event.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![];
+                if is_full || !aspect_expression.is_empty() {
+                    content = content
+                        .push(aspect_expression.view(is_full))
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ));
+                }
+                content = content.push(event.view(is_full)).align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for Event {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             Event::One(
                 post_modified_binary_predicate_phrase,
@@ -475,43 +574,58 @@ impl TreeViewer for Event {
                 argument_phrase_or_epsilon,
             ) => {
                 let category = "Event".to_string();
-                let content = row![
-                    post_modified_binary_predicate_phrase.view(),
+                let mut content = row![
+                    post_modified_binary_predicate_phrase.view(is_full),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase_or_epsilon.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                    argument_phrase.view(is_full),
+                ];
+                if is_full || !argument_phrase_or_epsilon.is_empty() {
+                    content = content
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ))
+                        .push(argument_phrase_or_epsilon.view(is_full));
+                }
+                content = content.align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for PostModifiedBinaryPredicatePhrase {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             PostModifiedBinaryPredicatePhrase::One(
                 binary_predicate_phrase,
                 post_binary_predicate_phrase_expression,
             ) => {
                 let category = "PostModifiedBinaryPredicatePhrase".to_string();
-                let content = row![
-                    binary_predicate_phrase.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    post_binary_predicate_phrase_expression.view(),
-                ]
-                .into();
-                category_box(category, content)
+                let mut content = row![binary_predicate_phrase.view(is_full)];
+                if is_full || !post_binary_predicate_phrase_expression.is_empty() {
+                    content = content
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ))
+                        .push(post_binary_predicate_phrase_expression.view(is_full));
+                }
+                content = content.align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for PostBinaryPredicatePhraseExpression {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             PostBinaryPredicatePhraseExpression::One(
                 post_binary_predicate_phrase_modifier,
@@ -521,7 +635,7 @@ impl TreeViewer for PostBinaryPredicatePhraseExpression {
                 let content = row![
                     text(post_binary_predicate_phrase_modifier.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase.view(),
+                    binary_predicate_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -534,10 +648,13 @@ impl TreeViewer for PostBinaryPredicatePhraseExpression {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, PostBinaryPredicatePhraseExpression::Epsilon)
+    }
 }
 
 impl TreeViewer for BinaryPredicatePhrase {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             BinaryPredicatePhrase::One(binary_predicate) => {
                 let category = "BinaryPredicatePhrase".to_string();
@@ -549,7 +666,7 @@ impl TreeViewer for BinaryPredicatePhrase {
                 let content = row![
                     text(negation.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase.view(),
+                    binary_predicate_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -560,7 +677,7 @@ impl TreeViewer for BinaryPredicatePhrase {
                 let content = row![
                     text(argument_phrase_transposer.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase.view(),
+                    binary_predicate_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -575,9 +692,9 @@ impl TreeViewer for BinaryPredicatePhrase {
                 let content = row![
                     text(binary_operator.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase1.view(),
+                    binary_predicate_phrase1.view(is_full),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase2.view(),
+                    binary_predicate_phrase2.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -585,10 +702,13 @@ impl TreeViewer for BinaryPredicatePhrase {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        false
+    }
 }
 
 impl TreeViewer for ArgumentPhrase {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ArgumentPhrase::One(argument) => {
                 let category = "ArgumentPhrase".to_string();
@@ -600,7 +720,7 @@ impl TreeViewer for ArgumentPhrase {
                 let content = row![
                     text(negation.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase.view(),
+                    argument_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -611,9 +731,9 @@ impl TreeViewer for ArgumentPhrase {
                 let content = row![
                     text(binary_operator.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase1.view(),
+                    argument_phrase1.view(is_full),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase2.view(),
+                    argument_phrase2.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -627,7 +747,7 @@ impl TreeViewer for ArgumentPhrase {
                 let content = row![
                     text(argument_retriever.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    determined_argument_retrieval_binary_predicate.view(),
+                    determined_argument_retrieval_binary_predicate.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -642,7 +762,7 @@ impl TreeViewer for ArgumentPhrase {
                 let content = row![
                     text(mta_event_to_argument_phrase_converter.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    mta_event.view(),
+                    mta_event.view(is_full),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
                     text(mta_event_to_argument_phrase_converter_end.get_string()),
                 ]
@@ -652,17 +772,20 @@ impl TreeViewer for ArgumentPhrase {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        false
+    }
 }
 
 impl TreeViewer for ArgumentPhraseOrEpsilon {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ArgumentPhraseOrEpsilon::One(argument_phrase_separator, argument_phrase) => {
                 let category = "ArgumentPhraseOrEpsilon".to_string();
                 let content = row![
                     text(argument_phrase_separator.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase.view()
+                    argument_phrase.view(is_full)
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -671,73 +794,94 @@ impl TreeViewer for ArgumentPhraseOrEpsilon {
             ArgumentPhraseOrEpsilon::Epsilon => text("ε").into(),
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, ArgumentPhraseOrEpsilon::Epsilon)
+    }
 }
 
 impl TreeViewer for DeterminedArgumentRetrievalBinaryPredicate {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             DeterminedArgumentRetrievalBinaryPredicate::One(
                 quantification,
                 articlized_argument_retrieval_binary_predicate,
             ) => {
                 let category = "DeterminedArgumentRetrievalBinaryPredicate".to_string();
-                let content = row![
-                    quantification.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    articlized_argument_retrieval_binary_predicate.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![];
+                if is_full || !quantification.is_empty() {
+                    content = content.push(quantification.view(is_full)).push(Space::new(
+                        iced::Length::Fixed(1.0),
+                        iced::Length::Fixed(0.0),
+                    ));
+                }
+                content = content
+                    .push(articlized_argument_retrieval_binary_predicate.view(is_full))
+                    .align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for ArticlizedArgumentRetrievalBinaryPredicate {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ArticlizedArgumentRetrievalBinaryPredicate::One(
                 article,
                 argument_retrieval_binary_predicate,
             ) => {
                 let category = "DeterminedArgumentRetrievalBinaryPredicate".to_string();
-                let content = row![
-                    article.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_retrieval_binary_predicate.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![];
+                if is_full || !article.is_empty() {
+                    content = content.push(article.view(is_full)).push(Space::new(
+                        iced::Length::Fixed(1.0),
+                        iced::Length::Fixed(0.0),
+                    ));
+                }
+                content = content
+                    .push(argument_retrieval_binary_predicate.view(is_full))
+                    .align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for ArgumentRetrievalBinaryPredicate {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ArgumentRetrievalBinaryPredicate::One(
                 post_modified_binary_predicate_phrase,
                 argument_retrieval_with_argument_phrase,
             ) => {
                 let category = "ArgumentRetrievalBinaryPredicate".to_string();
-                let content = row![
-                    post_modified_binary_predicate_phrase.view(),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_retrieval_with_argument_phrase.view(),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content)
+                let mut content = row![post_modified_binary_predicate_phrase.view(is_full)];
+                if is_full || !argument_retrieval_with_argument_phrase.is_empty() {
+                    content = content
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ))
+                        .push(argument_retrieval_with_argument_phrase.view(is_full));
+                }
+                content = content.align_y(Alignment::Center);
+                category_box(category, content.into())
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        false
     }
 }
 
 impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         match self {
             ArgumentRetrievalWithArgumentPhrase::One(
                 post_argument_phrase_modifier,
@@ -747,7 +891,7 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
                 let content = row![
                     text(post_argument_phrase_modifier.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase.view(),
+                    argument_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -760,10 +904,13 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, ArgumentRetrievalWithArgumentPhrase::Epsilon)
+    }
 }
 
 impl TreeViewer for Quantification {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
         match self {
             Quantification::One(quantifier) => {
                 let category = "Quantification".to_string();
@@ -777,10 +924,13 @@ impl TreeViewer for Quantification {
             }
         }
     }
+    fn is_empty(&self) -> bool {
+        matches!(self, Quantification::Epsilon)
+    }
 }
 
 impl TreeViewer for Article {
-    fn view(&self) -> Element<'static, Message> {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
         match self {
             Article::One(articlizer) => {
                 let category = "Article".to_string();
@@ -793,6 +943,9 @@ impl TreeViewer for Article {
                 category_box(category, content)
             }
         }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, Article::Epsilon)
     }
 }
 
