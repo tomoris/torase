@@ -1,0 +1,7 @@
+[package]
+name = "editor"
+edition.workspace = true
+
+[dependencies]
+language = { path = "../language" }
+iced = "0.13"
