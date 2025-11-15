@@ -328,31 +328,6 @@ impl TreeViewer for ModalityExpression {
     }
 }
 
-impl TreeViewer for ModalityWithAgent {
-    fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(150, 250, 250);
-        match self {
-            ModalityWithAgent::One(modified_modality, modality_agent) => {
-                let category = "ModalityWithAgent".to_string();
-                let mut content = row![modified_modality.view(is_full)];
-                if is_full || !modality_agent.is_empty() {
-                    content = content
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ))
-                        .push(modality_agent.view(is_full));
-                }
-                content = content.align_y(Alignment::Center);
-                category_box(category, content.into(), background)
-            }
-        }
-    }
-    fn is_empty(&self) -> bool {
-        false
-    }
-}
-
 impl TreeViewer for ModifiedModality {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(0, 255, 255);
@@ -377,33 +352,6 @@ impl TreeViewer for ModifiedModality {
     }
     fn is_empty(&self) -> bool {
         false
-    }
-}
-
-impl TreeViewer for ModalityAgent {
-    fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(65, 225, 210);
-        match self {
-            ModalityAgent::One(post_argument_phrase_modifier, argument_phrase) => {
-                let category = "ModalityAgent".to_string();
-                let content = row![
-                    text(post_argument_phrase_modifier.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    argument_phrase.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content, background)
-            }
-            ModalityAgent::Epsilon => {
-                let category = "ModalityAgent".to_string();
-                let content = text("ε").into();
-                category_box(category, content, background)
-            }
-        }
-    }
-    fn is_empty(&self) -> bool {
-        matches!(self, ModalityAgent::Epsilon)
     }
 }
 

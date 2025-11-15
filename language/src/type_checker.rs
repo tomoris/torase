@@ -77,33 +77,11 @@ impl ModalityExpression {
     }
 }
 
-impl ModalityWithAgent {
-    fn type_check(&self) -> TypeMismatchResult {
-        match self {
-            ModalityWithAgent::One(modified_modality, modality_agent) => {
-                modified_modality.type_check()?;
-                modality_agent.type_check()
-            }
-        }
-    }
-}
-
 impl ModifiedModality {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
             ModifiedModality::One(_modality) => Ok(()),
             ModifiedModality::Two(_modality_negation, _modality) => Ok(()),
-        }
-    }
-}
-
-impl ModalityAgent {
-    fn type_check(&self) -> TypeMismatchResult {
-        match self {
-            ModalityAgent::One(_post_argument_phrase_modifier, argument_phrase) => {
-                argument_phrase.type_check()
-            }
-            ModalityAgent::Epsilon => Ok(()),
         }
     }
 }

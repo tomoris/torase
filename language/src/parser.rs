@@ -149,14 +149,8 @@ fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonT
         DummyNonTerminalType::ModalityExpression => {
             NonTerminalType::ModalityExpression(ModalityExpression::new(rhs))
         }
-        DummyNonTerminalType::ModalityWithAgent => {
-            NonTerminalType::ModalityWithAgent(ModalityWithAgent::new(rhs))
-        }
         DummyNonTerminalType::ModifiedModality => {
             NonTerminalType::ModifiedModality(ModifiedModality::new(rhs))
-        }
-        DummyNonTerminalType::ModalityAgent => {
-            NonTerminalType::ModalityAgent(ModalityAgent::new(rhs))
         }
         DummyNonTerminalType::TenseExpression => {
             NonTerminalType::TenseExpression(TenseExpression::new(rhs))
@@ -228,9 +222,7 @@ fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRh
         DummyNonTerminalType::PostModifiedMtaEvent => PostModifiedMtaEvent::parse_table(t),
         DummyNonTerminalType::PostMtaEventExpression => PostMtaEventExpression::parse_table(t),
         DummyNonTerminalType::ModalityExpression => ModalityExpression::parse_table(t),
-        DummyNonTerminalType::ModalityWithAgent => ModalityWithAgent::parse_table(t),
         DummyNonTerminalType::ModifiedModality => ModifiedModality::parse_table(t),
-        DummyNonTerminalType::ModalityAgent => ModalityAgent::parse_table(t),
         DummyNonTerminalType::TenseExpression => TenseExpression::parse_table(t),
         DummyNonTerminalType::ModifiedTense => ModifiedTense::parse_table(t),
         DummyNonTerminalType::AspectExpression => AspectExpression::parse_table(t),
@@ -321,9 +313,7 @@ pub enum NonTerminalType {
     PostModifiedMtaEvent(PostModifiedMtaEvent),
     PostMtaEventExpression(PostMtaEventExpression),
     ModalityExpression(ModalityExpression),
-    ModalityWithAgent(ModalityWithAgent),
     ModifiedModality(ModifiedModality),
-    ModalityAgent(ModalityAgent),
     TenseExpression(TenseExpression),
     ModifiedTense(ModifiedTense),
     AspectExpression(AspectExpression),
@@ -353,9 +343,7 @@ pub enum DummyNonTerminalType {
     PostModifiedMtaEvent,
     PostMtaEventExpression,
     ModalityExpression,
-    ModalityWithAgent,
     ModifiedModality,
-    ModalityAgent,
     TenseExpression,
     ModifiedTense,
     AspectExpression,
@@ -408,25 +396,14 @@ pub enum PostMtaEventExpression {
 
 #[derive(Clone, Debug)]
 pub enum ModalityExpression {
-    One(ModalityWithAgent),
+    One(ModifiedModality),
     Epsilon,
-}
-
-#[derive(Clone, Debug)]
-pub enum ModalityWithAgent {
-    One(ModifiedModality, ModalityAgent),
 }
 
 #[derive(Clone, Debug)]
 pub enum ModifiedModality {
     One(Modality),
     Two(ModalityNegation, Box<ModifiedModality>),
-}
-
-#[derive(Clone, Debug)]
-pub enum ModalityAgent {
-    One(PostArgumentPhraseModifier, ArgumentPhrase),
-    Epsilon,
 }
 
 #[derive(Clone, Debug)]
@@ -836,14 +813,14 @@ impl ModalityExpression {
         match current_token {
             DummyTerminalType::Modality => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ModalityWithAgent,
+                    DummyNonTerminalType::ModifiedModality,
                 )]))
             }
             DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ModalityNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ModalityWithAgent,
+                    DummyNonTerminalType::ModifiedModality,
                 )]))
             }
             DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
@@ -858,7 +835,7 @@ impl ModalityExpression {
     fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::NonTerminal(NonTerminalType::ModalityWithAgent(child1))] => {
+                [SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child1))] => {
                     Self::One(child1.clone())
                 }
                 _ => {
@@ -866,38 +843,6 @@ impl ModalityExpression {
                 }
             },
             Rhs::Epsilon => Self::Epsilon,
-        }
-    }
-}
-
-impl ModalityWithAgent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
-        match current_token {
-            DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityAgent),
-            ])),
-            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityAgent),
-            ])),
-            _ => Err(()),
-        }
-    }
-    fn new(rhs: Rhs) -> Self {
-        match rhs {
-            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModalityAgent(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
-                _ => {
-                    panic!("Unexpected symbols: {:?}", symbols);
-                }
-            },
-            Rhs::Epsilon => {
-                panic!("Unexpected epsilon");
-            }
         }
     }
 }
@@ -932,40 +877,6 @@ impl ModifiedModality {
             Rhs::Epsilon => {
                 panic!("Unexpected epsilon");
             }
-        }
-    }
-}
-
-impl ModalityAgent {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
-        match current_token {
-            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::PostArgumentPhraseModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
-            ])),
-            _ => Err(()),
-        }
-    }
-    fn new(rhs: Rhs) -> Self {
-        match rhs {
-            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [
-                    SymbolType::Terminal(TerminalType::PostArgumentPhraseModifier(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
-                _ => {
-                    panic!("Unexpected symbols: {:?}", symbols);
-                }
-            },
-            Rhs::Epsilon => Self::Epsilon,
         }
     }
 }
@@ -1386,15 +1297,9 @@ impl PostModifiedBinaryPredicatePhrase {
 impl PostBinaryPredicatePhraseExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
@@ -1771,15 +1676,9 @@ impl ArgumentRetrievalBinaryPredicate {
 impl ArgumentRetrievalWithArgumentPhrase {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
@@ -1915,22 +1814,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let modality_with_agent = grammar::NonTerminal(
-            type_name::<ModalityWithAgent>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
         let modified_modality = grammar::NonTerminal(
             type_name::<ModifiedModality>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let modality_agent = grammar::NonTerminal(
-            type_name::<ModalityAgent>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2254,17 +2139,10 @@ mod tests {
             modality_expression.clone(),
             vec![
                 grammar::Rhs::Sequence(vec![grammar::Symbol::NonTerminal(
-                    modality_with_agent.clone(),
+                    modified_modality.clone(),
                 )]),
                 grammar::Rhs::Epsilon,
             ],
-        );
-        rules.insert(
-            modality_with_agent.clone(),
-            vec![grammar::Rhs::Sequence(vec![
-                grammar::Symbol::NonTerminal(modified_modality.clone()),
-                grammar::Symbol::NonTerminal(modality_agent.clone()),
-            ])],
         );
         rules.insert(
             modified_modality.clone(),
@@ -2274,16 +2152,6 @@ mod tests {
                     grammar::Symbol::Terminal(modality_negation_.clone()),
                     grammar::Symbol::NonTerminal(modified_modality.clone()),
                 ]),
-            ],
-        );
-        rules.insert(
-            modality_agent.clone(),
-            vec![
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(post_argument_phrase_modifier.clone()),
-                    grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                ]),
-                grammar::Rhs::Epsilon,
             ],
         );
         rules.insert(
@@ -2532,9 +2400,7 @@ mod tests {
             "PostModifiedMtaEvent" => PostModifiedMtaEvent::parse_table(tt),
             "PostMtaEventExpression" => PostMtaEventExpression::parse_table(tt),
             "ModalityExpression" => ModalityExpression::parse_table(tt),
-            "ModalityWithAgent" => ModalityWithAgent::parse_table(tt),
             "ModifiedModality" => ModifiedModality::parse_table(tt),
-            "ModalityAgent" => ModalityAgent::parse_table(tt),
             "TenseExpression" => TenseExpression::parse_table(tt),
             "ModifiedTense" => ModifiedTense::parse_table(tt),
             "AspectExpression" => AspectExpression::parse_table(tt),
@@ -2593,9 +2459,7 @@ mod tests {
                                                 DummyNonTerminalType::PostModifiedMtaEvent => "PostModifiedMtaEvent",
                                                 DummyNonTerminalType::PostMtaEventExpression => "PostMtaEventExpression",
                                                 DummyNonTerminalType::ModalityExpression => "ModalityExpression",
-                                                DummyNonTerminalType::ModalityWithAgent => "ModalityWithAgent",
                                                 DummyNonTerminalType::ModifiedModality => "ModifiedModality",
-                                                DummyNonTerminalType::ModalityAgent => "ModalityAgent",
                                                 DummyNonTerminalType::TenseExpression => "TenseExpression",
                                                 DummyNonTerminalType::ModifiedTense => "ModifiedTense",
                                                 DummyNonTerminalType::AspectExpression => "AspectExpression",

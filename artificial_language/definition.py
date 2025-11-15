@@ -551,11 +551,8 @@ converter = MyLambdaExpressionConverter()
 #         "ε",
 #     ],
 #     "modality_expression": [
-#         ["modality_with_agent"],
+#         ["modified_modality"],
 #         "ε",
-#     ],
-#     "modality_with_agent": [
-#         ["modified_modality", "modality_agent"],
 #     ],
 #     "modified_modality": [
 #         ["modality"],
@@ -563,10 +560,6 @@ converter = MyLambdaExpressionConverter()
 #             "modality_negation",
 #             "modified_modality",
 #         ],
-#     ],
-#     "modality_agent": [
-#         ["post_argument_phrase_modifier", "argument_phrase"],
-#         "ε",
 #     ],
 #     "tense_expression": [
 #         ["modified_tense"],
