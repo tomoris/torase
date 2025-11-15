@@ -691,7 +691,7 @@ impl Tense {
 
 impl Aspect {
     fn is_match(string: &str) -> bool {
-        let re_aspect = Regex::new(r"^(?:hu)(?:d[aeou])|(?:did[aiu])$").unwrap();
+        let re_aspect = Regex::new(r"^(?:(?:hu)(?:(?:d[aeou])|(?:did[aiu])))$").unwrap();
         re_aspect.is_match(string)
     }
     fn new(
