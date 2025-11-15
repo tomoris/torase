@@ -384,8 +384,8 @@ enum ModalityKind {
     Haku, // 許可、してよい
     Hame, // 事実性高い
     Hamo, // 事実性低い
-    Hasa, // 義務、すべき
-    Hasi, // 許可、してよい
+    Hase, // 義務、すべき
+    Haso, // 許可、してよい
     Hake, // 能力、できる
     Hako, // 可能、ありうる
     Hate, // 願望、したい
@@ -589,7 +589,7 @@ impl InterrogativeMarker {
 
 impl Modality {
     fn is_match(string: &str) -> bool {
-        let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|h[eo]|pa)$").unwrap();
+        let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|k[eo]|p[eo])$").unwrap();
         re_modality.is_match(string)
     }
     fn new(
@@ -605,8 +605,8 @@ impl Modality {
             "haku" => ModalityKind::Haku,
             "hame" => ModalityKind::Hame,
             "hamo" => ModalityKind::Hamo,
-            "hasa" => ModalityKind::Hasa,
-            "hasi" => ModalityKind::Hasi,
+            "hase" => ModalityKind::Hase,
+            "haso" => ModalityKind::Haso,
             "hake" => ModalityKind::Hake,
             "hako" => ModalityKind::Hako,
             "hate" => ModalityKind::Hate,
@@ -636,8 +636,8 @@ impl Modality {
             ModalityKind::Haku => "haku".to_string(),
             ModalityKind::Hame => "hame".to_string(),
             ModalityKind::Hamo => "hamo".to_string(),
-            ModalityKind::Hasa => "hasa".to_string(),
-            ModalityKind::Hasi => "hasi".to_string(),
+            ModalityKind::Hase => "hase".to_string(),
+            ModalityKind::Haso => "haso".to_string(),
             ModalityKind::Hake => "hake".to_string(),
             ModalityKind::Hako => "hako".to_string(),
             ModalityKind::Hate => "hate".to_string(),
