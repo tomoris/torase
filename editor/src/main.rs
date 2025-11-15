@@ -143,6 +143,7 @@ fn viewer(s: String) -> Element<'static, Message> {
 fn category_box(
     category: String,
     main_content: Element<'static, Message>,
+    background: iced::Color,
 ) -> Element<'static, Message>
 where
     Message: 'static + Clone,
@@ -169,7 +170,8 @@ where
         .padding(10)
         .width(iced::Length::Shrink)
         .height(iced::Length::Shrink)
-        .style(|_| container::Style {
+        .style(move |_| container::Style {
+            background: Some(iced::Background::Color(background)),
             border: iced::Border {
                 color: iced::Color::from_rgb8(200, 200, 200),
                 width: 2.0,
@@ -197,15 +199,16 @@ impl TreeViewer for Ast {
 
 impl TreeViewer for S {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 250, 250);
         match self {
             S::One(declarative_sentence) => {
                 let category = "s".to_string();
                 let content = declarative_sentence.view(is_full);
-                category_box(category, content)
+                category_box(category, content, background)
             }
             S::Two(interrogative_sentence) => {
                 let content = interrogative_sentence.view(is_full);
-                category_box("s".to_string(), content)
+                category_box("s".to_string(), content, background)
             }
         }
     }
@@ -216,11 +219,12 @@ impl TreeViewer for S {
 
 impl TreeViewer for DeclarativeSentence {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 240, 230);
         match self {
             DeclarativeSentence::One(post_modified_mta_event) => {
                 let category = "DeclarativeSentence".to_string();
                 let content = post_modified_mta_event.view(is_full);
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -231,6 +235,7 @@ impl TreeViewer for DeclarativeSentence {
 
 impl TreeViewer for InterrogativeSentence {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(255, 235, 205);
         match self {
             InterrogativeSentence::One(interrogative_marker, post_modified_mta_event) => {
                 let category = "InterrogativeSentence".to_string();
@@ -241,7 +246,7 @@ impl TreeViewer for InterrogativeSentence {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -252,6 +257,7 @@ impl TreeViewer for InterrogativeSentence {
 
 impl TreeViewer for PostModifiedMtaEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(255, 220, 185);
         match self {
             PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
                 let category = "PostModifiedMtaEvent".to_string();
@@ -265,7 +271,7 @@ impl TreeViewer for PostModifiedMtaEvent {
                         .push(post_mta_event_expression.view(is_full))
                 }
                 content = content.align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -276,6 +282,7 @@ impl TreeViewer for PostModifiedMtaEvent {
 
 impl TreeViewer for PostMtaEventExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(255, 200, 160);
         match self {
             PostMtaEventExpression::One(post_mta_event_modifier, mta_event) => {
                 let category = "PostMtaEventExpression".to_string();
@@ -286,12 +293,12 @@ impl TreeViewer for PostMtaEventExpression {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             PostMtaEventExpression::Epsilon => {
                 let category = "PostMtaEventExpression".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -302,16 +309,17 @@ impl TreeViewer for PostMtaEventExpression {
 
 impl TreeViewer for ModalityExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(0, 190, 255);
         match self {
             ModalityExpression::One(modality_with_agent) => {
                 let category = "ModalityExpression".to_string();
                 let content = modality_with_agent.view(is_full);
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ModalityExpression::Epsilon => {
                 let category = "ModalityExpression".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -322,6 +330,7 @@ impl TreeViewer for ModalityExpression {
 
 impl TreeViewer for ModalityWithAgent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(150, 250, 250);
         match self {
             ModalityWithAgent::One(modified_modality, modality_agent) => {
                 let category = "ModalityWithAgent".to_string();
@@ -335,7 +344,7 @@ impl TreeViewer for ModalityWithAgent {
                         .push(modality_agent.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -346,11 +355,12 @@ impl TreeViewer for ModalityWithAgent {
 
 impl TreeViewer for ModifiedModality {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(0, 255, 255);
         match self {
             ModifiedModality::One(modality) => {
                 let category = "ModifiedModality".to_string();
                 let content = text(modality.get_string()).into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ModifiedModality::Two(modality_negation, modified_modality) => {
                 let category = "ModifiedModality".to_string();
@@ -361,7 +371,7 @@ impl TreeViewer for ModifiedModality {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -372,6 +382,7 @@ impl TreeViewer for ModifiedModality {
 
 impl TreeViewer for ModalityAgent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(65, 225, 210);
         match self {
             ModalityAgent::One(post_argument_phrase_modifier, argument_phrase) => {
                 let category = "ModalityAgent".to_string();
@@ -382,12 +393,12 @@ impl TreeViewer for ModalityAgent {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ModalityAgent::Epsilon => {
                 let category = "ModalityAgent".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -398,16 +409,17 @@ impl TreeViewer for ModalityAgent {
 
 impl TreeViewer for TenseExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 240, 160);
         match self {
             TenseExpression::One(modified_tense) => {
                 let category = "TenseExpression".to_string();
                 let content = modified_tense.view(is_full);
-                category_box(category, content)
+                category_box(category, content, background)
             }
             TenseExpression::Epsilon => {
                 let category = "TenseExpression".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -418,11 +430,12 @@ impl TreeViewer for TenseExpression {
 
 impl TreeViewer for ModifiedTense {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(240, 230, 140);
         match self {
             ModifiedTense::One(tense) => {
                 let category = "ModifiedTense".to_string();
                 let content = text(tense.get_string()).into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ModifiedTense::Two(tense_negation, modified_tense) => {
                 let category = "ModifiedTense".to_string();
@@ -433,7 +446,7 @@ impl TreeViewer for ModifiedTense {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -444,16 +457,17 @@ impl TreeViewer for ModifiedTense {
 
 impl TreeViewer for AspectExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(155, 250, 155);
         match self {
             AspectExpression::One(modified_aspect) => {
                 let category = "AspectExpression".to_string();
                 let content = modified_aspect.view(is_full);
-                category_box(category, content)
+                category_box(category, content, background)
             }
             AspectExpression::Epsilon => {
                 let category = "AspectExpression".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -464,11 +478,12 @@ impl TreeViewer for AspectExpression {
 
 impl TreeViewer for ModifiedAspect {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(140, 250, 140);
         match self {
             ModifiedAspect::One(aspect) => {
                 let category = "ModifiedAspect".to_string();
                 let content = text(aspect.get_string()).into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ModifiedAspect::Two(aspect_negation, modified_aspect) => {
                 let category = "ModifiedAspect".to_string();
@@ -479,7 +494,7 @@ impl TreeViewer for ModifiedAspect {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -490,6 +505,7 @@ impl TreeViewer for ModifiedAspect {
 
 impl TreeViewer for MtaEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(135, 205, 250);
         match self {
             MtaEvent::One(modality_expression, ta_event) => {
                 let category = "MtaEvent".to_string();
@@ -506,7 +522,7 @@ impl TreeViewer for MtaEvent {
                     .push(ta_event.view(is_full))
                     .align_y(Alignment::Center)
                     .align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -517,6 +533,7 @@ impl TreeViewer for MtaEvent {
 
 impl TreeViewer for TaEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 245, 170);
         match self {
             TaEvent::One(tense_expression, a_event) => {
                 let category = "TaEvent".to_string();
@@ -532,7 +549,7 @@ impl TreeViewer for TaEvent {
                 content = content
                     .push(a_event.view(is_full))
                     .align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -543,6 +560,7 @@ impl TreeViewer for TaEvent {
 
 impl TreeViewer for AEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(170, 250, 170);
         match self {
             AEvent::One(aspect_expression, event) => {
                 let category = "AEvent".to_string();
@@ -556,7 +574,7 @@ impl TreeViewer for AEvent {
                         ));
                 }
                 content = content.push(event.view(is_full)).align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -567,6 +585,7 @@ impl TreeViewer for AEvent {
 
 impl TreeViewer for Event {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(240, 255, 240);
         match self {
             Event::One(
                 post_modified_binary_predicate_phrase,
@@ -588,7 +607,7 @@ impl TreeViewer for Event {
                         .push(argument_phrase_or_epsilon.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -599,6 +618,7 @@ impl TreeViewer for Event {
 
 impl TreeViewer for PostModifiedBinaryPredicatePhrase {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(175, 225, 230);
         match self {
             PostModifiedBinaryPredicatePhrase::One(
                 binary_predicate_phrase,
@@ -615,7 +635,7 @@ impl TreeViewer for PostModifiedBinaryPredicatePhrase {
                         .push(post_binary_predicate_phrase_expression.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -626,6 +646,7 @@ impl TreeViewer for PostModifiedBinaryPredicatePhrase {
 
 impl TreeViewer for PostBinaryPredicatePhraseExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(175, 240, 240);
         match self {
             PostBinaryPredicatePhraseExpression::One(
                 post_binary_predicate_phrase_modifier,
@@ -639,12 +660,12 @@ impl TreeViewer for PostBinaryPredicatePhraseExpression {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             PostBinaryPredicatePhraseExpression::Epsilon => {
                 let category = "PostBinaryPredicatePhraseExpression".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -654,34 +675,35 @@ impl TreeViewer for PostBinaryPredicatePhraseExpression {
 }
 
 impl TreeViewer for BinaryPredicatePhrase {
-    fn view(&self, is_full: bool) -> Element<'static, Message> {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(225, 255, 255);
         match self {
             BinaryPredicatePhrase::One(binary_predicate) => {
                 let category = "BinaryPredicatePhrase".to_string();
                 let content = text(binary_predicate.get_string()).into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             BinaryPredicatePhrase::Two(negation, binary_predicate_phrase) => {
                 let category = "BinaryPredicatePhrase".to_string();
                 let content = row![
                     text(negation.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase.view(is_full),
+                    binary_predicate_phrase.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             BinaryPredicatePhrase::Three(argument_phrase_transposer, binary_predicate_phrase) => {
                 let category = "BinaryPredicatePhrase".to_string();
                 let content = row![
                     text(argument_phrase_transposer.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase.view(is_full),
+                    binary_predicate_phrase.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             BinaryPredicatePhrase::Four(
                 binary_operator,
@@ -692,13 +714,13 @@ impl TreeViewer for BinaryPredicatePhrase {
                 let content = row![
                     text(binary_operator.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase1.view(is_full),
+                    binary_predicate_phrase1.view(_is_full),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase2.view(is_full),
+                    binary_predicate_phrase2.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -709,11 +731,12 @@ impl TreeViewer for BinaryPredicatePhrase {
 
 impl TreeViewer for ArgumentPhrase {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(240, 230, 170);
         match self {
             ArgumentPhrase::One(argument) => {
                 let category = "ArgumentPhrase".to_string();
                 let content = text(argument.get_string()).into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ArgumentPhrase::Two(negation, argument_phrase) => {
                 let category = "ArgumentPhrase".to_string();
@@ -724,7 +747,7 @@ impl TreeViewer for ArgumentPhrase {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ArgumentPhrase::Three(binary_operator, argument_phrase1, argument_phrase2) => {
                 let category = "ArgumentPhrase".to_string();
@@ -737,7 +760,7 @@ impl TreeViewer for ArgumentPhrase {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ArgumentPhrase::Four(
                 argument_retriever,
@@ -751,7 +774,7 @@ impl TreeViewer for ArgumentPhrase {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ArgumentPhrase::Five(
                 mta_event_to_argument_phrase_converter,
@@ -768,7 +791,7 @@ impl TreeViewer for ArgumentPhrase {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -779,6 +802,7 @@ impl TreeViewer for ArgumentPhrase {
 
 impl TreeViewer for ArgumentPhraseOrEpsilon {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 240, 205);
         match self {
             ArgumentPhraseOrEpsilon::One(argument_phrase_separator, argument_phrase) => {
                 let category = "ArgumentPhraseOrEpsilon".to_string();
@@ -789,7 +813,7 @@ impl TreeViewer for ArgumentPhraseOrEpsilon {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ArgumentPhraseOrEpsilon::Epsilon => text("ε").into(),
         }
@@ -801,6 +825,7 @@ impl TreeViewer for ArgumentPhraseOrEpsilon {
 
 impl TreeViewer for DeterminedArgumentRetrievalBinaryPredicate {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
             DeterminedArgumentRetrievalBinaryPredicate::One(
                 quantification,
@@ -817,7 +842,7 @@ impl TreeViewer for DeterminedArgumentRetrievalBinaryPredicate {
                 content = content
                     .push(articlized_argument_retrieval_binary_predicate.view(is_full))
                     .align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -828,6 +853,7 @@ impl TreeViewer for DeterminedArgumentRetrievalBinaryPredicate {
 
 impl TreeViewer for ArticlizedArgumentRetrievalBinaryPredicate {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
             ArticlizedArgumentRetrievalBinaryPredicate::One(
                 article,
@@ -844,7 +870,7 @@ impl TreeViewer for ArticlizedArgumentRetrievalBinaryPredicate {
                 content = content
                     .push(argument_retrieval_binary_predicate.view(is_full))
                     .align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -855,6 +881,7 @@ impl TreeViewer for ArticlizedArgumentRetrievalBinaryPredicate {
 
 impl TreeViewer for ArgumentRetrievalBinaryPredicate {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
             ArgumentRetrievalBinaryPredicate::One(
                 post_modified_binary_predicate_phrase,
@@ -871,7 +898,7 @@ impl TreeViewer for ArgumentRetrievalBinaryPredicate {
                         .push(argument_retrieval_with_argument_phrase.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
-                category_box(category, content.into())
+                category_box(category, content.into(), background)
             }
         }
     }
@@ -882,6 +909,7 @@ impl TreeViewer for ArgumentRetrievalBinaryPredicate {
 
 impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(50, 0, 50);
         match self {
             ArgumentRetrievalWithArgumentPhrase::One(
                 post_argument_phrase_modifier,
@@ -895,12 +923,12 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
                 ]
                 .align_y(Alignment::Center)
                 .into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             ArgumentRetrievalWithArgumentPhrase::Epsilon => {
                 let category = "ArgumentRetrievalWithArgumentPhrase".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -911,16 +939,17 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
 
 impl TreeViewer for Quantification {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(50, 50, 0);
         match self {
             Quantification::One(quantifier) => {
                 let category = "Quantification".to_string();
                 let content = text(quantifier.get_string()).into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             Quantification::Epsilon => {
                 let category = "Quantification".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
@@ -931,16 +960,17 @@ impl TreeViewer for Quantification {
 
 impl TreeViewer for Article {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(0, 50, 0);
         match self {
             Article::One(articlizer) => {
                 let category = "Article".to_string();
                 let content = text(articlizer.get_string()).into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
             Article::Epsilon => {
                 let category = "Article".to_string();
                 let content = text("ε").into();
-                category_box(category, content)
+                category_box(category, content, background)
             }
         }
     }
