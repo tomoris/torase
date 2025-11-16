@@ -2,11 +2,9 @@
 resolver = "3"
 members = [
     "language",
-    "language_server",
     "editor",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-

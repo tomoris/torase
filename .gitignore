@@ -1,8 +1,3 @@
-__pycache__
-.venv
 data
 /target
 .vscode
-**/node_modules
-client/out
-client/tsconfig.tsbuildinfo
