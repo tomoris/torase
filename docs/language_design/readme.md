@@ -34,10 +34,10 @@
 
 ## コア機能
 
-- [tokenizer](../../src/compiler/tokenizer.rs)
+- [tokenizer](../../language/src/tokenizer.rs)
   - [音韻論](./phonology.md)
   - [形態論](./morphology.md)
-- [parser](../../src/compiler/parser.rs)
+- [parser](../../language/src/parser.rs)
   - [統語論](./syntax.md)
-- [type checker](../../src/compiler/type_checker.rs)
+- [type checker](../../language/src/type_checker.rs)
 - SMT solver
