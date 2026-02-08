@@ -492,6 +492,7 @@ enum ArgumentKind {
     Be, // それ
     Gi, // 彼、彼女
     Gu, // 彼ら
+    Go, // 誰か(単数か複数か不明)
     Ge, // あれ
 }
 
@@ -1022,7 +1023,7 @@ impl BinaryPredicate {
 
 impl Argument {
     fn is_match(string: &str) -> bool {
-        let re_argument = Regex::new(r"^(:?(?:m[aiue])|(?:b[aue])|(?:g[iue]))$").unwrap();
+        let re_argument = Regex::new(r"^(:?(?:m[aiue])|(?:b[aue])|(?:g[iueo]))$").unwrap();
         re_argument.is_match(string)
     }
     fn new(
@@ -1042,6 +1043,7 @@ impl Argument {
             "be" => ArgumentKind::Be,
             "gi" => ArgumentKind::Gi,
             "gu" => ArgumentKind::Gu,
+            "go" => ArgumentKind::Go,
             "ge" => ArgumentKind::Ge,
             _ => panic!("Invalid argument surface: {}", string),
         };
@@ -1068,20 +1070,27 @@ impl Argument {
             ArgumentKind::Mi => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Mu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Me => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ArgumentType::Abstraction,
             ],
             ArgumentKind::Ba => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Bu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Be => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ArgumentType::Abstraction,
             ],
             ArgumentKind::Gi => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Gu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            ArgumentKind::Go => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Ge => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ArgumentType::Abstraction,
             ],
         }
     }
@@ -1096,6 +1105,7 @@ impl Argument {
             ArgumentKind::Be => "be".to_string(),
             ArgumentKind::Gi => "gi".to_string(),
             ArgumentKind::Gu => "gu".to_string(),
+            ArgumentKind::Go => "go".to_string(),
             ArgumentKind::Ge => "ge".to_string(),
         }
     }
