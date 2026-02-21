@@ -99,9 +99,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_私の妻はりんごを食べたことがある() {
-        let text = "hita 経験する pahete ro paparatanera du mi si ro behapare".to_string();
+        let text = "hita kaheperihenese ro paparatanera du mi si se pahete ro paparatanera du mi si ro behapare so".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -356,9 +355,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_いいえ私はみかんを食べたくはありません() {
-        let text = "[いいえ]".to_string();
+        let text = "ne kahagare mi si be".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
 
@@ -409,9 +407,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_いいえお断りします() {
-        let text = "[いいえ]".to_string();
+        let text = "ne kahagare mi si be".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -429,16 +426,15 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_私はりんごをあげる() {
-        let text = "pagibeto mi si ro behapare".to_string();
+        let text = "pagibe mi si ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私はあなたにあげる() {
-        let text = "pagibe mi si ba".to_string();
+        let text = "pagibeto mi si ba".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -459,7 +455,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_私はりんごをもらう() {
-        let text = "???".to_string();
+        let text = "[eventのand] re pagibeto mi , re pagibe ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -531,9 +527,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_彼は私にりんごを食べさせる() {
-        let text = "[使役] gi si se pahete ba si ro behapare so".to_string();
+        let text = "kareta gi si se pahete ba si ro behapare so".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -554,9 +549,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_りんごは彼によって私に食べさせられた() {
-        let text = "re [使役] se re pahete ro behapare si ba so si gi".to_string();
+        let text = "re kareta se re pahete ro behapare si ba so si gi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
