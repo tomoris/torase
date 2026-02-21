@@ -355,9 +355,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_いいえ私はみかんを食べたくはありません() {
-        let text = "[いいえ]".to_string();
+        let text = "ne kahagare mi si be".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
 
@@ -410,7 +409,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_いいえお断りします() {
-        let text = "[いいえ]".to_string();
+        let text = "ne kahagare mi si be".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
