@@ -427,16 +427,15 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_私はりんごをあげる() {
-        let text = "pagibeto mi si ro behapare".to_string();
+        let text = "pagibe mi si ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私はあなたにあげる() {
-        let text = "pagibe mi si ba".to_string();
+        let text = "pagibeto mi si ba".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -457,7 +456,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_私はりんごをもらう() {
-        let text = "???".to_string();
+        let text = "[eventのand] re pagibeto mi , re pagibe ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

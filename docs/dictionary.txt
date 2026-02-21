@@ -554,3 +554,11 @@ experience
 kahagare
 x1はx2に同意する
 agree
+
+pagibe
+x1はx2をあげる
+give
+
+pagibeto
+x1はx2にあげる
+give
