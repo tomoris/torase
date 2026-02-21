@@ -609,7 +609,7 @@ mod tests {
 
     #[test]
     fn test_第一項の型が間違っている場合にerr型を返す() {
-        let source = "parobe me si ba eos";
+        let source = "parobe ro didora si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -636,7 +636,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの第一項の型が間違っている場合にerr型を返す() {
-        let source = "bahomo me eos";
+        let source = "bahomo ro didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
