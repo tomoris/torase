@@ -99,9 +99,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_私の妻はりんごを食べたことがある() {
-        let text = "hita 経験する pahete ro paparatanera du mi si ro behapare".to_string();
+        let text = "hita kaheperihenese ro paparatanera du mi si se pahete ro paparatanera du mi si ro behapare so".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

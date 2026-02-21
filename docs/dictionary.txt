@@ -546,3 +546,7 @@ apple
 paparatanera
 x1はx2のパートナーである
 partner
+
+kaheperihenese
+x1はx2を経験する
+experience
