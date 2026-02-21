@@ -528,9 +528,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_彼は私にりんごを食べさせる() {
-        let text = "[使役] gi si se pahete ba si ro behapare so".to_string();
+        let text = "kareta gi si se pahete ba si ro behapare so".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -551,9 +550,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_りんごは彼によって私に食べさせられた() {
-        let text = "re [使役] se re pahete ro behapare si ba so si gi".to_string();
+        let text = "re kareta se re pahete ro behapare si ba so si gi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

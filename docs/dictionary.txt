@@ -562,3 +562,7 @@ give
 pagibeto
 x1はx2にあげる
 give
+
+kareta
+x1はx2という命題をさせる
+let
