@@ -539,3 +539,10 @@ di
 post_argument_phrase_modifier
 du
 
+pahete
+x1はりんごだ
+apple
+
+paparatanera
+x1はx2のパートナーである
+partner
