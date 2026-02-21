@@ -551,9 +551,9 @@ kaheperihenese
 x1はx2を経験する
 experience
 
-kahagare
-x1はx2に同意する
-agree
+kaho
+x1はx2に肯定する
+OK (よく使いそうなので短めの文字列にする。型的にはkaが先にくるのでoだけ付け足す形にした)
 
 pagibe
 x1はx2をあげる
