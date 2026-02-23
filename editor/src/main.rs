@@ -795,14 +795,36 @@ impl TreeViewer for ArticlizedArgumentRetrievalBinaryPredicate {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(
-                article,
-                argument_retrieval_binary_predicate,
-            ) => {
-                let category = "DeterminedArgumentRetrievalBinaryPredicate".to_string();
+            ArticlizedArgumentRetrievalBinaryPredicate::One(article, numeral_argument) => {
+                let category = "ArticlizedArgumentRetrievalBinaryPredicate".to_string();
                 let mut content = row![];
                 if is_full || !article.is_empty() {
                     content = content.push(article.view(is_full)).push(Space::new(
+                        iced::Length::Fixed(1.0),
+                        iced::Length::Fixed(0.0),
+                    ));
+                }
+                content = content
+                    .push(numeral_argument.view(is_full))
+                    .align_y(Alignment::Center);
+                category_box(category, content.into(), background)
+            }
+        }
+    }
+    fn is_empty(&self) -> bool {
+        false
+    }
+}
+
+impl TreeViewer for NumeralArgument {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(50, 50, 50);
+        match self {
+            NumeralArgument::One(numeral, argument_retrieval_binary_predicate) => {
+                let category = "NumeralArgument".to_string();
+                let mut content = row![];
+                if is_full || !numeral.is_empty() {
+                    content = content.push(numeral.view(is_full)).push(Space::new(
                         iced::Length::Fixed(1.0),
                         iced::Length::Fixed(0.0),
                     ));
@@ -916,6 +938,27 @@ impl TreeViewer for Article {
     }
     fn is_empty(&self) -> bool {
         matches!(self, Article::Epsilon)
+    }
+}
+
+impl TreeViewer for Numeral {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(0, 50, 0);
+        match self {
+            Numeral::One(number) => {
+                let category = "Numeral".to_string();
+                let content = text(number.get_string()).into();
+                category_box(category, content, background)
+            }
+            Numeral::Epsilon => {
+                let category = "Numeral".to_string();
+                let content = text("ε").into();
+                category_box(category, content, background)
+            }
+        }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, Numeral::Epsilon)
     }
 }
 

@@ -473,28 +473,52 @@ impl DeterminedArgumentRetrievalBinaryPredicate {
 impl ArticlizedArgumentRetrievalBinaryPredicate {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(
-                _article,
-                argument_retrieval_binary_predicate,
-            ) => argument_retrieval_binary_predicate.type_check(),
+            ArticlizedArgumentRetrievalBinaryPredicate::One(_article, numeral_argument) => {
+                numeral_argument.type_check()
+            }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(
-                _articlizer,
-                argument_retrieval_binary_predicate,
-            ) => argument_retrieval_binary_predicate.get_type(),
+            ArticlizedArgumentRetrievalBinaryPredicate::One(_articlizer, numeral_argument) => {
+                numeral_argument.get_type()
+            }
         }
     }
     fn get_range(&self) -> Range {
         match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(
-                article,
-                argument_retrieval_binary_predicate,
-            ) => {
-                let end = argument_retrieval_binary_predicate.get_range().end();
+            ArticlizedArgumentRetrievalBinaryPredicate::One(article, numeral_argument) => {
+                let end = numeral_argument.get_range().end();
                 if let Some(start) = article.get_range() {
+                    return Range::new(start.start(), end);
+                }
+                let start = numeral_argument.get_range().start();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl NumeralArgument {
+    fn type_check(&self) -> TypeMismatchResult {
+        match self {
+            NumeralArgument::One(_numeral, argument_retrieval_binary_predicate) => {
+                argument_retrieval_binary_predicate.type_check()
+            }
+        }
+    }
+    fn get_type(&self) -> Vec<ArgumentType> {
+        match self {
+            NumeralArgument::One(_numeral, argument_retrieval_binary_predicate) => {
+                argument_retrieval_binary_predicate.get_type()
+            }
+        }
+    }
+    fn get_range(&self) -> Range {
+        match self {
+            NumeralArgument::One(numeral, argument_retrieval_binary_predicate) => {
+                let end = argument_retrieval_binary_predicate.get_range().end();
+                if let Some(start) = numeral.get_range() {
                     return Range::new(start.start(), end);
                 }
                 let start = argument_retrieval_binary_predicate.get_range().start();
@@ -583,6 +607,15 @@ impl Article {
         match self {
             Article::One(articlizer) => Some(articlizer.get_range()),
             Article::Epsilon => None,
+        }
+    }
+}
+
+impl Numeral {
+    fn get_range(&self) -> Option<Range> {
+        match self {
+            Numeral::One(number) => Some(number.get_range()),
+            Numeral::Epsilon => None,
         }
     }
 }
