@@ -87,6 +87,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Articlizer(Articlizer::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
+        } else if Number::is_match(token.0) {
+            doc.push(TerminalType::Number(Number::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if MtaEventToArgumentPhraseConverter::is_match(token.0) {
             doc.push(TerminalType::MtaEventToArgumentPhraseConverter(
                 MtaEventToArgumentPhraseConverter::new(token.0, token.1, token.2, token.3, token.4),
@@ -226,6 +230,7 @@ pub enum TerminalType {
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
     Articlizer(Articlizer),
+    Number(Number),
     MtaEventToArgumentPhraseConverter(MtaEventToArgumentPhraseConverter),
     MtaEventToArgumentPhraseConverterEnd(MtaEventToArgumentPhraseConverterEnd),
     PostMtaEventModifier(PostMtaEventModifier),
@@ -252,6 +257,7 @@ pub enum DummyTerminalType {
     ArgumentRetriever,
     Quantifier,
     Articlizer,
+    Number,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
     PostMtaEventModifier,
@@ -278,6 +284,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
         TerminalType::Articlizer(_) => DummyTerminalType::Articlizer,
+        TerminalType::Number(_) => DummyTerminalType::Number,
         TerminalType::MtaEventToArgumentPhraseConverter(_) => {
             DummyTerminalType::MtaEventToArgumentPhraseConverter
         }
@@ -314,6 +321,7 @@ impl TerminalType {
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
             TerminalType::Articlizer(articlizer) => articlizer.range.start.clone(),
+            TerminalType::Number(number) => number.range.start.clone(),
             TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
                 converter.range.start.clone()
             }
@@ -346,6 +354,7 @@ impl TerminalType {
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
             TerminalType::Articlizer(articlizer) => articlizer.range.end.clone(),
+            TerminalType::Number(number) => number.range.end.clone(),
             TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
                 converter.range.end.clone()
             }
@@ -523,6 +532,11 @@ pub struct Quantifier {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Articlizer {
+    range: Range,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Number {
     range: Range,
 }
 
@@ -1315,6 +1329,41 @@ impl Articlizer {
     }
     pub fn get_string(&self) -> String {
         "articlizer".to_string()
+    }
+}
+
+impl Number {
+    fn is_match(string: &str) -> bool {
+        string == "number"
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid number surface: {}", string);
+        }
+        Number {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        "number".to_string()
     }
 }
 

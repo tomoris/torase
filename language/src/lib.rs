@@ -71,6 +71,13 @@ mod tests {
     }
 
     #[test]
+    fn test_私は3つのりんごを食べる() {
+        let text = "pahete mi si ro number behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita pahete mi si ro behapare".to_string();
         let result = diagnose(text);
@@ -174,7 +181,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_りんごが3つある() {
-        let text = "存在する ro [3] behapare".to_string();
+        let text = "存在する ro number behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
