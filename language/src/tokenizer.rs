@@ -87,12 +87,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Number(Number::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if Demonstrative::is_match(token.0) {
-            doc.push(TerminalType::Demonstrative(Demonstrative::new(
-                token.0, token.1, token.2, token.3, token.4,
-            )));
-        } else if Possessive::is_match(token.0) {
-            doc.push(TerminalType::Possessive(Possessive::new(
+        } else if Determiner::is_match(token.0) {
+            doc.push(TerminalType::Determiner(Determiner::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if MtaEventToArgumentPhraseConverter::is_match(token.0) {
@@ -234,8 +230,7 @@ pub enum TerminalType {
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
     Number(Number),
-    Demonstrative(Demonstrative),
-    Possessive(Possessive),
+    Determiner(Determiner),
     MtaEventToArgumentPhraseConverter(MtaEventToArgumentPhraseConverter),
     MtaEventToArgumentPhraseConverterEnd(MtaEventToArgumentPhraseConverterEnd),
     PostMtaEventModifier(PostMtaEventModifier),
@@ -262,8 +257,7 @@ pub enum DummyTerminalType {
     ArgumentRetriever,
     Quantifier,
     Number,
-    Demonstrative,
-    Possessive,
+    Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
     PostMtaEventModifier,
@@ -290,8 +284,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
         TerminalType::Number(_) => DummyTerminalType::Number,
-        TerminalType::Demonstrative(_) => DummyTerminalType::Demonstrative,
-        TerminalType::Possessive(_) => DummyTerminalType::Possessive,
+        TerminalType::Determiner(_) => DummyTerminalType::Determiner,
         TerminalType::MtaEventToArgumentPhraseConverter(_) => {
             DummyTerminalType::MtaEventToArgumentPhraseConverter
         }
@@ -328,8 +321,7 @@ impl TerminalType {
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
             TerminalType::Number(number) => number.range.start.clone(),
-            TerminalType::Demonstrative(demonstrative) => demonstrative.range.start.clone(),
-            TerminalType::Possessive(possessive) => possessive.range.start.clone(),
+            TerminalType::Determiner(determiner) => determiner.range.start.clone(),
             TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
                 converter.range.start.clone()
             }
@@ -362,8 +354,7 @@ impl TerminalType {
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
             TerminalType::Number(number) => number.range.end.clone(),
-            TerminalType::Demonstrative(demonstrative) => demonstrative.range.end.clone(),
-            TerminalType::Possessive(possessive) => possessive.range.end.clone(),
+            TerminalType::Determiner(determiner) => determiner.range.end.clone(),
             TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
                 converter.range.end.clone()
             }
@@ -508,9 +499,9 @@ enum ArgumentKind {
     Ba, // あなた
     Bu, // あなたたち
     Be, // それ
+    Ga, // 誰か(単数か複数か不明)
     Gi, // 彼、彼女
     Gu, // 彼ら
-    Go, // 誰か(単数か複数か不明)
     Ge, // あれ
 }
 
@@ -537,6 +528,15 @@ pub struct ArgumentRetriever {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quantifier {
     range: Range,
+    kind: QuantifierKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum QuantifierKind {
+    Ta, // 全ての
+    Te, // 多くの
+    Ti, // 半分の
+    To, // 少しの
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -545,13 +545,16 @@ pub struct Number {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Demonstrative {
+pub struct Determiner {
     range: Range,
+    kind: DeterminerKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Possessive {
-    range: Range,
+enum DeterminerKind {
+    Mo, // この
+    Bo, // その
+    Go, // あの
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1051,7 +1054,7 @@ impl BinaryPredicate {
 
 impl Argument {
     fn is_match(string: &str) -> bool {
-        let re_argument = Regex::new(r"^(:?(?:m[aiue])|(?:b[aue])|(?:g[iueo]))$").unwrap();
+        let re_argument = Regex::new(r"^(:?(?:m[aiue])|(?:b[aue])|(?:g[aiue]))$").unwrap();
         re_argument.is_match(string)
     }
     fn new(
@@ -1069,9 +1072,9 @@ impl Argument {
             "ba" => ArgumentKind::Ba,
             "bu" => ArgumentKind::Bu,
             "be" => ArgumentKind::Be,
+            "ga" => ArgumentKind::Ga,
             "gi" => ArgumentKind::Gi,
             "gu" => ArgumentKind::Gu,
-            "go" => ArgumentKind::Go,
             "ge" => ArgumentKind::Ge,
             _ => panic!("Invalid argument surface: {}", string),
         };
@@ -1111,9 +1114,9 @@ impl Argument {
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ArgumentType::Abstraction,
             ],
+            ArgumentKind::Ga => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Gi => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Gu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
-            ArgumentKind::Go => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Ge => vec![
                 ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -1131,9 +1134,9 @@ impl Argument {
             ArgumentKind::Ba => "ba".to_string(),
             ArgumentKind::Bu => "bu".to_string(),
             ArgumentKind::Be => "be".to_string(),
+            ArgumentKind::Ga => "ga".to_string(),
             ArgumentKind::Gi => "gi".to_string(),
             ArgumentKind::Gu => "gu".to_string(),
-            ArgumentKind::Go => "go".to_string(),
             ArgumentKind::Ge => "ge".to_string(),
         }
     }
@@ -1278,7 +1281,8 @@ impl ArgumentRetriever {
 
 impl Quantifier {
     fn is_match(string: &str) -> bool {
-        string == "quantifier"
+        let re_quantifier = Regex::new(r"^(?:t[aeio])$").unwrap();
+        re_quantifier.is_match(string)
     }
     fn new(
         string: &str,
@@ -1287,9 +1291,13 @@ impl Quantifier {
         end_line: usize,
         end_character: usize,
     ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid quantifier surface: {}", string);
-        }
+        let kind = match string {
+            "ta" => QuantifierKind::Ta,
+            "te" => QuantifierKind::Te,
+            "ti" => QuantifierKind::Ti,
+            "to" => QuantifierKind::To,
+            _ => panic!("Invalid quantifier surface: {}", string),
+        };
         Quantifier {
             range: Range {
                 start: Position {
@@ -1301,13 +1309,19 @@ impl Quantifier {
                     character: end_character,
                 },
             },
+            kind,
         }
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
     pub fn get_string(&self) -> String {
-        "quantifier".to_string()
+        match self.kind {
+            QuantifierKind::Ta => "ta".to_string(),
+            QuantifierKind::Te => "te".to_string(),
+            QuantifierKind::Ti => "ti".to_string(),
+            QuantifierKind::To => "to".to_string(),
+        }
     }
 }
 
@@ -1346,9 +1360,10 @@ impl Number {
     }
 }
 
-impl Demonstrative {
+impl Determiner {
     fn is_match(string: &str) -> bool {
-        string == "demonstrative"
+        let re_determiner = Regex::new(r"^(?:[mbg]o)$").unwrap();
+        re_determiner.is_match(string)
     }
     fn new(
         string: &str,
@@ -1357,10 +1372,13 @@ impl Demonstrative {
         end_line: usize,
         end_character: usize,
     ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid demonstrative surface: {}", string);
-        }
-        Demonstrative {
+        let kind = match string {
+            "mo" => DeterminerKind::Mo,
+            "bo" => DeterminerKind::Bo,
+            "go" => DeterminerKind::Go,
+            _ => panic!("Invalid determiner surface: {}", string),
+        };
+        Determiner {
             range: Range {
                 start: Position {
                     line: start_line,
@@ -1371,48 +1389,18 @@ impl Demonstrative {
                     character: end_character,
                 },
             },
+            kind,
         }
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
     pub fn get_string(&self) -> String {
-        "demonstrative".to_string()
-    }
-}
-
-impl Possessive {
-    fn is_match(string: &str) -> bool {
-        string == "possessive"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid possessive surface: {}", string);
+        match self.kind {
+            DeterminerKind::Mo => "mo".to_string(),
+            DeterminerKind::Bo => "bo".to_string(),
+            DeterminerKind::Go => "go".to_string(),
         }
-        Possessive {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        "possessive".to_string()
     }
 }
 

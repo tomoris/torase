@@ -791,39 +791,12 @@ impl TreeViewer for DeterminedArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
-            DeterminedArgument::One(demonstrative_modifier, possessive_argument) => {
+            DeterminedArgument::One(determiner_modifier, argument_retrieval_binary_predicate) => {
                 let category = "DeterminedArgument".to_string();
                 let mut content = row![];
-                if is_full || !demonstrative_modifier.is_empty() {
+                if is_full || !determiner_modifier.is_empty() {
                     content = content
-                        .push(demonstrative_modifier.view(is_full))
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ));
-                }
-                content = content
-                    .push(possessive_argument.view(is_full))
-                    .align_y(Alignment::Center);
-                category_box(category, content.into(), background)
-            }
-        }
-    }
-    fn is_empty(&self) -> bool {
-        false
-    }
-}
-
-impl TreeViewer for PossessiveArgument {
-    fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(50, 50, 50);
-        match self {
-            PossessiveArgument::One(possessive_modifier, argument_retrieval_binary_predicate) => {
-                let category = "PossessiveArgument".to_string();
-                let mut content = row![];
-                if is_full || !possessive_modifier.is_empty() {
-                    content = content
-                        .push(possessive_modifier.view(is_full))
+                        .push(determiner_modifier.view(is_full))
                         .push(Space::new(
                             iced::Length::Fixed(1.0),
                             iced::Length::Fixed(0.0),
@@ -941,45 +914,24 @@ impl TreeViewer for NumericalExpression {
     }
 }
 
-impl TreeViewer for DemonstrativeModifier {
+impl TreeViewer for DeterminerModifier {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(0, 50, 0);
         match self {
-            DemonstrativeModifier::One(demonstrative) => {
-                let category = "DemonstrativeModifier".to_string();
-                let content = text(demonstrative.get_string()).into();
+            DeterminerModifier::One(determiner) => {
+                let category = "DeterminerModifier".to_string();
+                let content = text(determiner.get_string()).into();
                 category_box(category, content, background)
             }
-            DemonstrativeModifier::Epsilon => {
-                let category = "DemonstrativeModifier".to_string();
+            DeterminerModifier::Epsilon => {
+                let category = "DeterminerModifier".to_string();
                 let content = text("ε").into();
                 category_box(category, content, background)
             }
         }
     }
     fn is_empty(&self) -> bool {
-        matches!(self, DemonstrativeModifier::Epsilon)
-    }
-}
-
-impl TreeViewer for PossessiveModifier {
-    fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(0, 50, 0);
-        match self {
-            PossessiveModifier::One(possessive) => {
-                let category = "PossessiveModifier".to_string();
-                let content = text(possessive.get_string()).into();
-                category_box(category, content, background)
-            }
-            PossessiveModifier::Epsilon => {
-                let category = "PossessiveModifier".to_string();
-                let content = text("ε").into();
-                category_box(category, content, background)
-            }
-        }
-    }
-    fn is_empty(&self) -> bool {
-        matches!(self, PossessiveModifier::Epsilon)
+        matches!(self, DeterminerModifier::Epsilon)
     }
 }
 

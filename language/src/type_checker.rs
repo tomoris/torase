@@ -463,52 +463,23 @@ impl QuantifiedArgument {
 impl DeterminedArgument {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            DeterminedArgument::One(_demonstrative_modifier, possessive_argument) => {
-                possessive_argument.type_check()
-            }
-        }
-    }
-    fn get_type(&self) -> Vec<ArgumentType> {
-        match self {
-            DeterminedArgument::One(_demonstrative_modifier, possessive_argument) => {
-                possessive_argument.get_type()
-            }
-        }
-    }
-    fn get_range(&self) -> Range {
-        match self {
-            DeterminedArgument::One(demonstrative_modifier, possessive_argument) => {
-                let end = possessive_argument.get_range().end();
-                if let Some(start) = demonstrative_modifier.get_range() {
-                    return Range::new(start.start(), end);
-                }
-                let start = possessive_argument.get_range().start();
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-impl PossessiveArgument {
-    fn type_check(&self) -> TypeMismatchResult {
-        match self {
-            PossessiveArgument::One(_possessive_modifier, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(_determiner_modifier, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.type_check()
             }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
-            PossessiveArgument::One(_possessive_modifier, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(_determiner_modifier, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.get_type()
             }
         }
     }
     fn get_range(&self) -> Range {
         match self {
-            PossessiveArgument::One(possessive_modifier, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(determiner_modifier, argument_retrieval_binary_predicate) => {
                 let end = argument_retrieval_binary_predicate.get_range().end();
-                if let Some(start) = possessive_modifier.get_range() {
+                if let Some(start) = determiner_modifier.get_range() {
                     return Range::new(start.start(), end);
                 }
                 let start = argument_retrieval_binary_predicate.get_range().start();
@@ -601,20 +572,11 @@ impl NumericalExpression {
     }
 }
 
-impl DemonstrativeModifier {
+impl DeterminerModifier {
     fn get_range(&self) -> Option<Range> {
         match self {
-            DemonstrativeModifier::One(demonstrative) => Some(demonstrative.get_range()),
-            DemonstrativeModifier::Epsilon => None,
-        }
-    }
-}
-
-impl PossessiveModifier {
-    fn get_range(&self) -> Option<Range> {
-        match self {
-            PossessiveModifier::One(possessive) => Some(possessive.get_range()),
-            PossessiveModifier::Epsilon => None,
+            DeterminerModifier::One(determiner) => Some(determiner.get_range()),
+            DeterminerModifier::Epsilon => None,
         }
     }
 }

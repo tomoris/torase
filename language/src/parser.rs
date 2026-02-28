@@ -193,9 +193,6 @@ fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonT
         DummyNonTerminalType::DeterminedArgument => {
             NonTerminalType::DeterminedArgument(DeterminedArgument::new(rhs))
         }
-        DummyNonTerminalType::PossessiveArgument => {
-            NonTerminalType::PossessiveArgument(PossessiveArgument::new(rhs))
-        }
         DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
             NonTerminalType::ArgumentRetrievalBinaryPredicate(
                 ArgumentRetrievalBinaryPredicate::new(rhs),
@@ -212,11 +209,8 @@ fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonT
         DummyNonTerminalType::NumericalExpression => {
             NonTerminalType::NumericalExpression(NumericalExpression::new(rhs))
         }
-        DummyNonTerminalType::DemonstrativeModifier => {
-            NonTerminalType::DemonstrativeModifier(DemonstrativeModifier::new(rhs))
-        }
-        DummyNonTerminalType::PossessiveModifier => {
-            NonTerminalType::PossessiveModifier(PossessiveModifier::new(rhs))
+        DummyNonTerminalType::DeterminerModifier => {
+            NonTerminalType::DeterminerModifier(DeterminerModifier::new(rhs))
         }
     }
 }
@@ -249,7 +243,6 @@ fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRh
         DummyNonTerminalType::ArgumentPhraseOrEpsilon => ArgumentPhraseOrEpsilon::parse_table(t),
         DummyNonTerminalType::QuantifiedArgument => QuantifiedArgument::parse_table(t),
         DummyNonTerminalType::DeterminedArgument => DeterminedArgument::parse_table(t),
-        DummyNonTerminalType::PossessiveArgument => PossessiveArgument::parse_table(t),
         DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
             ArgumentRetrievalBinaryPredicate::parse_table(t)
         }
@@ -258,8 +251,7 @@ fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRh
         }
         DummyNonTerminalType::QuantifierModifier => QuantifierModifier::parse_table(t),
         DummyNonTerminalType::NumericalExpression => NumericalExpression::parse_table(t),
-        DummyNonTerminalType::DemonstrativeModifier => DemonstrativeModifier::parse_table(t),
-        DummyNonTerminalType::PossessiveModifier => PossessiveModifier::parse_table(t),
+        DummyNonTerminalType::DeterminerModifier => DeterminerModifier::parse_table(t),
     }
 }
 
@@ -335,13 +327,11 @@ pub enum NonTerminalType {
     ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon),
     QuantifiedArgument(QuantifiedArgument),
     DeterminedArgument(DeterminedArgument),
-    PossessiveArgument(PossessiveArgument),
     ArgumentRetrievalBinaryPredicate(ArgumentRetrievalBinaryPredicate),
     ArgumentRetrievalWithArgumentPhrase(ArgumentRetrievalWithArgumentPhrase),
     QuantifierModifier(QuantifierModifier),
     NumericalExpression(NumericalExpression),
-    DemonstrativeModifier(DemonstrativeModifier),
-    PossessiveModifier(PossessiveModifier),
+    DeterminerModifier(DeterminerModifier),
 }
 
 #[derive(Clone, Debug)]
@@ -368,13 +358,11 @@ pub enum DummyNonTerminalType {
     ArgumentPhraseOrEpsilon,
     QuantifiedArgument,
     DeterminedArgument,
-    PossessiveArgument,
     ArgumentRetrievalBinaryPredicate,
     ArgumentRetrievalWithArgumentPhrase,
     QuantifierModifier,
     NumericalExpression,
-    DemonstrativeModifier,
-    PossessiveModifier,
+    DeterminerModifier,
 }
 
 // non-terminal types
@@ -515,12 +503,7 @@ pub enum QuantifiedArgument {
 
 #[derive(Clone, Debug)]
 pub enum DeterminedArgument {
-    One(DemonstrativeModifier, PossessiveArgument),
-}
-
-#[derive(Clone, Debug)]
-pub enum PossessiveArgument {
-    One(PossessiveModifier, ArgumentRetrievalBinaryPredicate),
+    One(DeterminerModifier, ArgumentRetrievalBinaryPredicate),
 }
 
 #[derive(Clone, Debug)]
@@ -558,14 +541,8 @@ pub enum NumericalExpression {
 }
 
 #[derive(Clone, Debug)]
-pub enum DemonstrativeModifier {
-    One(Demonstrative),
-    Epsilon,
-}
-
-#[derive(Clone, Debug)]
-pub enum PossessiveModifier {
-    One(Possessive),
+pub enum DeterminerModifier {
+    One(Determiner),
     Epsilon,
 }
 
@@ -1552,11 +1529,7 @@ impl QuantifiedArgument {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
             ])),
-            DummyTerminalType::Demonstrative => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
-            DummyTerminalType::Possessive => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Determiner => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
             ])),
@@ -1585,79 +1558,31 @@ impl DeterminedArgument {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DemonstrativeModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveArgument),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DemonstrativeModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveArgument),
-            ])),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DemonstrativeModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveArgument),
-            ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DemonstrativeModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveArgument),
-            ])),
-            DummyTerminalType::Demonstrative => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DemonstrativeModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveArgument),
-            ])),
-            DummyTerminalType::Possessive => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DemonstrativeModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveArgument),
-            ])),
-            _ => Err(()),
-        }
-    }
-    fn new(rhs: Rhs) -> Self {
-        match rhs {
-            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [
-                    SymbolType::NonTerminal(NonTerminalType::DemonstrativeModifier(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::PossessiveArgument(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
-                _ => {
-                    panic!("Unexpected symbols: {:?}", symbols);
-                }
-            },
-            Rhs::Epsilon => {
-                panic!("Unexpected epsilon");
-            }
-        }
-    }
-}
-
-impl PossessiveArgument {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
-        match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
             ])),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
             ])),
             DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
             ])),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
             ])),
-            DummyTerminalType::Possessive => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PossessiveModifier),
+            DummyTerminalType::Determiner => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
@@ -1669,7 +1594,7 @@ impl PossessiveArgument {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::PossessiveModifier(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::DeterminerModifier(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(
                         child2,
                     )),
@@ -1797,8 +1722,7 @@ impl QuantifierModifier {
                     DummyNonTerminalType::NumericalExpression,
                 )]))
             }
-            DummyTerminalType::Demonstrative => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Possessive => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1846,47 +1770,16 @@ impl NumericalExpression {
     }
 }
 
-impl DemonstrativeModifier {
+impl DeterminerModifier {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Demonstrative => {
+            DummyTerminalType::Determiner => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
-                    DummyTerminalType::Demonstrative,
-                )]))
-            }
-            DummyTerminalType::Possessive => Ok(DummyRhs::Epsilon),
-            _ => Err(()),
-        }
-    }
-    fn new(rhs: Rhs) -> Self {
-        match rhs {
-            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Demonstrative(child1))] => {
-                    Self::One(child1.clone())
-                }
-                _ => {
-                    panic!("Unexpected symbols: {:?}", symbols);
-                }
-            },
-            Rhs::Epsilon => Self::Epsilon,
-        }
-    }
-}
-
-impl PossessiveModifier {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
-        match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Possessive => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
-                    DummyTerminalType::Possessive,
+                    DummyTerminalType::Determiner,
                 )]))
             }
             _ => Err(()),
@@ -1895,7 +1788,7 @@ impl PossessiveModifier {
     fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Possessive(child1))] => {
+                [SymbolType::Terminal(TerminalType::Determiner(child1))] => {
                     Self::One(child1.clone())
                 }
                 _ => {
@@ -2060,13 +1953,6 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let possessive_argument = grammar::NonTerminal(
-            type_name::<PossessiveArgument>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
         let argument_retrieval_binary_predicate = grammar::NonTerminal(
             type_name::<ArgumentRetrievalBinaryPredicate>()
                 .split("::")
@@ -2095,15 +1981,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let demonstrative_modifier = grammar::NonTerminal(
-            type_name::<DemonstrativeModifier>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let possessive_modifier = grammar::NonTerminal(
-            type_name::<PossessiveModifier>()
+        let determiner_modifier = grammar::NonTerminal(
+            type_name::<DeterminerModifier>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2210,15 +2089,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let demonstrative = grammar::Terminal(
-            type_name::<Demonstrative>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let possessive = grammar::Terminal(
-            type_name::<Possessive>()
+        let determiner = grammar::Terminal(
+            type_name::<Determiner>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2472,14 +2344,7 @@ mod tests {
         rules.insert(
             determined_argument.clone(),
             vec![grammar::Rhs::Sequence(vec![
-                grammar::Symbol::NonTerminal(demonstrative_modifier.clone()),
-                grammar::Symbol::NonTerminal(possessive_argument.clone()),
-            ])],
-        );
-        rules.insert(
-            possessive_argument.clone(),
-            vec![grammar::Rhs::Sequence(vec![
-                grammar::Symbol::NonTerminal(possessive_modifier.clone()),
+                grammar::Symbol::NonTerminal(determiner_modifier.clone()),
                 grammar::Symbol::NonTerminal(argument_retrieval_binary_predicate.clone()),
             ])],
         );
@@ -2517,16 +2382,9 @@ mod tests {
             )])],
         );
         rules.insert(
-            demonstrative_modifier.clone(),
+            determiner_modifier.clone(),
             vec![
-                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(demonstrative.clone())]),
-                grammar::Rhs::Epsilon,
-            ],
-        );
-        rules.insert(
-            possessive_modifier.clone(),
-            vec![
-                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(possessive.clone())]),
+                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(determiner.clone())]),
                 grammar::Rhs::Epsilon,
             ],
         );
@@ -2555,8 +2413,7 @@ mod tests {
                     "BinaryOperator" => DummyTerminalType::BinaryOperator,
                     "ArgumentRetriever" => DummyTerminalType::ArgumentRetriever,
                     "Quantifier" => DummyTerminalType::Quantifier,
-                    "Demonstrative" => DummyTerminalType::Demonstrative,
-                    "Possessive" => DummyTerminalType::Possessive,
+                    "Determiner" => DummyTerminalType::Determiner,
                     "Number" => DummyTerminalType::Number,
                     "MtaEventToArgumentPhraseConverter" => {
                         DummyTerminalType::MtaEventToArgumentPhraseConverter
@@ -2616,15 +2473,13 @@ mod tests {
             "ArgumentPhraseOrEpsilon" => ArgumentPhraseOrEpsilon::parse_table(tt),
             "QuantifiedArgument" => QuantifiedArgument::parse_table(tt),
             "DeterminedArgument" => DeterminedArgument::parse_table(tt),
-            "PossessiveArgument" => PossessiveArgument::parse_table(tt),
             "ArgumentRetrievalBinaryPredicate" => ArgumentRetrievalBinaryPredicate::parse_table(tt),
             "ArgumentRetrievalWithArgumentPhrase" => {
                 ArgumentRetrievalWithArgumentPhrase::parse_table(tt)
             }
             "QuantifierModifier" => QuantifierModifier::parse_table(tt),
             "NumericalExpression" => NumericalExpression::parse_table(tt),
-            "DemonstrativeModifier" => DemonstrativeModifier::parse_table(tt),
-            "PossessiveModifier" => PossessiveModifier::parse_table(tt),
+            "DeterminerModifier" => DeterminerModifier::parse_table(tt),
             _ => self::panic!("Unknown non-terminal type: {}", nt.0),
         };
 
@@ -2671,13 +2526,11 @@ mod tests {
                                                 DummyNonTerminalType::ArgumentPhraseOrEpsilon => "ArgumentPhraseOrEpsilon",
                                                 DummyNonTerminalType::QuantifiedArgument => "QuantifiedArgument",
                                                 DummyNonTerminalType::DeterminedArgument => "DeterminedArgument",
-                                                DummyNonTerminalType::PossessiveArgument => "PossessiveArgument",
                                                 DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => "ArgumentRetrievalBinaryPredicate",
                                                 DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => "ArgumentRetrievalWithArgumentPhrase",
                                                 DummyNonTerminalType::QuantifierModifier => "QuantifierModifier",
                                                 DummyNonTerminalType::NumericalExpression => "NumericalExpression",
-                                                DummyNonTerminalType::DemonstrativeModifier => "DemonstrativeModifier",
-                                                DummyNonTerminalType::PossessiveModifier => "PossessiveModifier",
+                                                DummyNonTerminalType::DeterminerModifier => "DeterminerModifier",
                                             };
                                     assert_eq!(
                                         auto_nt.0, manual_nt_variant_name,
@@ -2710,9 +2563,8 @@ mod tests {
                                         DummyTerminalType::BinaryOperator => "BinaryOperator",
                                         DummyTerminalType::ArgumentRetriever => "ArgumentRetriever",
                                         DummyTerminalType::Quantifier => "Quantifier",
-                                        DummyTerminalType::Demonstrative => "Demonstrative",
-                                        DummyTerminalType::Possessive => "Possessive",
                                         DummyTerminalType::Number => "Number",
+                                        DummyTerminalType::Determiner => "Determiner",
                                         DummyTerminalType::MtaEventToArgumentPhraseConverter => {
                                             "MtaEventToArgumentPhraseConverter"
                                         }
