@@ -83,12 +83,16 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Quantifier(Quantifier::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if Articlizer::is_match(token.0) {
-            doc.push(TerminalType::Articlizer(Articlizer::new(
-                token.0, token.1, token.2, token.3, token.4,
-            )));
         } else if Number::is_match(token.0) {
             doc.push(TerminalType::Number(Number::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if Demonstrative::is_match(token.0) {
+            doc.push(TerminalType::Demonstrative(Demonstrative::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if Possessive::is_match(token.0) {
+            doc.push(TerminalType::Possessive(Possessive::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if MtaEventToArgumentPhraseConverter::is_match(token.0) {
@@ -229,8 +233,9 @@ pub enum TerminalType {
     BinaryOperator(BinaryOperator),
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
-    Articlizer(Articlizer),
     Number(Number),
+    Demonstrative(Demonstrative),
+    Possessive(Possessive),
     MtaEventToArgumentPhraseConverter(MtaEventToArgumentPhraseConverter),
     MtaEventToArgumentPhraseConverterEnd(MtaEventToArgumentPhraseConverterEnd),
     PostMtaEventModifier(PostMtaEventModifier),
@@ -256,8 +261,9 @@ pub enum DummyTerminalType {
     BinaryOperator,
     ArgumentRetriever,
     Quantifier,
-    Articlizer,
     Number,
+    Demonstrative,
+    Possessive,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
     PostMtaEventModifier,
@@ -283,8 +289,9 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::BinaryOperator(_) => DummyTerminalType::BinaryOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
-        TerminalType::Articlizer(_) => DummyTerminalType::Articlizer,
         TerminalType::Number(_) => DummyTerminalType::Number,
+        TerminalType::Demonstrative(_) => DummyTerminalType::Demonstrative,
+        TerminalType::Possessive(_) => DummyTerminalType::Possessive,
         TerminalType::MtaEventToArgumentPhraseConverter(_) => {
             DummyTerminalType::MtaEventToArgumentPhraseConverter
         }
@@ -320,8 +327,9 @@ impl TerminalType {
             TerminalType::BinaryOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
-            TerminalType::Articlizer(articlizer) => articlizer.range.start.clone(),
             TerminalType::Number(number) => number.range.start.clone(),
+            TerminalType::Demonstrative(demonstrative) => demonstrative.range.start.clone(),
+            TerminalType::Possessive(possessive) => possessive.range.start.clone(),
             TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
                 converter.range.start.clone()
             }
@@ -353,8 +361,9 @@ impl TerminalType {
             TerminalType::BinaryOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
-            TerminalType::Articlizer(articlizer) => articlizer.range.end.clone(),
             TerminalType::Number(number) => number.range.end.clone(),
+            TerminalType::Demonstrative(demonstrative) => demonstrative.range.end.clone(),
+            TerminalType::Possessive(possessive) => possessive.range.end.clone(),
             TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
                 converter.range.end.clone()
             }
@@ -531,12 +540,17 @@ pub struct Quantifier {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Articlizer {
+pub struct Number {
     range: Range,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Number {
+pub struct Demonstrative {
+    range: Range,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Possessive {
     range: Range,
 }
 
@@ -1297,41 +1311,6 @@ impl Quantifier {
     }
 }
 
-impl Articlizer {
-    fn is_match(string: &str) -> bool {
-        string == "articlizer"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid articlizer surface: {}", string);
-        }
-        Articlizer {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        "articlizer".to_string()
-    }
-}
-
 impl Number {
     fn is_match(string: &str) -> bool {
         string == "number"
@@ -1364,6 +1343,76 @@ impl Number {
     }
     pub fn get_string(&self) -> String {
         "number".to_string()
+    }
+}
+
+impl Demonstrative {
+    fn is_match(string: &str) -> bool {
+        string == "demonstrative"
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid demonstrative surface: {}", string);
+        }
+        Demonstrative {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        "demonstrative".to_string()
+    }
+}
+
+impl Possessive {
+    fn is_match(string: &str) -> bool {
+        string == "possessive"
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid possessive surface: {}", string);
+        }
+        Possessive {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        "possessive".to_string()
     }
 }
 

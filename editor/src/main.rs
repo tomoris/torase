@@ -702,15 +702,12 @@ impl TreeViewer for ArgumentPhrase {
                 .into();
                 category_box(category, content, background)
             }
-            ArgumentPhrase::Four(
-                argument_retriever,
-                determined_argument_retrieval_binary_predicate,
-            ) => {
+            ArgumentPhrase::Four(argument_retriever, quantified_argument) => {
                 let category = "ArgumentPhrase".to_string();
                 let content = row![
                     text(argument_retriever.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    determined_argument_retrieval_binary_predicate.view(is_full),
+                    quantified_argument.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -763,24 +760,23 @@ impl TreeViewer for ArgumentPhraseOrEpsilon {
     }
 }
 
-impl TreeViewer for DeterminedArgumentRetrievalBinaryPredicate {
+impl TreeViewer for QuantifiedArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
-            DeterminedArgumentRetrievalBinaryPredicate::One(
-                quantification,
-                articlized_argument_retrieval_binary_predicate,
-            ) => {
-                let category = "DeterminedArgumentRetrievalBinaryPredicate".to_string();
+            QuantifiedArgument::One(quantifier_modifier, determined_argument) => {
+                let category = "QuantifiedArgument".to_string();
                 let mut content = row![];
-                if is_full || !quantification.is_empty() {
-                    content = content.push(quantification.view(is_full)).push(Space::new(
-                        iced::Length::Fixed(1.0),
-                        iced::Length::Fixed(0.0),
-                    ));
+                if is_full || !quantifier_modifier.is_empty() {
+                    content = content
+                        .push(quantifier_modifier.view(is_full))
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ));
                 }
                 content = content
-                    .push(articlized_argument_retrieval_binary_predicate.view(is_full))
+                    .push(determined_argument.view(is_full))
                     .align_y(Alignment::Center);
                 category_box(category, content.into(), background)
             }
@@ -791,21 +787,23 @@ impl TreeViewer for DeterminedArgumentRetrievalBinaryPredicate {
     }
 }
 
-impl TreeViewer for ArticlizedArgumentRetrievalBinaryPredicate {
+impl TreeViewer for DeterminedArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(article, numeral_argument) => {
-                let category = "ArticlizedArgumentRetrievalBinaryPredicate".to_string();
+            DeterminedArgument::One(demonstrative_modifier, possessive_argument) => {
+                let category = "DeterminedArgument".to_string();
                 let mut content = row![];
-                if is_full || !article.is_empty() {
-                    content = content.push(article.view(is_full)).push(Space::new(
-                        iced::Length::Fixed(1.0),
-                        iced::Length::Fixed(0.0),
-                    ));
+                if is_full || !demonstrative_modifier.is_empty() {
+                    content = content
+                        .push(demonstrative_modifier.view(is_full))
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ));
                 }
                 content = content
-                    .push(numeral_argument.view(is_full))
+                    .push(possessive_argument.view(is_full))
                     .align_y(Alignment::Center);
                 category_box(category, content.into(), background)
             }
@@ -816,18 +814,20 @@ impl TreeViewer for ArticlizedArgumentRetrievalBinaryPredicate {
     }
 }
 
-impl TreeViewer for NumeralArgument {
+impl TreeViewer for PossessiveArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
-            NumeralArgument::One(numeral, argument_retrieval_binary_predicate) => {
-                let category = "NumeralArgument".to_string();
+            PossessiveArgument::One(possessive_modifier, argument_retrieval_binary_predicate) => {
+                let category = "PossessiveArgument".to_string();
                 let mut content = row![];
-                if is_full || !numeral.is_empty() {
-                    content = content.push(numeral.view(is_full)).push(Space::new(
-                        iced::Length::Fixed(1.0),
-                        iced::Length::Fixed(0.0),
-                    ));
+                if is_full || !possessive_modifier.is_empty() {
+                    content = content
+                        .push(possessive_modifier.view(is_full))
+                        .push(Space::new(
+                            iced::Length::Fixed(1.0),
+                            iced::Length::Fixed(0.0),
+                        ));
                 }
                 content = content
                     .push(argument_retrieval_binary_predicate.view(is_full))
@@ -899,66 +899,87 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
     }
 }
 
-impl TreeViewer for Quantification {
+impl TreeViewer for QuantifierModifier {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 0);
         match self {
-            Quantification::One(quantifier) => {
-                let category = "Quantification".to_string();
+            QuantifierModifier::One(quantifier) => {
+                let category = "QuantifierModifier".to_string();
                 let content = text(quantifier.get_string()).into();
                 category_box(category, content, background)
             }
-            Quantification::Epsilon => {
-                let category = "Quantification".to_string();
+            QuantifierModifier::Two(numerical_expression) => {
+                let category = "QuantifierModifier".to_string();
+                let content = numerical_expression.view(_is_full);
+                category_box(category, content, background)
+            }
+            QuantifierModifier::Epsilon => {
+                let category = "QuantifierModifier".to_string();
                 let content = text("ε").into();
                 category_box(category, content, background)
             }
         }
     }
     fn is_empty(&self) -> bool {
-        matches!(self, Quantification::Epsilon)
+        matches!(self, QuantifierModifier::Epsilon)
     }
 }
 
-impl TreeViewer for Article {
+impl TreeViewer for NumericalExpression {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(0, 50, 0);
         match self {
-            Article::One(articlizer) => {
-                let category = "Article".to_string();
-                let content = text(articlizer.get_string()).into();
-                category_box(category, content, background)
-            }
-            Article::Epsilon => {
-                let category = "Article".to_string();
-                let content = text("ε").into();
-                category_box(category, content, background)
-            }
-        }
-    }
-    fn is_empty(&self) -> bool {
-        matches!(self, Article::Epsilon)
-    }
-}
-
-impl TreeViewer for Numeral {
-    fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(0, 50, 0);
-        match self {
-            Numeral::One(number) => {
-                let category = "Numeral".to_string();
+            NumericalExpression::One(number) => {
+                let category = "NumericalExpression".to_string();
                 let content = text(number.get_string()).into();
                 category_box(category, content, background)
             }
-            Numeral::Epsilon => {
-                let category = "Numeral".to_string();
+        }
+    }
+    fn is_empty(&self) -> bool {
+        false
+    }
+}
+
+impl TreeViewer for DemonstrativeModifier {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(0, 50, 0);
+        match self {
+            DemonstrativeModifier::One(demonstrative) => {
+                let category = "DemonstrativeModifier".to_string();
+                let content = text(demonstrative.get_string()).into();
+                category_box(category, content, background)
+            }
+            DemonstrativeModifier::Epsilon => {
+                let category = "DemonstrativeModifier".to_string();
                 let content = text("ε").into();
                 category_box(category, content, background)
             }
         }
     }
     fn is_empty(&self) -> bool {
-        matches!(self, Numeral::Epsilon)
+        matches!(self, DemonstrativeModifier::Epsilon)
+    }
+}
+
+impl TreeViewer for PossessiveModifier {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(0, 50, 0);
+        match self {
+            PossessiveModifier::One(possessive) => {
+                let category = "PossessiveModifier".to_string();
+                let content = text(possessive.get_string()).into();
+                category_box(category, content, background)
+            }
+            PossessiveModifier::Epsilon => {
+                let category = "PossessiveModifier".to_string();
+                let content = text("ε").into();
+                category_box(category, content, background)
+            }
+        }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, PossessiveModifier::Epsilon)
     }
 }
 

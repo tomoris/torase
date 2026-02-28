@@ -71,13 +71,6 @@ mod tests {
     }
 
     #[test]
-    fn test_私は3つのりんごを食べる() {
-        let text = "pahete mi si ro number behapare".to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita pahete mi si ro behapare".to_string();
         let result = diagnose(text);
@@ -565,6 +558,32 @@ mod tests {
     fn test_ここには何もない() {
         let text = "".to_string();
         let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はあるりんごを食べる() {
+        // ∃x (apple(x))
+        let text = "pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        dbg!(&result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は私のりんごを食べる() {
+        // ∃x (apple(x) ∧ has(me, x))
+        let text = "pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        dbg!(&result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は3つのりんごを食べる() {
+        let text = "pahete mi si ro number behapare".to_string();
+        let result = diagnose(text);
+        dbg!(&result);
         assert!(result.is_ok());
     }
 }
