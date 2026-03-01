@@ -71,13 +71,6 @@ mod tests {
     }
 
     #[test]
-    fn test_私は3つのりんごを食べる() {
-        let text = "pahete mi si ro number behapare".to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita pahete mi si ro behapare".to_string();
         let result = diagnose(text);
@@ -195,25 +188,22 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_誰かがあのりんごを食べてしまった_その結果あのりんごは今はない() {
-        let text = "hudu pahete go si ge du ro behapare".to_string();
+        let text = "hudu pahete ga si ro go behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_誰かがこのりんごを食べそうだ() {
-        let text = "hame hitu pahete go si me du ro behapare".to_string();
+        let text = "hame hitu pahete ga si ro mo behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_誰かがこのりんごそのりんごあのりんごを食べたそうだ() {
-        let text = "kahehara mi si se pahete go si binary_operator ro [この] behapare binary_operator ro [その] behapare ro [あの] behapare so".to_string();
+        let text = "kahehara mi si se pahete ga si binary_operator ro mo behapare binary_operator ro bo behapare ro go behapare so".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -280,7 +270,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_このりんごは汚い() {
-        let text = "[この] ro behapare".to_string();
+        let text = "[x1は汚いもの] mo ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -288,15 +278,14 @@ mod tests {
     #[test]
     #[ignore]
     fn test_このりんごは綺麗ではない() {
-        let text = "[この] ro behapare".to_string();
+        let text = "ne [x1は綺麗なもの] mo ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_あのりんごは食べられそうだ() {
-        let text = "hako re padaropa [あの] ro behapare".to_string();
+        let text = "hako re padaropa ro bo behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -311,7 +300,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_これはりんごではなくみかんだ() {
-        let text = "behoranage [これ] da ne behapare [これ]".to_string();
+        let text = "behoranage me da [文分割] ne behapare me".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -566,5 +555,125 @@ mod tests {
         let text = "".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はあるりんごを食べる() {
+        // ∃x (apple(x))
+        let text = "pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はこのりんごを食べる() {
+        // ∃x (apple(x) ∧ this(x))
+        let text = "pahete mi si ro mo behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はそのりんごを食べる() {
+        // ∃x (apple(x) ∧ it(x))
+        let text = "pahete mi si ro bo behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はあのりんごを食べる() {
+        // ∃x (apple(x) ∧ that(x))
+        let text = "pahete mi si ro go behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は3つのりんごを食べる() {
+        // ∃=3 x (apple(x))
+        let text = "pahete mi si ro number behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はこの3つのりんごを食べる() {
+        // ∃=3 x (apple(x))
+        let text = "pahete mi si ro number mo behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は少しのりんごを食べる() {
+        // ∃=to x (apple(x))
+        let text = "pahete mi si ro to behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は少しこのりんごを食べる() {
+        // ∃=to x (apple(x) ∧ this(x))
+        let text = "pahete mi si ro to mo behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は少しの3つのりんごを食べる_がエラーになること() {
+        // ∀x ∃=3 (apple(x))
+        let text = "pahete mi si ro number to behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+
+        let text = "pahete mi si ro to number behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_私は半分のりんごを食べる() {
+        // ∃=ti x (apple(x))
+        let text = "pahete mi si ro ti behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は多くのりんごを食べる() {
+        // ∃=ta x (apple(x))
+        let text = "pahete mi si ro te behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は全てのりんごを食べる() {
+        // ∀x (apple(x))
+        let text = "pahete mi si ro ta behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は全てのこのりんごを食べる() {
+        // ∀x (apple(x) ∧ this(x))
+        let text = "pahete mi si ro ta mo behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私は全ての3つのりんごを食べる_がエラーになること() {
+        // ∀x ∃=3 (apple(x))
+        let text = "pahete mi si ro number ta behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+
+        let text = "pahete mi si ro ta number behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
     }
 }
