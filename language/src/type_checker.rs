@@ -361,10 +361,9 @@ impl ArgumentPhrase {
                 }
                 Ok(())
             }
-            ArgumentPhrase::Four(
-                _argument_phrase_transposer,
-                determined_argument_retrieval_binary_predicate,
-            ) => determined_argument_retrieval_binary_predicate.type_check(),
+            ArgumentPhrase::Four(_argument_phrase_transposer, quantified_argument) => {
+                quantified_argument.type_check()
+            }
             ArgumentPhrase::Five(
                 _mta_event_to_argument_phrase_converter,
                 mta_event,
@@ -432,93 +431,55 @@ impl ArgumentPhraseOrEpsilon {
     }
 }
 
-impl DeterminedArgumentRetrievalBinaryPredicate {
+impl QuantifiedArgument {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            DeterminedArgumentRetrievalBinaryPredicate::One(
-                _quantification,
-                articlized_argument_retrieval_binary_predicate,
-            ) => articlized_argument_retrieval_binary_predicate.type_check(),
+            QuantifiedArgument::One(_quantified_modifier, determined_argument) => {
+                determined_argument.type_check()
+            }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
-            DeterminedArgumentRetrievalBinaryPredicate::One(
-                _quantification,
-                articlized_argument_retrieval_binary_predicate,
-            ) => articlized_argument_retrieval_binary_predicate.get_type(),
+            QuantifiedArgument::One(_quantified_modifier, determined_argument) => {
+                determined_argument.get_type()
+            }
         }
     }
     fn get_range(&self) -> Range {
         match self {
-            DeterminedArgumentRetrievalBinaryPredicate::One(
-                quantification,
-                articlized_argument_retrieval_binary_predicate,
-            ) => {
-                let end = articlized_argument_retrieval_binary_predicate
-                    .get_range()
-                    .end();
-                if let Some(start) = quantification.get_range() {
+            QuantifiedArgument::One(quantified_modifier, determined_argument) => {
+                let end = determined_argument.get_range().end();
+                if let Some(start) = quantified_modifier.get_range() {
                     return Range::new(start.start(), end);
                 }
-                let start = articlized_argument_retrieval_binary_predicate
-                    .get_range()
-                    .start();
+                let start = determined_argument.get_range().start();
                 Range::new(start, end)
             }
         }
     }
 }
 
-impl ArticlizedArgumentRetrievalBinaryPredicate {
+impl DeterminedArgument {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(_article, numeral_argument) => {
-                numeral_argument.type_check()
-            }
-        }
-    }
-    fn get_type(&self) -> Vec<ArgumentType> {
-        match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(_articlizer, numeral_argument) => {
-                numeral_argument.get_type()
-            }
-        }
-    }
-    fn get_range(&self) -> Range {
-        match self {
-            ArticlizedArgumentRetrievalBinaryPredicate::One(article, numeral_argument) => {
-                let end = numeral_argument.get_range().end();
-                if let Some(start) = article.get_range() {
-                    return Range::new(start.start(), end);
-                }
-                let start = numeral_argument.get_range().start();
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-impl NumeralArgument {
-    fn type_check(&self) -> TypeMismatchResult {
-        match self {
-            NumeralArgument::One(_numeral, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(_determiner_modifier, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.type_check()
             }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
-            NumeralArgument::One(_numeral, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(_determiner_modifier, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.get_type()
             }
         }
     }
     fn get_range(&self) -> Range {
         match self {
-            NumeralArgument::One(numeral, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(determiner_modifier, argument_retrieval_binary_predicate) => {
                 let end = argument_retrieval_binary_predicate.get_range().end();
-                if let Some(start) = numeral.get_range() {
+                if let Some(start) = determiner_modifier.get_range() {
                     return Range::new(start.start(), end);
                 }
                 let start = argument_retrieval_binary_predicate.get_range().start();
@@ -593,29 +554,29 @@ impl ArgumentRetrievalWithArgumentPhrase {
     }
 }
 
-impl Quantification {
+impl QuantifierModifier {
     fn get_range(&self) -> Option<Range> {
         match self {
-            Quantification::One(quantifier) => Some(quantifier.get_range()),
-            Quantification::Epsilon => None,
+            QuantifierModifier::One(quantifier) => Some(quantifier.get_range()),
+            QuantifierModifier::Two(numerical_expression) => numerical_expression.get_range(),
+            QuantifierModifier::Epsilon => None,
         }
     }
 }
 
-impl Article {
+impl NumericalExpression {
     fn get_range(&self) -> Option<Range> {
         match self {
-            Article::One(articlizer) => Some(articlizer.get_range()),
-            Article::Epsilon => None,
+            NumericalExpression::One(number) => Some(number.get_range()),
         }
     }
 }
 
-impl Numeral {
+impl DeterminerModifier {
     fn get_range(&self) -> Option<Range> {
         match self {
-            Numeral::One(number) => Some(number.get_range()),
-            Numeral::Epsilon => None,
+            DeterminerModifier::One(determiner) => Some(determiner.get_range()),
+            DeterminerModifier::Epsilon => None,
         }
     }
 }
