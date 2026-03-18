@@ -702,15 +702,11 @@ impl TreeViewer for ArgumentPhrase {
                 .into();
                 category_box(category, content, background)
             }
-            ArgumentPhrase::Four(argument_retriever, quantified_argument) => {
+            ArgumentPhrase::Four(quantified_argument) => {
                 let category = "ArgumentPhrase".to_string();
-                let content = row![
-                    text(argument_retriever.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    quantified_argument.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                let content = row![quantified_argument.view(is_full),]
+                    .align_y(Alignment::Center)
+                    .into();
                 category_box(category, content, background)
             }
             ArgumentPhrase::Five(
@@ -791,7 +787,7 @@ impl TreeViewer for DeterminedArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 50);
         match self {
-            DeterminedArgument::One(determiner_modifier, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(determiner_modifier, retrieved_argument) => {
                 let category = "DeterminedArgument".to_string();
                 let mut content = row![];
                 if is_full || !determiner_modifier.is_empty() {
@@ -803,9 +799,31 @@ impl TreeViewer for DeterminedArgument {
                         ));
                 }
                 content = content
-                    .push(argument_retrieval_binary_predicate.view(is_full))
+                    .push(retrieved_argument.view(is_full))
                     .align_y(Alignment::Center);
                 category_box(category, content.into(), background)
+            }
+        }
+    }
+    fn is_empty(&self) -> bool {
+        false
+    }
+}
+
+impl TreeViewer for RetrievedArgument {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(50, 50, 50);
+        match self {
+            RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
+                let category = "RetrievedArgument".to_string();
+                let content = row![
+                    text(argument_retriever.get_string()),
+                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    argument_retrieval_binary_predicate.view(is_full),
+                ]
+                .align_y(Alignment::Center)
+                .into();
+                category_box(category, content, background)
             }
         }
     }

@@ -361,9 +361,7 @@ impl ArgumentPhrase {
                 }
                 Ok(())
             }
-            ArgumentPhrase::Four(_argument_phrase_transposer, quantified_argument) => {
-                quantified_argument.type_check()
-            }
+            ArgumentPhrase::Four(quantified_argument) => quantified_argument.type_check(),
             ArgumentPhrase::Five(
                 _mta_event_to_argument_phrase_converter,
                 mta_event,
@@ -376,9 +374,7 @@ impl ArgumentPhrase {
             ArgumentPhrase::One(argument) => argument.get_type(),
             ArgumentPhrase::Two(_, argument) => argument.get_type(),
             ArgumentPhrase::Three(_, argument1, _) => argument1.get_type(),
-            ArgumentPhrase::Four(_, determined_argument_retrieval_binary_predicate) => {
-                determined_argument_retrieval_binary_predicate.get_type()
-            }
+            ArgumentPhrase::Four(quantified_argument) => quantified_argument.get_type(),
             ArgumentPhrase::Five(_, _, _) => {
                 vec![ArgumentType::Abstraction]
             }
@@ -397,14 +393,9 @@ impl ArgumentPhrase {
                 let end = argument2.get_range().end();
                 Range::new(start, end)
             }
-            ArgumentPhrase::Four(
-                argument_retriever,
-                determined_argument_retrieval_binary_predicate,
-            ) => {
-                let start = argument_retriever.get_range().start();
-                let end = determined_argument_retrieval_binary_predicate
-                    .get_range()
-                    .end();
+            ArgumentPhrase::Four(quantified_argument) => {
+                let start = quantified_argument.get_range().start();
+                let end = quantified_argument.get_range().end();
                 Range::new(start, end)
             }
             ArgumentPhrase::Five(
@@ -463,26 +454,52 @@ impl QuantifiedArgument {
 impl DeterminedArgument {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            DeterminedArgument::One(_determiner_modifier, argument_retrieval_binary_predicate) => {
+            DeterminedArgument::One(_determiner_modifier, retrieved_argument) => {
+                retrieved_argument.type_check()
+            }
+        }
+    }
+    fn get_type(&self) -> Vec<ArgumentType> {
+        match self {
+            DeterminedArgument::One(_determiner_modifier, retrieved_argument) => {
+                retrieved_argument.get_type()
+            }
+        }
+    }
+    fn get_range(&self) -> Range {
+        match self {
+            DeterminedArgument::One(determiner_modifier, retrieved_argument) => {
+                let end = retrieved_argument.get_range().end();
+                if let Some(start) = determiner_modifier.get_range() {
+                    return Range::new(start.start(), end);
+                }
+                let start = retrieved_argument.get_range().start();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl RetrievedArgument {
+    fn type_check(&self) -> TypeMismatchResult {
+        match self {
+            RetrievedArgument::One(_argument_retriever, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.type_check()
             }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
-            DeterminedArgument::One(_determiner_modifier, argument_retrieval_binary_predicate) => {
+            RetrievedArgument::One(_argument_retriever, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.get_type()
             }
         }
     }
     fn get_range(&self) -> Range {
         match self {
-            DeterminedArgument::One(determiner_modifier, argument_retrieval_binary_predicate) => {
+            RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
+                let start = argument_retriever.get_range().start();
                 let end = argument_retrieval_binary_predicate.get_range().end();
-                if let Some(start) = determiner_modifier.get_range() {
-                    return Range::new(start.start(), end);
-                }
-                let start = argument_retrieval_binary_predicate.get_range().start();
                 Range::new(start, end)
             }
         }
