@@ -193,6 +193,9 @@ fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonT
         DummyNonTerminalType::DeterminedArgument => {
             NonTerminalType::DeterminedArgument(DeterminedArgument::new(rhs))
         }
+        DummyNonTerminalType::RetrievedArgument => {
+            NonTerminalType::RetrievedArgument(RetrievedArgument::new(rhs))
+        }
         DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
             NonTerminalType::ArgumentRetrievalBinaryPredicate(
                 ArgumentRetrievalBinaryPredicate::new(rhs),
@@ -243,6 +246,7 @@ fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRh
         DummyNonTerminalType::ArgumentPhraseOrEpsilon => ArgumentPhraseOrEpsilon::parse_table(t),
         DummyNonTerminalType::QuantifiedArgument => QuantifiedArgument::parse_table(t),
         DummyNonTerminalType::DeterminedArgument => DeterminedArgument::parse_table(t),
+        DummyNonTerminalType::RetrievedArgument => RetrievedArgument::parse_table(t),
         DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
             ArgumentRetrievalBinaryPredicate::parse_table(t)
         }
@@ -327,6 +331,7 @@ pub enum NonTerminalType {
     ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon),
     QuantifiedArgument(QuantifiedArgument),
     DeterminedArgument(DeterminedArgument),
+    RetrievedArgument(RetrievedArgument),
     ArgumentRetrievalBinaryPredicate(ArgumentRetrievalBinaryPredicate),
     ArgumentRetrievalWithArgumentPhrase(ArgumentRetrievalWithArgumentPhrase),
     QuantifierModifier(QuantifierModifier),
@@ -358,6 +363,7 @@ pub enum DummyNonTerminalType {
     ArgumentPhraseOrEpsilon,
     QuantifiedArgument,
     DeterminedArgument,
+    RetrievedArgument,
     ArgumentRetrievalBinaryPredicate,
     ArgumentRetrievalWithArgumentPhrase,
     QuantifierModifier,
@@ -482,7 +488,7 @@ pub enum ArgumentPhrase {
     One(Argument),
     Two(Negation, Box<ArgumentPhrase>),
     Three(BinaryOperator, Box<ArgumentPhrase>, Box<ArgumentPhrase>),
-    Four(ArgumentRetriever, QuantifiedArgument),
+    Four(QuantifiedArgument),
     Five(
         MtaEventToArgumentPhraseConverter,
         Box<MtaEvent>,
@@ -503,7 +509,12 @@ pub enum QuantifiedArgument {
 
 #[derive(Clone, Debug)]
 pub enum DeterminedArgument {
-    One(DeterminerModifier, ArgumentRetrievalBinaryPredicate),
+    One(DeterminerModifier, RetrievedArgument),
+}
+
+#[derive(Clone, Debug)]
+pub enum RetrievedArgument {
+    One(ArgumentRetriever, ArgumentRetrievalBinaryPredicate),
 }
 
 #[derive(Clone, Debug)]
@@ -1312,6 +1323,9 @@ impl PostBinaryPredicatePhraseExpression {
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
@@ -1418,10 +1432,26 @@ impl ArgumentPhrase {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentRetriever),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifiedArgument),
-            ])),
+            DummyTerminalType::Quantifier => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
+            DummyTerminalType::Number => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
+            DummyTerminalType::Determiner => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
+            DummyTerminalType::ArgumentRetriever => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(
                     DummyTerminalType::MtaEventToArgumentPhraseConverter,
@@ -1451,10 +1481,9 @@ impl ArgumentPhrase {
                     Box::new(child2.clone()),
                     Box::new(child3.clone()),
                 ),
-                [
-                    SymbolType::Terminal(TerminalType::ArgumentRetriever(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::QuantifiedArgument(child2)),
-                ] => Self::Four(child1.clone(), child2.clone()),
+                [SymbolType::NonTerminal(NonTerminalType::QuantifiedArgument(child1))] => {
+                    Self::Four(child1.clone())
+                }
                 [
                     SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)),
                     SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
@@ -1505,22 +1534,6 @@ impl ArgumentPhraseOrEpsilon {
 impl QuantifiedArgument {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
             DummyTerminalType::Quantifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
@@ -1530,6 +1543,10 @@ impl QuantifiedArgument {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
             ])),
             DummyTerminalType::Determiner => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
+            ])),
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
             ])),
@@ -1557,32 +1574,40 @@ impl QuantifiedArgument {
 impl DeterminedArgument {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
-                ),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
-                ),
-            ])),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
-                ),
-            ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
-                ),
-            ])),
             DummyTerminalType::Determiner => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RetrievedArgument),
+            ])),
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RetrievedArgument),
+            ])),
+            _ => Err(()),
+        }
+    }
+    fn new(rhs: Rhs) -> Self {
+        match rhs {
+            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
+                [
+                    SymbolType::NonTerminal(NonTerminalType::DeterminerModifier(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::RetrievedArgument(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
+                _ => {
+                    panic!("Unexpected symbols: {:?}", symbols);
+                }
+            },
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon");
+            }
+        }
+    }
+}
+
+impl RetrievedArgument {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
+        match current_token {
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentRetriever),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
@@ -1594,7 +1619,7 @@ impl DeterminedArgument {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::NonTerminal(NonTerminalType::DeterminerModifier(child1)),
+                    SymbolType::Terminal(TerminalType::ArgumentRetriever(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(
                         child2,
                     )),
@@ -1677,6 +1702,9 @@ impl ArgumentRetrievalWithArgumentPhrase {
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
@@ -1708,10 +1736,6 @@ impl ArgumentRetrievalWithArgumentPhrase {
 impl QuantifierModifier {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Quantifier => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
                     DummyTerminalType::Quantifier,
@@ -1723,6 +1747,7 @@ impl QuantifierModifier {
                 )]))
             }
             DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1773,15 +1798,12 @@ impl NumericalExpression {
 impl DeterminerModifier {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Determiner => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
                     DummyTerminalType::Determiner,
                 )]))
             }
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1948,6 +1970,13 @@ mod tests {
         );
         let determined_argument = grammar::NonTerminal(
             type_name::<DeterminedArgument>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let retrieved_argument = grammar::NonTerminal(
+            type_name::<RetrievedArgument>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2304,10 +2333,9 @@ mod tests {
             argument_phrase.clone(),
             vec![
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(argument.clone())]),
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(argument_retriever.clone()),
-                    grammar::Symbol::NonTerminal(quantified_argument.clone()),
-                ]),
+                grammar::Rhs::Sequence(vec![grammar::Symbol::NonTerminal(
+                    quantified_argument.clone(),
+                )]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(binary_operator.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
@@ -2345,6 +2373,13 @@ mod tests {
             determined_argument.clone(),
             vec![grammar::Rhs::Sequence(vec![
                 grammar::Symbol::NonTerminal(determiner_modifier.clone()),
+                grammar::Symbol::NonTerminal(retrieved_argument.clone()),
+            ])],
+        );
+        rules.insert(
+            retrieved_argument.clone(),
+            vec![grammar::Rhs::Sequence(vec![
+                grammar::Symbol::Terminal(argument_retriever.clone()),
                 grammar::Symbol::NonTerminal(argument_retrieval_binary_predicate.clone()),
             ])],
         );
@@ -2473,6 +2508,7 @@ mod tests {
             "ArgumentPhraseOrEpsilon" => ArgumentPhraseOrEpsilon::parse_table(tt),
             "QuantifiedArgument" => QuantifiedArgument::parse_table(tt),
             "DeterminedArgument" => DeterminedArgument::parse_table(tt),
+            "RetrievedArgument" => RetrievedArgument::parse_table(tt),
             "ArgumentRetrievalBinaryPredicate" => ArgumentRetrievalBinaryPredicate::parse_table(tt),
             "ArgumentRetrievalWithArgumentPhrase" => {
                 ArgumentRetrievalWithArgumentPhrase::parse_table(tt)
@@ -2526,6 +2562,7 @@ mod tests {
                                                 DummyNonTerminalType::ArgumentPhraseOrEpsilon => "ArgumentPhraseOrEpsilon",
                                                 DummyNonTerminalType::QuantifiedArgument => "QuantifiedArgument",
                                                 DummyNonTerminalType::DeterminedArgument => "DeterminedArgument",
+                                                DummyNonTerminalType::RetrievedArgument => "RetrievedArgument",
                                                 DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => "ArgumentRetrievalBinaryPredicate",
                                                 DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => "ArgumentRetrievalWithArgumentPhrase",
                                                 DummyNonTerminalType::QuantifierModifier => "QuantifierModifier",
