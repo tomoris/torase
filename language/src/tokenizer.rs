@@ -146,25 +146,22 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
 // 文の最後にEosトークンがない場合に追加する
 pub fn add_eos_to_last_sentence(sentences: Vec<Vec<TerminalType>>) -> Vec<Vec<TerminalType>> {
     let mut sentences = sentences.clone();
-    if let Some(last_sentence) = sentences.last_mut() {
-        if let Some(last_token) = last_sentence.last() {
-            if discriminant(&TerminalType::Eos(Eos::new_omitted_token()))
-                != discriminant(last_token)
-            {
-                let start = if let Some(last_token) = last_sentence.last() {
-                    last_token.end()
-                } else {
-                    Position {
-                        line: 0,
-                        character: 0,
-                    }
-                };
-                let end = start.clone();
-                last_sentence.push(TerminalType::Eos(Eos {
-                    range: Range { start, end },
-                }));
+    if let Some(last_sentence) = sentences.last_mut()
+        && let Some(last_token) = last_sentence.last()
+        && discriminant(&TerminalType::Eos(Eos::new_omitted_token())) != discriminant(last_token)
+    {
+        let start = if let Some(last_token) = last_sentence.last() {
+            last_token.end()
+        } else {
+            Position {
+                line: 0,
+                character: 0,
             }
-        }
+        };
+        let end = start.clone();
+        last_sentence.push(TerminalType::Eos(Eos {
+            range: Range { start, end },
+        }));
     }
     sentences
 }
