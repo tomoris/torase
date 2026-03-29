@@ -1,10 +1,10 @@
+pub mod argument_type_checker;
 pub mod parser;
 pub mod tokenizer;
-pub mod type_checker;
 
+use argument_type_checker::type_check;
 use parser::{Ast, parse};
 use tokenizer::{Range, add_eos_to_last_sentence, tokenize};
-use type_checker::type_check;
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
