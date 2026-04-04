@@ -1,4 +1,4 @@
-pub mod fol;
+pub mod first_order_logic;
 pub mod type_checker;
-pub use fol::{Formula, GenQKind, Term, to_fol};
+pub use first_order_logic::{Formula, GenQKind, Term, to_fol};
 pub use type_checker::{Type, TypeMismatch, type_check};
