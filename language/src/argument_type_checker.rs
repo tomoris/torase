@@ -216,21 +216,6 @@ impl PostModifiedBinaryPredicatePhrase {
             ) => binary_predicate_phrase.get_argument_types(),
         }
     }
-    fn get_range(&self) -> Range {
-        match self {
-            PostModifiedBinaryPredicatePhrase::One(
-                binary_predicate_phrase,
-                post_binary_predicate_phrase_expression,
-            ) => {
-                let start = binary_predicate_phrase.get_range().start();
-                if let Some(end) = post_binary_predicate_phrase_expression.get_range() {
-                    return Range::new(start, end.end());
-                }
-                let end = binary_predicate_phrase.get_range().end();
-                Range::new(start, end)
-            }
-        }
-    }
 }
 
 impl PostBinaryPredicatePhraseExpression {
@@ -241,19 +226,6 @@ impl PostBinaryPredicatePhraseExpression {
                 binary_predicate_phrase,
             ) => binary_predicate_phrase.type_check(),
             PostBinaryPredicatePhraseExpression::Epsilon => Ok(()),
-        }
-    }
-    fn get_range(&self) -> Option<Range> {
-        match self {
-            PostBinaryPredicatePhraseExpression::One(
-                post_binary_predicate_modifier,
-                binary_predicate_phrase,
-            ) => {
-                let start = post_binary_predicate_modifier.get_range().start();
-                let end = binary_predicate_phrase.get_range().end();
-                Some(Range::new(start, end))
-            }
-            PostBinaryPredicatePhraseExpression::Epsilon => None,
         }
     }
 }
@@ -319,26 +291,6 @@ impl BinaryPredicatePhrase {
             }
         }
     }
-    fn get_range(&self) -> Range {
-        match self {
-            BinaryPredicatePhrase::One(binary_predicate) => binary_predicate.get_range(),
-            BinaryPredicatePhrase::Two(negation, binary_predicate_phrase) => {
-                let start = negation.get_range().start();
-                let end = binary_predicate_phrase.get_range().end();
-                Range::new(start, end)
-            }
-            BinaryPredicatePhrase::Three(argument_phrase_transposer, binary_predicate_phrase) => {
-                let start = argument_phrase_transposer.get_range().start();
-                let end = binary_predicate_phrase.get_range().end();
-                Range::new(start, end)
-            }
-            BinaryPredicatePhrase::Four(binary_operator, _, binary_predicate2) => {
-                let start = binary_operator.get_range().start();
-                let end = binary_predicate2.get_range().end();
-                Range::new(start, end)
-            }
-        }
-    }
 }
 
 impl ArgumentPhrase {
@@ -380,35 +332,6 @@ impl ArgumentPhrase {
             }
         }
     }
-    fn get_range(&self) -> Range {
-        match self {
-            ArgumentPhrase::One(argument) => argument.get_range(),
-            ArgumentPhrase::Two(negation, argument) => {
-                let start = negation.get_range().start();
-                let end = argument.get_range().end();
-                Range::new(start, end)
-            }
-            ArgumentPhrase::Three(binary_operator, _, argument2) => {
-                let start = binary_operator.get_range().start();
-                let end = argument2.get_range().end();
-                Range::new(start, end)
-            }
-            ArgumentPhrase::Four(quantified_argument) => {
-                let start = quantified_argument.get_range().start();
-                let end = quantified_argument.get_range().end();
-                Range::new(start, end)
-            }
-            ArgumentPhrase::Five(
-                mta_event_to_argument_phrase_converter,
-                _,
-                mta_event_to_argument_phrase_converter_end,
-            ) => {
-                let start = mta_event_to_argument_phrase_converter.get_range().start();
-                let end = mta_event_to_argument_phrase_converter_end.get_range().end();
-                Range::new(start, end)
-            }
-        }
-    }
 }
 
 impl ArgumentPhraseOrEpsilon {
@@ -437,18 +360,6 @@ impl QuantifiedArgument {
             }
         }
     }
-    fn get_range(&self) -> Range {
-        match self {
-            QuantifiedArgument::One(quantified_modifier, determined_argument) => {
-                let end = determined_argument.get_range().end();
-                if let Some(start) = quantified_modifier.get_range() {
-                    return Range::new(start.start(), end);
-                }
-                let start = determined_argument.get_range().start();
-                Range::new(start, end)
-            }
-        }
-    }
 }
 
 impl DeterminedArgument {
@@ -466,18 +377,6 @@ impl DeterminedArgument {
             }
         }
     }
-    fn get_range(&self) -> Range {
-        match self {
-            DeterminedArgument::One(determiner_modifier, retrieved_argument) => {
-                let end = retrieved_argument.get_range().end();
-                if let Some(start) = determiner_modifier.get_range() {
-                    return Range::new(start.start(), end);
-                }
-                let start = retrieved_argument.get_range().start();
-                Range::new(start, end)
-            }
-        }
-    }
 }
 
 impl RetrievedArgument {
@@ -492,15 +391,6 @@ impl RetrievedArgument {
         match self {
             RetrievedArgument::One(_argument_retriever, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.get_type()
-            }
-        }
-    }
-    fn get_range(&self) -> Range {
-        match self {
-            RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
-                let start = argument_retriever.get_range().start();
-                let end = argument_retrieval_binary_predicate.get_range().end();
-                Range::new(start, end)
             }
         }
     }
@@ -529,21 +419,6 @@ impl ArgumentRetrievalBinaryPredicate {
             }
         }
     }
-    fn get_range(&self) -> Range {
-        match self {
-            ArgumentRetrievalBinaryPredicate::One(
-                post_modified_binary_predicate_phrase,
-                argument_retrieval_with_argument_phrase,
-            ) => {
-                let start = post_modified_binary_predicate_phrase.get_range().start();
-                if let Some(end) = argument_retrieval_with_argument_phrase.get_range() {
-                    return Range::new(start, end.end());
-                }
-                let end = post_modified_binary_predicate_phrase.get_range().end();
-                Range::new(start, end)
-            }
-        }
-    }
 }
 
 impl ArgumentRetrievalWithArgumentPhrase {
@@ -554,46 +429,6 @@ impl ArgumentRetrievalWithArgumentPhrase {
                 argument_phrase,
             ) => argument_phrase.type_check(),
             ArgumentRetrievalWithArgumentPhrase::Epsilon => Ok(()),
-        }
-    }
-    fn get_range(&self) -> Option<Range> {
-        match self {
-            ArgumentRetrievalWithArgumentPhrase::One(
-                post_argument_phrase_modifier,
-                argument_phrase,
-            ) => {
-                let start = post_argument_phrase_modifier.get_range().start();
-                let end = argument_phrase.get_range().end();
-                Some(Range::new(start, end))
-            }
-            ArgumentRetrievalWithArgumentPhrase::Epsilon => None,
-        }
-    }
-}
-
-impl QuantifierModifier {
-    fn get_range(&self) -> Option<Range> {
-        match self {
-            QuantifierModifier::One(quantifier) => Some(quantifier.get_range()),
-            QuantifierModifier::Two(numerical_expression) => numerical_expression.get_range(),
-            QuantifierModifier::Epsilon => None,
-        }
-    }
-}
-
-impl NumericalExpression {
-    fn get_range(&self) -> Option<Range> {
-        match self {
-            NumericalExpression::One(number) => Some(number.get_range()),
-        }
-    }
-}
-
-impl DeterminerModifier {
-    fn get_range(&self) -> Option<Range> {
-        match self {
-            DeterminerModifier::One(determiner) => Some(determiner.get_range()),
-            DeterminerModifier::Epsilon => None,
         }
     }
 }

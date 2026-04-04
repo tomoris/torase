@@ -1822,6 +1822,278 @@ impl DeterminerModifier {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Range helpers — canonical implementations shared by all type checkers
+// ---------------------------------------------------------------------------
+
+impl BinaryPredicatePhrase {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            BinaryPredicatePhrase::One(binary_predicate) => binary_predicate.get_range(),
+            BinaryPredicatePhrase::Two(negation, binary_predicate_phrase) => {
+                let start = negation.get_range().start();
+                let end = binary_predicate_phrase.get_range().end();
+                Range::new(start, end)
+            }
+            BinaryPredicatePhrase::Three(argument_phrase_transposer, binary_predicate_phrase) => {
+                let start = argument_phrase_transposer.get_range().start();
+                let end = binary_predicate_phrase.get_range().end();
+                Range::new(start, end)
+            }
+            BinaryPredicatePhrase::Four(binary_operator, _, binary_predicate2) => {
+                let start = binary_operator.get_range().start();
+                let end = binary_predicate2.get_range().end();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl PostBinaryPredicatePhraseExpression {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            PostBinaryPredicatePhraseExpression::One(
+                post_binary_predicate_modifier,
+                binary_predicate_phrase,
+            ) => {
+                let start = post_binary_predicate_modifier.get_range().start();
+                let end = binary_predicate_phrase.get_range().end();
+                Some(Range::new(start, end))
+            }
+            PostBinaryPredicatePhraseExpression::Epsilon => None,
+        }
+    }
+}
+
+impl PostModifiedBinaryPredicatePhrase {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            PostModifiedBinaryPredicatePhrase::One(
+                binary_predicate_phrase,
+                post_binary_predicate_phrase_expression,
+            ) => {
+                let start = binary_predicate_phrase.get_range().start();
+                if let Some(end) = post_binary_predicate_phrase_expression.get_range() {
+                    return Range::new(start, end.end());
+                }
+                let end = binary_predicate_phrase.get_range().end();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl QuantifierModifier {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            QuantifierModifier::One(quantifier) => Some(quantifier.get_range()),
+            QuantifierModifier::Two(numerical_expression) => numerical_expression.get_range(),
+            QuantifierModifier::Epsilon => None,
+        }
+    }
+}
+
+impl NumericalExpression {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            NumericalExpression::One(number) => Some(number.get_range()),
+        }
+    }
+}
+
+impl DeterminerModifier {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            DeterminerModifier::One(determiner) => Some(determiner.get_range()),
+            DeterminerModifier::Epsilon => None,
+        }
+    }
+}
+
+impl QuantifiedArgument {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            QuantifiedArgument::One(quantified_modifier, determined_argument) => {
+                let end = determined_argument.get_range().end();
+                if let Some(start) = quantified_modifier.get_range() {
+                    return Range::new(start.start(), end);
+                }
+                let start = determined_argument.get_range().start();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl DeterminedArgument {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            DeterminedArgument::One(determiner_modifier, retrieved_argument) => {
+                let end = retrieved_argument.get_range().end();
+                if let Some(start) = determiner_modifier.get_range() {
+                    return Range::new(start.start(), end);
+                }
+                let start = retrieved_argument.get_range().start();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl RetrievedArgument {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
+                let start = argument_retriever.get_range().start();
+                let end = argument_retrieval_binary_predicate.get_range().end();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl ArgumentRetrievalWithArgumentPhrase {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            ArgumentRetrievalWithArgumentPhrase::One(
+                post_argument_phrase_modifier,
+                argument_phrase,
+            ) => {
+                let start = post_argument_phrase_modifier.get_range().start();
+                let end = argument_phrase.get_range().end();
+                Some(Range::new(start, end))
+            }
+            ArgumentRetrievalWithArgumentPhrase::Epsilon => None,
+        }
+    }
+}
+
+impl ArgumentRetrievalBinaryPredicate {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            ArgumentRetrievalBinaryPredicate::One(
+                post_modified_binary_predicate_phrase,
+                argument_retrieval_with_argument_phrase,
+            ) => {
+                let start = post_modified_binary_predicate_phrase.get_range().start();
+                if let Some(end) = argument_retrieval_with_argument_phrase.get_range() {
+                    return Range::new(start, end.end());
+                }
+                let end = post_modified_binary_predicate_phrase.get_range().end();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl ArgumentPhrase {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            ArgumentPhrase::One(argument) => argument.get_range(),
+            ArgumentPhrase::Two(negation, argument) => {
+                let start = negation.get_range().start();
+                let end = argument.get_range().end();
+                Range::new(start, end)
+            }
+            ArgumentPhrase::Three(binary_operator, _, argument2) => {
+                let start = binary_operator.get_range().start();
+                let end = argument2.get_range().end();
+                Range::new(start, end)
+            }
+            ArgumentPhrase::Four(quantified_argument) => quantified_argument.get_range(),
+            ArgumentPhrase::Five(
+                mta_event_to_argument_phrase_converter,
+                _,
+                mta_event_to_argument_phrase_converter_end,
+            ) => {
+                let start = mta_event_to_argument_phrase_converter.get_range().start();
+                let end = mta_event_to_argument_phrase_converter_end.get_range().end();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl Event {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            Event::One(pred, arg1, arg2) => {
+                let start = pred.get_range().start();
+                let end = match arg2 {
+                    ArgumentPhraseOrEpsilon::One(_, a2) => a2.get_range().end(),
+                    ArgumentPhraseOrEpsilon::Epsilon => arg1.get_range().end(),
+                };
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl AEvent {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            AEvent::One(_, event) => event.get_range(),
+        }
+    }
+}
+
+impl TaEvent {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            TaEvent::One(_, a_event) => a_event.get_range(),
+        }
+    }
+}
+
+impl MtaEvent {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            MtaEvent::One(_, ta_event) => ta_event.get_range(),
+        }
+    }
+}
+
+impl PostModifiedMtaEvent {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            PostModifiedMtaEvent::One(mta, post_expr) => {
+                let start = mta.get_range().start();
+                let end = match post_expr {
+                    PostMtaEventExpression::One(_, mta2) => mta2.get_range().end(),
+                    PostMtaEventExpression::Epsilon => mta.get_range().end(),
+                };
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl DeclarativeSentence {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            DeclarativeSentence::One(pm) => pm.get_range(),
+        }
+    }
+}
+
+impl InterrogativeSentence {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            // InterrogativeMarker does not expose get_range(); use the event range
+            InterrogativeSentence::One(_, pm) => pm.get_range(),
+        }
+    }
+}
+
+impl S {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            S::One(d) => d.get_range(),
+            S::Two(i) => i.get_range(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

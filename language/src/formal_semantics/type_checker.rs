@@ -145,210 +145,6 @@ fn apply(func_type: Type, arg_type: Type, error_range: Range) -> TCResult {
 }
 
 // ---------------------------------------------------------------------------
-// Range helpers via a separate trait to avoid naming conflicts with
-// argument_type_checker.rs which defines private `get_range()` methods
-// on the same types.
-//
-// Note: Modality / Tense / Aspect / ModalityNegation / TenseNegation /
-//       AspectNegation tokens do NOT expose get_range(), so MTA wrappers
-//       (MtaEvent, TaEvent, AEvent) delegate to the inner Event range.
-// ---------------------------------------------------------------------------
-
-trait SemRange {
-    fn sem_range(&self) -> Range;
-}
-
-impl SemRange for BinaryPredicatePhrase {
-    fn sem_range(&self) -> Range {
-        match self {
-            BinaryPredicatePhrase::One(p) => p.get_range(),
-            BinaryPredicatePhrase::Two(neg, phrase) => {
-                Range::new(neg.get_range().start(), phrase.sem_range().end())
-            }
-            BinaryPredicatePhrase::Three(trans, phrase) => {
-                Range::new(trans.get_range().start(), phrase.sem_range().end())
-            }
-            BinaryPredicatePhrase::Four(op, _, p2) => {
-                Range::new(op.get_range().start(), p2.sem_range().end())
-            }
-        }
-    }
-}
-
-impl SemRange for PostModifiedBinaryPredicatePhrase {
-    fn sem_range(&self) -> Range {
-        match self {
-            PostModifiedBinaryPredicatePhrase::One(phrase, post) => {
-                let start = phrase.sem_range().start();
-                let end = match post {
-                    PostBinaryPredicatePhraseExpression::One(_, p2) => p2.sem_range().end(),
-                    PostBinaryPredicatePhraseExpression::Epsilon => phrase.sem_range().end(),
-                };
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-impl SemRange for ArgumentPhrase {
-    fn sem_range(&self) -> Range {
-        match self {
-            ArgumentPhrase::One(arg) => arg.get_range(),
-            ArgumentPhrase::Two(neg, inner) => {
-                Range::new(neg.get_range().start(), inner.sem_range().end())
-            }
-            ArgumentPhrase::Three(op, _, a2) => {
-                Range::new(op.get_range().start(), a2.sem_range().end())
-            }
-            ArgumentPhrase::Four(quant) => quant.sem_range(),
-            ArgumentPhrase::Five(conv, _, end_marker) => {
-                Range::new(conv.get_range().start(), end_marker.get_range().end())
-            }
-        }
-    }
-}
-
-impl SemRange for QuantifiedArgument {
-    fn sem_range(&self) -> Range {
-        match self {
-            QuantifiedArgument::One(qm, det) => {
-                let end = det.sem_range().end();
-                let start = match qm {
-                    QuantifierModifier::One(q) => q.get_range().start(),
-                    QuantifierModifier::Two(ne) => match ne {
-                        NumericalExpression::One(n) => n.get_range().start(),
-                    },
-                    QuantifierModifier::Epsilon => det.sem_range().start(),
-                };
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-impl SemRange for DeterminedArgument {
-    fn sem_range(&self) -> Range {
-        match self {
-            DeterminedArgument::One(dm, ret) => {
-                let end = ret.sem_range().end();
-                let start = match dm {
-                    DeterminerModifier::One(d) => d.get_range().start(),
-                    DeterminerModifier::Epsilon => ret.sem_range().start(),
-                };
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-impl SemRange for RetrievedArgument {
-    fn sem_range(&self) -> Range {
-        match self {
-            RetrievedArgument::One(ret, pred) => {
-                Range::new(ret.get_range().start(), pred.sem_range().end())
-            }
-        }
-    }
-}
-
-impl SemRange for ArgumentRetrievalBinaryPredicate {
-    fn sem_range(&self) -> Range {
-        match self {
-            ArgumentRetrievalBinaryPredicate::One(pred, with_arg) => {
-                let start = pred.sem_range().start();
-                let end = match with_arg {
-                    ArgumentRetrievalWithArgumentPhrase::One(_, arg) => arg.sem_range().end(),
-                    ArgumentRetrievalWithArgumentPhrase::Epsilon => pred.sem_range().end(),
-                };
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-impl SemRange for Event {
-    fn sem_range(&self) -> Range {
-        match self {
-            Event::One(pred, arg1, arg2) => {
-                let start = pred.sem_range().start();
-                let end = match arg2 {
-                    ArgumentPhraseOrEpsilon::One(_, a2) => a2.sem_range().end(),
-                    ArgumentPhraseOrEpsilon::Epsilon => arg1.sem_range().end(),
-                };
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-// Modality / Tense / Aspect tokens lack get_range(), so MTA wrappers
-// delegate to the inner Event.
-impl SemRange for AEvent {
-    fn sem_range(&self) -> Range {
-        match self {
-            AEvent::One(_, event) => event.sem_range(),
-        }
-    }
-}
-
-impl SemRange for TaEvent {
-    fn sem_range(&self) -> Range {
-        match self {
-            TaEvent::One(_, a_event) => a_event.sem_range(),
-        }
-    }
-}
-
-impl SemRange for MtaEvent {
-    fn sem_range(&self) -> Range {
-        match self {
-            MtaEvent::One(_, ta_event) => ta_event.sem_range(),
-        }
-    }
-}
-
-impl SemRange for PostModifiedMtaEvent {
-    fn sem_range(&self) -> Range {
-        match self {
-            PostModifiedMtaEvent::One(mta, post_expr) => {
-                let start = mta.sem_range().start();
-                let end = match post_expr {
-                    PostMtaEventExpression::One(_, mta2) => mta2.sem_range().end(),
-                    PostMtaEventExpression::Epsilon => mta.sem_range().end(),
-                };
-                Range::new(start, end)
-            }
-        }
-    }
-}
-
-impl SemRange for DeclarativeSentence {
-    fn sem_range(&self) -> Range {
-        match self {
-            DeclarativeSentence::One(pm) => pm.sem_range(),
-        }
-    }
-}
-
-impl SemRange for InterrogativeSentence {
-    fn sem_range(&self) -> Range {
-        match self {
-            // InterrogativeMarker does not expose get_range(); use the event range
-            InterrogativeSentence::One(_, pm) => pm.sem_range(),
-        }
-    }
-}
-
-impl SemRange for S {
-    fn sem_range(&self) -> Range {
-        match self {
-            S::One(d) => d.sem_range(),
-            S::Two(i) => i.sem_range(),
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
 // Type inference
 // ---------------------------------------------------------------------------
 
@@ -356,7 +152,7 @@ pub fn type_check(ast: Ast) -> Result<(), TypeMismatch> {
     let s = ast.get_s();
     let ty = s.infer_type()?;
     if ty != Type::T {
-        return Err(TypeMismatch::new(s.sem_range(), ty, Type::T));
+        return Err(TypeMismatch::new(s.get_range(), ty, Type::T));
     }
     Ok(())
 }
@@ -448,20 +244,20 @@ impl Event {
 
                 // Apply predicate to first argument: (e → e → t)(e) = e → t
                 let arg1_type = arg1.infer_type()?;
-                let after_arg1 = apply(pred_type, arg1_type, arg1.sem_range())?;
+                let after_arg1 = apply(pred_type, arg1_type, arg1.get_range())?;
 
                 match arg2_or_eps {
                     ArgumentPhraseOrEpsilon::One(_sep, arg2) => {
                         // Apply (e → t)(e) = t
                         let arg2_type = arg2.infer_type()?;
-                        apply(after_arg1, arg2_type, arg2.sem_range())
+                        apply(after_arg1, arg2_type, arg2.get_range())
                     }
                     ArgumentPhraseOrEpsilon::Epsilon => {
                         // Existential closure: ∃Q. after_arg1(Q) : t
                         // after_arg1 must be (e → t) → t → t  (i.e. GQ → t)
                         let gq_to_t = Type::arrow(Type::gq(), Type::T);
                         if after_arg1 != gq_to_t {
-                            return Err(TypeMismatch::new(arg1.sem_range(), after_arg1, gq_to_t));
+                            return Err(TypeMismatch::new(arg1.get_range(), after_arg1, gq_to_t));
                         }
                         Ok(Type::T)
                     }
@@ -480,7 +276,7 @@ impl PostModifiedBinaryPredicatePhrase {
                 if let PostBinaryPredicatePhraseExpression::One(_modifier, phrase2) = post_expr {
                     let t2 = phrase2.infer_type()?;
                     if t != t2 {
-                        return Err(TypeMismatch::new(phrase2.sem_range(), t2, t));
+                        return Err(TypeMismatch::new(phrase2.get_range(), t2, t));
                     }
                 }
                 Ok(t)
@@ -516,7 +312,7 @@ impl BinaryPredicatePhrase {
                 let t1 = p1.infer_type()?;
                 let t2 = p2.infer_type()?;
                 if t1 != t2 {
-                    return Err(TypeMismatch::new(p2.sem_range(), t2, t1));
+                    return Err(TypeMismatch::new(p2.get_range(), t2, t1));
                 }
                 Ok(t1)
             }
@@ -546,7 +342,7 @@ impl ArgumentPhrase {
                 let t1 = a1.infer_type()?;
                 let t2 = a2.infer_type()?;
                 if t1 != t2 {
-                    return Err(TypeMismatch::new(a2.sem_range(), t2, t1));
+                    return Err(TypeMismatch::new(a2.get_range(), t2, t1));
                 }
                 Ok(t1)
             }
@@ -616,17 +412,17 @@ impl ArgumentRetrievalBinaryPredicate {
                     ArgumentRetrievalWithArgumentPhrase::One(_modifier, extra_arg) => {
                         // Semantic structure: λR. P(R)(extra_arg)
                         // Apply P to the retrieved variable slot (GQ):  P(R) : GQ → t
-                        let after_r = apply(pred_type, Type::gq(), pred_phrase.sem_range())?;
+                        let after_r = apply(pred_type, Type::gq(), pred_phrase.get_range())?;
                         // Apply P(R) to extra_arg: P(R)(extra_arg) : t
                         let extra_arg_type = extra_arg.infer_type()?;
-                        apply(after_r, extra_arg_type, extra_arg.sem_range())?;
+                        apply(after_r, extra_arg_type, extra_arg.get_range())?;
                         // λR. P(R)(extra_arg) : GQ → t
                         Ok(Type::arrow(Type::gq(), Type::T))
                     }
                     ArgumentRetrievalWithArgumentPhrase::Epsilon => {
                         // Semantic structure: λR. ∃Q. P(R)(Q)
                         // Verify the first argument slot accepts GQ
-                        apply(pred_type, Type::gq(), pred_phrase.sem_range())?;
+                        apply(pred_type, Type::gq(), pred_phrase.get_range())?;
                         // λR. ∃Q. P(R)(Q) : GQ → t
                         Ok(Type::arrow(Type::gq(), Type::T))
                     }
