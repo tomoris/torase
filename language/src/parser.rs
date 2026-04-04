@@ -2014,6 +2014,67 @@ impl ArgumentPhrase {
     }
 }
 
+impl ModifiedModality {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            ModifiedModality::One(modality) => modality.get_range(),
+            ModifiedModality::Two(modality_negation, inner) => Range::new(
+                modality_negation.get_range().start(),
+                inner.get_range().end(),
+            ),
+        }
+    }
+}
+
+impl ModalityExpression {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            ModalityExpression::One(modified_modality) => Some(modified_modality.get_range()),
+            ModalityExpression::Epsilon => None,
+        }
+    }
+}
+
+impl ModifiedTense {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            ModifiedTense::One(tense) => tense.get_range(),
+            ModifiedTense::Two(tense_negation, inner) => {
+                Range::new(tense_negation.get_range().start(), inner.get_range().end())
+            }
+        }
+    }
+}
+
+impl TenseExpression {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            TenseExpression::One(modified_tense) => Some(modified_tense.get_range()),
+            TenseExpression::Epsilon => None,
+        }
+    }
+}
+
+impl ModifiedAspect {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            ModifiedAspect::One(aspect) => aspect.get_range(),
+            ModifiedAspect::Two(aspect_negation, inner) => {
+                Range::new(aspect_negation.get_range().start(), inner.get_range().end())
+            }
+        }
+    }
+}
+
+impl AspectExpression {
+    pub(crate) fn get_range(&self) -> Option<Range> {
+        match self {
+            AspectExpression::One(modified_aspect) => Some(modified_aspect.get_range()),
+            AspectExpression::Epsilon => None,
+        }
+    }
+}
+
 impl Event {
     pub(crate) fn get_range(&self) -> Range {
         match self {
@@ -2032,7 +2093,14 @@ impl Event {
 impl AEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            AEvent::One(_, event) => event.get_range(),
+            AEvent::One(aspect_expr, event) => {
+                let end = event.get_range().end();
+                let start = aspect_expr
+                    .get_range()
+                    .map(|r| r.start())
+                    .unwrap_or_else(|| event.get_range().start());
+                Range::new(start, end)
+            }
         }
     }
 }
@@ -2040,7 +2108,14 @@ impl AEvent {
 impl TaEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            TaEvent::One(_, a_event) => a_event.get_range(),
+            TaEvent::One(tense_expr, a_event) => {
+                let end = a_event.get_range().end();
+                let start = tense_expr
+                    .get_range()
+                    .map(|r| r.start())
+                    .unwrap_or_else(|| a_event.get_range().start());
+                Range::new(start, end)
+            }
         }
     }
 }
@@ -2048,7 +2123,14 @@ impl TaEvent {
 impl MtaEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            MtaEvent::One(_, ta_event) => ta_event.get_range(),
+            MtaEvent::One(modality_expr, ta_event) => {
+                let end = ta_event.get_range().end();
+                let start = modality_expr
+                    .get_range()
+                    .map(|r| r.start())
+                    .unwrap_or_else(|| ta_event.get_range().start());
+                Range::new(start, end)
+            }
         }
     }
 }
@@ -2079,8 +2161,9 @@ impl DeclarativeSentence {
 impl InterrogativeSentence {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            // InterrogativeMarker does not expose get_range(); use the event range
-            InterrogativeSentence::One(_, pm) => pm.get_range(),
+            InterrogativeSentence::One(marker, pm) => {
+                Range::new(marker.get_range().start(), pm.get_range().end())
+            }
         }
     }
 }

@@ -614,6 +614,9 @@ impl InterrogativeMarker {
     pub fn get_string(&self) -> String {
         "ku".to_string()
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl Modality {
@@ -675,6 +678,9 @@ impl Modality {
             ModalityKind::Hapo => "hapo".to_string(),
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl Tense {
@@ -715,6 +721,9 @@ impl Tense {
             TenseKind::Hiti => "hiti".to_string(),
             TenseKind::Hitu => "hitu".to_string(),
         }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
     }
 }
 
@@ -765,6 +774,9 @@ impl Aspect {
             AspectKind::Hudu => "hudu".to_string(),
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl ModalityNegation {
@@ -801,6 +813,9 @@ impl ModalityNegation {
         match self.kind {
             ModalityNegationKind::Hane => "hane".to_string(),
         }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
     }
 }
 
@@ -839,6 +854,9 @@ impl TenseNegation {
             TenseNegationKind::Hine => "hine".to_string(),
         }
     }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
 }
 
 impl AspectNegation {
@@ -875,6 +893,9 @@ impl AspectNegation {
         match self.kind {
             AspectNegationKind::Hune => "hune".to_string(),
         }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
     }
 }
 
