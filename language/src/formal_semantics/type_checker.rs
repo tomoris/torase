@@ -12,8 +12,8 @@ use crate::tokenizer::Range;
 /// - `Arrow(a, b)`: functional type  a → b
 ///
 /// Common derived types:
-/// - one-place predicate : `e → t`
-/// - binary predicate    : `e → e → t`  (= `e → (e → t)`)
+/// - generalized quantifier   : `(e → t) → t`          (NP / argument type)
+/// - binary predicate         : `((e → t) → t) → (((e → t) → t) → t`)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     E,
@@ -31,9 +31,14 @@ impl Type {
         Type::arrow(Type::E, Type::T)
     }
 
-    /// `e → e → t`  (binary predicate)
+    /// `(e → t) → t`  — generalized quantifier (NP / argument type)
+    pub fn gq() -> Type {
+        Type::arrow(Type::e_to_t(), Type::T)
+    }
+
+    /// `((e → t) → t) → (((e → t) → t) → t)`  — binary predicate over generalized quantifiers
     pub fn pred2() -> Type {
-        Type::arrow(Type::E, Type::e_to_t())
+        Type::arrow(Type::gq(), Type::arrow(Type::gq(), Type::T))
     }
 }
 
@@ -355,14 +360,11 @@ impl Event {
                         apply(after_arg1, arg2_type, arg2.sem_range())
                     }
                     ArgumentPhraseOrEpsilon::Epsilon => {
-                        // Existential closure: ∃x. after_arg1(x) : t
-                        // after_arg1 must be e → t for this to be valid
-                        if after_arg1 != Type::e_to_t() {
-                            return Err(TypeMismatch::new(
-                                arg1.sem_range(),
-                                after_arg1,
-                                Type::e_to_t(),
-                            ));
+                        // Existential closure: ∃Q. after_arg1(Q) : t
+                        // after_arg1 must be (e → t) → t → t  (i.e. GQ → t)
+                        let gq_to_t = Type::arrow(Type::gq(), Type::T);
+                        if after_arg1 != gq_to_t {
+                            return Err(TypeMismatch::new(arg1.sem_range(), after_arg1, gq_to_t));
                         }
                         Ok(Type::T)
                     }
@@ -373,7 +375,7 @@ impl Event {
 }
 
 impl PostModifiedBinaryPredicatePhrase {
-    /// PostModifiedBinaryPredicatePhrase : e → e → t
+    /// PostModifiedBinaryPredicatePhrase : ((e → t) → t) → (((e → t) → t) → t)
     fn infer_type(&self) -> TCResult {
         match self {
             PostModifiedBinaryPredicatePhrase::One(phrase, post_expr) => {
@@ -391,7 +393,7 @@ impl PostModifiedBinaryPredicatePhrase {
 }
 
 impl BinaryPredicatePhrase {
-    /// BinaryPredicatePhrase : e → e → t
+    /// BinaryPredicatePhrase : ((e → t) → t) → (((e → t) → t) → t)
     ///
     /// All constructors preserve the binary predicate type:
     /// - negation   ¬P          : same type as P
@@ -399,7 +401,7 @@ impl BinaryPredicatePhrase {
     /// - coordination P₁ ∧/∨ P₂ : both must have matching types
     fn infer_type(&self) -> TCResult {
         match self {
-            // Lexical binary predicate: e → e → t
+            // Lexical binary predicate: ((e → t) → t) → (((e → t) → t) → t)
             BinaryPredicatePhrase::One(_pred) => Ok(Type::pred2()),
 
             // Negation is type-preserving: ¬P has the same type as P
@@ -422,18 +424,18 @@ impl BinaryPredicatePhrase {
 }
 
 impl ArgumentPhrase {
-    /// ArgumentPhrase : e
+    /// ArgumentPhrase : (e → t) → t
     ///
-    /// All argument phrases denote entities:
-    /// - bare argument             : individual constant         e
-    /// - negated argument   ¬arg   : complement                  e
-    /// - coordinated args          : both must be e              e
-    /// - quantified argument       : iota/choice gives           e
-    /// - event nominalization se…so: t →(nominalize)→            e
+    /// All argument phrases are generalized quantifiers (NP-type):
+    /// - bare argument             : lifts individual to GQ      (e → t) → t
+    /// - negated argument   ¬arg   : complement GQ               (e → t) → t
+    /// - coordinated args          : both must be (e → t) → t        (e → t) → t
+    /// - quantified argument       : quantifier gives GQ         (e → t) → t
+    /// - event nominalization se…so: t →(nominalize)→            (e → t) → t
     fn infer_type(&self) -> TCResult {
         match self {
-            // Bare argument: individual constant / pronoun
-            ArgumentPhrase::One(_arg) => Ok(Type::E),
+            // Bare argument: individual constant / pronoun  →  GQ = (e → t) → t
+            ArgumentPhrase::One(_arg) => Ok(Type::gq()),
 
             // Negated argument: complement, type is preserved
             ArgumentPhrase::Two(_neg, inner) => inner.infer_type(),
@@ -451,7 +453,7 @@ impl ArgumentPhrase {
             // Quantified argument: the iota / choice operator gives an entity
             ArgumentPhrase::Four(quant_arg) => quant_arg.infer_type(),
 
-            // Event nominalization se…so:  MtaEvent : t  →  e
+            // Event nominalization se…so:  MtaEvent : t  →  (e → t) → t
             ArgumentPhrase::Five(_conv, mta_event, _end) => {
                 let event_type = mta_event.infer_type()?;
                 if event_type != Type::T {
@@ -461,15 +463,15 @@ impl ArgumentPhrase {
                         Type::T,
                     ));
                 }
-                Ok(Type::E)
+                Ok(Type::gq())
             }
         }
     }
 }
 
 impl QuantifiedArgument {
-    /// QuantifiedArgument : e
-    /// The quantifier + determiner + retrieval structure ultimately denotes an entity
+    /// QuantifiedArgument : (e → t) → t
+    /// The quantifier + determiner + retrieval structure denotes a generalized quantifier
     /// (via the iota / choice operator applied to the restriction predicate).
     fn infer_type(&self) -> TCResult {
         match self {
@@ -479,7 +481,7 @@ impl QuantifiedArgument {
 }
 
 impl DeterminedArgument {
-    /// DeterminedArgument : e
+    /// DeterminedArgument : (e → t) → t
     fn infer_type(&self) -> TCResult {
         match self {
             DeterminedArgument::One(_det_mod, ret_arg) => ret_arg.infer_type(),
@@ -488,48 +490,48 @@ impl DeterminedArgument {
 }
 
 impl RetrievedArgument {
-    /// RetrievedArgument : e
+    /// RetrievedArgument : (e → t) → t
     ///
-    /// `ro P` = ιx. P(x)  where P : e → t  →  e
+    /// `ro P` = ιQ. P(Q)  where P : GQ → t  →  GQ = (e → t) → t
     fn infer_type(&self) -> TCResult {
         match self {
             RetrievedArgument::One(_retriever, pred) => {
                 pred.infer_type()?;
-                Ok(Type::E)
+                Ok(Type::gq())
             }
         }
     }
 }
 
 impl ArgumentRetrievalBinaryPredicate {
-    /// ArgumentRetrievalBinaryPredicate : e → t
+    /// ArgumentRetrievalBinaryPredicate : GQ → t  (= ((e → t) → t) → t)
     ///
-    /// Given a binary predicate P : e → e → t and an optional extra argument y : e,
-    /// this term represents  λx. P(x)(y)  or  λx. ∃y. P(x)(y),  both of type e → t.
-    /// The iota operator in `RetrievedArgument` then picks the entity.
+    /// Given a binary predicate P : GQ → GQ → t and an optional extra argument Q : GQ,
+    /// this term represents  λR. P(R)(Q)  or  λR. ∃Q. P(R)(Q),  both of type GQ → t.
+    /// The iota operator in `RetrievedArgument` then picks the GQ.
     fn infer_type(&self) -> TCResult {
         match self {
             ArgumentRetrievalBinaryPredicate::One(pred_phrase, with_arg) => {
-                // P : e → e → t
+                // P : GQ → GQ → t
                 let pred_type = pred_phrase.infer_type()?;
 
                 match with_arg {
                     ArgumentRetrievalWithArgumentPhrase::One(_modifier, extra_arg) => {
-                        // Semantic structure: λx. P(x)(extra_arg)
-                        // Apply P to the retrieved variable slot (e):  P(x) : e → t
-                        let after_x = apply(pred_type, Type::E, pred_phrase.sem_range())?;
-                        // Apply P(x) to extra_arg: P(x)(extra_arg) : t
+                        // Semantic structure: λR. P(R)(extra_arg)
+                        // Apply P to the retrieved variable slot (GQ):  P(R) : GQ → t
+                        let after_r = apply(pred_type, Type::gq(), pred_phrase.sem_range())?;
+                        // Apply P(R) to extra_arg: P(R)(extra_arg) : t
                         let extra_arg_type = extra_arg.infer_type()?;
-                        apply(after_x, extra_arg_type, extra_arg.sem_range())?;
-                        // λx. P(x)(extra_arg) : e → t
-                        Ok(Type::e_to_t())
+                        apply(after_r, extra_arg_type, extra_arg.sem_range())?;
+                        // λR. P(R)(extra_arg) : GQ → t
+                        Ok(Type::arrow(Type::gq(), Type::T))
                     }
                     ArgumentRetrievalWithArgumentPhrase::Epsilon => {
-                        // Semantic structure: λx. ∃y. P(x)(y)
-                        // Verify the first argument slot accepts e
-                        apply(pred_type, Type::E, pred_phrase.sem_range())?;
-                        // λx. ∃y. P(x)(y) : e → t
-                        Ok(Type::e_to_t())
+                        // Semantic structure: λR. ∃Q. P(R)(Q)
+                        // Verify the first argument slot accepts GQ
+                        apply(pred_type, Type::gq(), pred_phrase.sem_range())?;
+                        // λR. ∃Q. P(R)(Q) : GQ → t
+                        Ok(Type::arrow(Type::gq(), Type::T))
                     }
                 }
             }
