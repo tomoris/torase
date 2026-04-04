@@ -610,3 +610,114 @@ fn extract_bp_name_inner(phrase: &BinaryPredicatePhrase) -> String {
         BinaryPredicatePhrase::Four(_op, p1, _p2) => extract_bp_name_inner(p1),
     }
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Diagnostic, diagnose};
+
+    /// Parse `text`, run all checks, and return the FOL formula string for the first sentence.
+    fn to_fol_string(text: &str) -> Result<String, Vec<Diagnostic>> {
+        let asts = diagnose(text.to_string())?;
+        Ok(to_fol(&asts[0]).to_string())
+    }
+
+    fn check(text: &str, expected: &str) {
+        let fol = to_fol_string(text).unwrap();
+        assert_eq!(fol, expected, "input: {text}");
+    }
+
+    #[test]
+    fn test_存在量化_私はりんごを食べる() {
+        check(
+            "pahete mi si ro behapare",
+            "∃x.(behapare(x) ∧ pahete(mi, x))",
+        );
+    }
+
+    #[test]
+    fn test_全称量化_私は全てのりんごを食べる() {
+        check(
+            "pahete mi si ta ro behapare",
+            "∀x.(behapare(x) ⇒ pahete(mi, x))",
+        );
+    }
+
+    #[test]
+    fn test_述語否定_私はりんごを食べない() {
+        check(
+            "ne pahete mi si ro behapare",
+            "¬∃x.(behapare(x) ∧ pahete(mi, x))",
+        );
+    }
+
+    #[test]
+    fn test_転置_りんごは食べられない() {
+        check(
+            "hapo re pahete ro behapare",
+            "∃y.∃x.(behapare(x) ∧ pahete(y, x))",
+        );
+    }
+
+    #[test]
+    fn test_転置と否定_みかんは私に食べられていない() {
+        check(
+            "ne re pahete ro behoranage si mi",
+            "¬∃x.(behoranage(x) ∧ pahete(mi, x))",
+        );
+    }
+
+    #[test]
+    fn test_指示詞_このりんご() {
+        check(
+            "pahete mi si mo ro behapare",
+            "∃x.((mo(x) ∧ behapare(x)) ∧ pahete(mi, x))",
+        );
+    }
+
+    #[test]
+    fn test_数量化_数のりんご() {
+        check(
+            "pahete mi si number ro behapare",
+            "∃_# x.(behapare(x) ∧ pahete(mi, x))",
+        );
+    }
+
+    #[test]
+    fn test_多量化_多くのりんご() {
+        check(
+            "pahete mi si te ro behapare",
+            "∃_many x.(behapare(x) ∧ pahete(mi, x))",
+        );
+    }
+
+    #[test]
+    fn test_関係節_私はあなたをパートナーとする人を愛している() {
+        check(
+            "parobe mi si ro paparatanera du ba",
+            "∃x.(paparatanera(x, ba) ∧ parobe(mi, x))",
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_関係節_私はあなたのパートナーを愛している() {
+        check(
+            "parobe mi si ro re paparatanera du ba",
+            "∃x.(paparatanera(ba, x) ∧ parobe(mi, x))",
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_事象名詞化_あなたは_私はりんごを食べる_と言った() {
+        check(
+            "kasahi ba si se pahete mi si ro behapare so",
+            "kasahi(ba, ∃x.(behapare(x) ∧ pahete(mi, x))",
+        );
+    }
+}
