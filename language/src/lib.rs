@@ -5,6 +5,7 @@ pub mod tokenizer;
 
 use argument_type_checker::type_check as argument_type_check;
 use formal_semantics::type_check as formal_type_check;
+pub use formal_semantics::{Formula, to_fol};
 use parser::{Ast, parse};
 use tokenizer::{Range, add_eos_to_last_sentence, tokenize};
 
@@ -71,6 +72,13 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
     } else {
         Ok(asts)
     }
+}
+
+/// Parse `text`, run all checks, and return the FOL formula string for the first sentence.
+#[allow(dead_code)]
+fn to_fol_string(text: &str) -> Result<String, Vec<Diagnostic>> {
+    let asts = diagnose(text.to_string())?;
+    Ok(to_fol(&asts[0]).to_string())
 }
 
 #[cfg(test)]
@@ -689,5 +697,100 @@ mod tests {
         let text = "pahete mi si ta number ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
+    }
+
+    // ── FOL generation tests ──────────────────────────────────────────────
+
+    #[test]
+    fn test_fol_存在量化_私はりんごを食べる() {
+        // ∃x.(behapare(x) ∧ pahete(mi, x))
+        let fol = to_fol_string("pahete mi si ro behapare").unwrap();
+        assert!(fol.contains("∃x"), "expected ∃x, got: {fol}");
+        assert!(
+            fol.contains("behapare(x)"),
+            "expected behapare(x), got: {fol}"
+        );
+        assert!(
+            fol.contains("pahete(mi, x)"),
+            "expected pahete(mi, x), got: {fol}"
+        );
+    }
+
+    #[test]
+    fn test_fol_全称量化_私は全てのりんごを食べる() {
+        // ∀x.(behapare(x) ⇒ pahete(mi, x))
+        let fol = to_fol_string("pahete mi si ta ro behapare").unwrap();
+        assert!(fol.contains("∀x"), "expected ∀x, got: {fol}");
+        assert!(fol.contains("⇒"), "expected ⇒, got: {fol}");
+        assert!(
+            fol.contains("pahete(mi, x)"),
+            "expected pahete(mi, x), got: {fol}"
+        );
+    }
+
+    #[test]
+    fn test_fol_述語否定_私はりんごを食べない() {
+        // ¬∃x.(behapare(x) ∧ pahete(mi, x))
+        let fol = to_fol_string("ne pahete mi si ro behapare").unwrap();
+        assert!(fol.contains('¬'), "expected ¬, got: {fol}");
+    }
+
+    #[test]
+    fn test_fol_転置_りんごは食べられない() {
+        // re pahete ro behapare → ∃y.(∃x.(behapare(x) ∧ pahete(y, x)))
+        let fol = to_fol_string("hapo re pahete ro behapare").unwrap();
+        assert!(fol.contains("pahete"), "expected pahete, got: {fol}");
+    }
+
+    #[test]
+    fn test_fol_指示詞_このりんご() {
+        // ∃x.((mo(x) ∧ behapare(x)) ∧ pahete(mi, x))
+        let fol = to_fol_string("pahete mi si mo ro behapare").unwrap();
+        assert!(fol.contains("mo(x)"), "expected mo(x), got: {fol}");
+        assert!(
+            fol.contains("behapare(x)"),
+            "expected behapare(x), got: {fol}"
+        );
+    }
+
+    #[test]
+    fn test_fol_事象名詞化() {
+        // se pahete ba si ro behapare so を含む文
+        let fol = to_fol_string("ku kasahi ba si se pahete mi si ro behapare so").unwrap();
+        assert!(
+            fol.contains("pahete"),
+            "expected pahete in nominalization, got: {fol}"
+        );
+    }
+
+    #[test]
+    fn test_fol_出力確認() {
+        let cases = [
+            ("pahete mi si ro behapare", "私はりんごを食べる"),
+            ("pahete mi si ta ro behapare", "私は全てのりんごを食べる"),
+            ("ne pahete mi si ro behapare", "私はりんごを食べない"),
+            ("pahete mi si mo ro behapare", "私はこのりんごを食べる"),
+            ("hapo re pahete ro behapare", "りんごは食べられない"),
+            (
+                "ne re pahete ro behoranage si mi",
+                "みかんは私に食べられていない",
+            ),
+            ("pahete mi si number ro behapare", "私は数のりんごを食べる"),
+            ("pahete mi si te ro behapare", "私は多くのりんごを食べる"),
+            (
+                "kasahi ba si se pahete mi si ro behapare so",
+                "あなたは私がりんごを食べると言う",
+            ),
+            (
+                "pahete mi si ro paparatanera du ba",
+                "私はあなたの妻を食べる",
+            ),
+        ];
+        for (text, label) in &cases {
+            match to_fol_string(text) {
+                Ok(fol) => println!("{label}\n  {text}\n  → {fol}\n"),
+                Err(e) => println!("{label}\n  {text}\n  ERROR: {e:?}\n"),
+            }
+        }
     }
 }
