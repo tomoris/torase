@@ -81,6 +81,31 @@ impl TypeMismatch {
 type TCResult = Result<Type, TypeMismatch>;
 
 // ---------------------------------------------------------------------------
+// Lexical types — terminal tokens carry their own semantic type
+// ---------------------------------------------------------------------------
+
+/// A terminal token that has a fixed semantic type in the formal semantics.
+trait LexicalType {
+    fn lexical_type(&self) -> Type;
+}
+
+impl LexicalType for crate::tokenizer::Argument {
+    /// Individual argument (pronoun / name) is lifted to a generalized quantifier.
+    /// e.g.  mi  ↦  λP. P(mi)  :  (e → t) → t
+    fn lexical_type(&self) -> Type {
+        Type::gq()
+    }
+}
+
+impl LexicalType for crate::tokenizer::BinaryPredicate {
+    /// A binary predicate takes two generalized-quantifier arguments.
+    /// e.g.  pahete  ↦  λQ₁ Q₂. pahete(Q₁)(Q₂)  :  ((e → t) → t) → (((e → t) → t) → t)
+    fn lexical_type(&self) -> Type {
+        Type::pred2()
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Helper: function application type check
 // ---------------------------------------------------------------------------
 
@@ -401,8 +426,8 @@ impl BinaryPredicatePhrase {
     /// - coordination P₁ ∧/∨ P₂ : both must have matching types
     fn infer_type(&self) -> TCResult {
         match self {
-            // Lexical binary predicate: ((e → t) → t) → (((e → t) → t) → t)
-            BinaryPredicatePhrase::One(_pred) => Ok(Type::pred2()),
+            // Lexical binary predicate: type comes from the token's lexical entry
+            BinaryPredicatePhrase::One(pred) => Ok(pred.lexical_type()),
 
             // Negation is type-preserving: ¬P has the same type as P
             BinaryPredicatePhrase::Two(_neg, phrase) => phrase.infer_type(),
@@ -434,8 +459,8 @@ impl ArgumentPhrase {
     /// - event nominalization se…so: t →(nominalize)→            (e → t) → t
     fn infer_type(&self) -> TCResult {
         match self {
-            // Bare argument: individual constant / pronoun  →  GQ = (e → t) → t
-            ArgumentPhrase::One(_arg) => Ok(Type::gq()),
+            // Bare argument: type comes from the token's lexical entry
+            ArgumentPhrase::One(arg) => Ok(arg.lexical_type()),
 
             // Negated argument: complement, type is preserved
             ArgumentPhrase::Two(_neg, inner) => inner.infer_type(),
