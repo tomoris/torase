@@ -1,10 +1,12 @@
+pub mod argument_type_checker;
+pub mod formal_semantics;
 pub mod parser;
 pub mod tokenizer;
-pub mod type_checker;
 
+use argument_type_checker::type_check as argument_type_check;
+use formal_semantics::type_check as formal_type_check;
 use parser::{Ast, parse};
 use tokenizer::{Range, add_eos_to_last_sentence, tokenize};
-use type_checker::type_check;
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
@@ -40,13 +42,25 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
         }
     }
 
-    // type checking
+    // argument type checking
     for ast in &asts {
-        let type_check_result = type_check(ast.clone());
-        if let Err(e) = type_check_result {
+        let argument_type_check_result = argument_type_check(ast.clone());
+        if let Err(e) = argument_type_check_result {
             let diagnostics_item = Diagnostic {
                 range: e.range,
-                message: format!("type error: {}", e.message),
+                message: format!("argument type error: {}", e.message),
+            };
+            diagnostics.push(diagnostics_item);
+        }
+    }
+
+    // formal semantics type checking
+    for ast in &asts {
+        let formal_type_check_result = formal_type_check(ast.clone());
+        if let Err(e) = formal_type_check_result {
+            let diagnostics_item = Diagnostic {
+                range: e.range,
+                message: format!("formal type error: {}", e.message),
             };
             diagnostics.push(diagnostics_item);
         }
