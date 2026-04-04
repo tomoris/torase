@@ -307,12 +307,58 @@ impl SemRange for MtaEvent {
     }
 }
 
+impl SemRange for PostModifiedMtaEvent {
+    fn sem_range(&self) -> Range {
+        match self {
+            PostModifiedMtaEvent::One(mta, post_expr) => {
+                let start = mta.sem_range().start();
+                let end = match post_expr {
+                    PostMtaEventExpression::One(_, mta2) => mta2.sem_range().end(),
+                    PostMtaEventExpression::Epsilon => mta.sem_range().end(),
+                };
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl SemRange for DeclarativeSentence {
+    fn sem_range(&self) -> Range {
+        match self {
+            DeclarativeSentence::One(pm) => pm.sem_range(),
+        }
+    }
+}
+
+impl SemRange for InterrogativeSentence {
+    fn sem_range(&self) -> Range {
+        match self {
+            // InterrogativeMarker does not expose get_range(); use the event range
+            InterrogativeSentence::One(_, pm) => pm.sem_range(),
+        }
+    }
+}
+
+impl SemRange for S {
+    fn sem_range(&self) -> Range {
+        match self {
+            S::One(d) => d.sem_range(),
+            S::Two(i) => i.sem_range(),
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Type inference
 // ---------------------------------------------------------------------------
 
 pub fn type_check(ast: Ast) -> Result<(), TypeMismatch> {
-    ast.get_s().infer_type().map(|_| ())
+    let s = ast.get_s();
+    let ty = s.infer_type()?;
+    if ty != Type::T {
+        return Err(TypeMismatch::new(s.sem_range(), ty, Type::T));
+    }
+    Ok(())
 }
 
 impl S {
