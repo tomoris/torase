@@ -105,6 +105,32 @@ impl LexicalType for crate::tokenizer::BinaryPredicate {
     }
 }
 
+impl LexicalType for crate::tokenizer::ArgumentRetriever {
+    /// Iota / choice operator: picks a GQ satisfying a property.
+    /// ro  ↦  λP. ιQ. P(Q)  :  (GQ → t) → GQ
+    ///     where GQ = (e → t) → t
+    fn lexical_type(&self) -> Type {
+        let gq_to_t = Type::arrow(Type::gq(), Type::T);
+        Type::arrow(gq_to_t, Type::gq())
+    }
+}
+
+impl LexicalType for crate::tokenizer::ArgumentPhraseTransposer {
+    /// Argument transposition: swaps the two GQ argument slots.
+    /// re  ↦  λP Q₁ Q₂. P(Q₂)(Q₁)  :  pred2 → pred2
+    fn lexical_type(&self) -> Type {
+        Type::arrow(Type::pred2(), Type::pred2())
+    }
+}
+
+impl LexicalType for crate::tokenizer::MtaEventToArgumentPhraseConverter {
+    /// Event nominalization opener: converts a proposition into a GQ.
+    /// se…so  ↦  λt. ιQ. Q = ↑t  :  t → GQ
+    fn lexical_type(&self) -> Type {
+        Type::arrow(Type::T, Type::gq())
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Helper: function application type check
 // ---------------------------------------------------------------------------
@@ -432,8 +458,12 @@ impl BinaryPredicatePhrase {
             // Negation is type-preserving: ¬P has the same type as P
             BinaryPredicatePhrase::Two(_neg, phrase) => phrase.infer_type(),
 
-            // Argument transposition is type-preserving for binary predicates
-            BinaryPredicatePhrase::Three(_trans, phrase) => phrase.infer_type(),
+            // Argument transposition: re : pred2 → pred2
+            BinaryPredicatePhrase::Three(trans, phrase) => {
+                let trans_type = trans.lexical_type();
+                let phrase_type = phrase.infer_type()?;
+                apply(trans_type, phrase_type, trans.get_range())
+            }
 
             // Boolean coordination: both operands must have the same type
             BinaryPredicatePhrase::Four(_op, p1, p2) => {
@@ -478,17 +508,11 @@ impl ArgumentPhrase {
             // Quantified argument: the iota / choice operator gives an entity
             ArgumentPhrase::Four(quant_arg) => quant_arg.infer_type(),
 
-            // Event nominalization se…so:  MtaEvent : t  →  (e → t) → t
-            ArgumentPhrase::Five(_conv, mta_event, _end) => {
+            // Event nominalization se…so:  se : t → GQ
+            ArgumentPhrase::Five(conv, mta_event, _end) => {
+                let conv_type = conv.lexical_type();
                 let event_type = mta_event.infer_type()?;
-                if event_type != Type::T {
-                    return Err(TypeMismatch::new(
-                        mta_event.sem_range(),
-                        event_type,
-                        Type::T,
-                    ));
-                }
-                Ok(Type::gq())
+                apply(conv_type, event_type, conv.get_range())
             }
         }
     }
@@ -520,9 +544,11 @@ impl RetrievedArgument {
     /// `ro P` = ιQ. P(Q)  where P : GQ → t  →  GQ = (e → t) → t
     fn infer_type(&self) -> TCResult {
         match self {
-            RetrievedArgument::One(_retriever, pred) => {
-                pred.infer_type()?;
-                Ok(Type::gq())
+            RetrievedArgument::One(retriever, pred) => {
+                // ro : (GQ → t) → GQ
+                let ro_type = retriever.lexical_type();
+                let pred_type = pred.infer_type()?;
+                apply(ro_type, pred_type, retriever.get_range())
             }
         }
     }
