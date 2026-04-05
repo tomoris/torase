@@ -301,10 +301,10 @@ impl BinaryPredicatePhrase {
             BinaryPredicatePhrase::Two(_neg, phrase) => phrase.infer_type(),
 
             // Argument transposition: re : pred2 → pred2
-            BinaryPredicatePhrase::Three(trans, phrase) => {
+            BinaryPredicatePhrase::Three(trans, pred) => {
                 let trans_type = trans.lexical_type();
-                let phrase_type = phrase.infer_type()?;
-                apply(trans_type, phrase_type, trans.get_range())
+                let pred_type = pred.lexical_type();
+                apply(trans_type, pred_type, trans.get_range())
             }
 
             // Boolean coordination: both operands must have the same type

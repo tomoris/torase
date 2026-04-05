@@ -634,12 +634,12 @@ impl TreeViewer for BinaryPredicatePhrase {
                 .into();
                 category_box(category, content, background)
             }
-            BinaryPredicatePhrase::Three(argument_phrase_transposer, binary_predicate_phrase) => {
+            BinaryPredicatePhrase::Three(argument_phrase_transposer, binary_predicate) => {
                 let category = "BinaryPredicatePhrase".to_string();
                 let content = row![
                     text(argument_phrase_transposer.get_string()),
                     Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
-                    binary_predicate_phrase.view(_is_full),
+                    text(binary_predicate.get_string()),
                 ]
                 .align_y(Alignment::Center)
                 .into();

@@ -475,7 +475,7 @@ pub enum PostBinaryPredicatePhraseExpression {
 pub enum BinaryPredicatePhrase {
     One(BinaryPredicate),
     Two(Negation, Box<BinaryPredicatePhrase>),
-    Three(ArgumentPhraseTransposer, Box<BinaryPredicatePhrase>),
+    Three(ArgumentPhraseTransposer, Box<BinaryPredicate>),
     Four(
         BinaryOperator,
         Box<BinaryPredicatePhrase>,
@@ -1371,7 +1371,7 @@ impl BinaryPredicatePhrase {
             }
             DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentPhraseTransposer),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryPredicate),
             ])),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
@@ -1393,7 +1393,7 @@ impl BinaryPredicatePhrase {
                 }
                 [
                     SymbolType::Terminal(TerminalType::ArgumentPhraseTransposer(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
+                    SymbolType::Terminal(TerminalType::BinaryPredicate(child2)),
                 ] => Self::Three(child1.clone(), Box::new(child2.clone())),
                 [
                     SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
@@ -2671,7 +2671,7 @@ mod tests {
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(binary_predicate.clone())]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(argument_phrase_transposer.clone()),
-                    grammar::Symbol::NonTerminal(binary_predicate_phrase.clone()),
+                    grammar::Symbol::Terminal(binary_predicate.clone()),
                 ]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(binary_operator.clone()),

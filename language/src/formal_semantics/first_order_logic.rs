@@ -158,7 +158,9 @@ fn extract_bp(phrase: &BinaryPredicatePhrase) -> PredCtx {
     match phrase {
         BinaryPredicatePhrase::One(pred) => PredCtx::Simple(pred.get_string()),
         BinaryPredicatePhrase::Two(_neg, inner) => PredCtx::Neg(Box::new(extract_bp(inner))),
-        BinaryPredicatePhrase::Three(_trans, inner) => PredCtx::Trans(Box::new(extract_bp(inner))),
+        BinaryPredicatePhrase::Three(_trans, inner) => {
+            PredCtx::Trans(Box::new(PredCtx::Simple(inner.get_string())))
+        }
         BinaryPredicatePhrase::Four(_op, p1, p2) => PredCtx::Coord {
             and_op: true, // binary_operator は論理積として扱う
             left: Box::new(extract_bp(p1)),
@@ -582,12 +584,12 @@ impl ArgumentRetrievalBinaryPredicate {
                     ArgumentRetrievalWithArgumentPhrase::Epsilon => {
                         build_restriction(pred_phrase, var)
                     }
-                    // ro pred du extra_arg — binary use: pred(x, extra_arg)
+                    // ro pred du extra_arg — binary use: pred(x, extra_arg), re swaps order
                     ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
-                        let pred_name = extract_bp_name(pred_phrase);
+                        let pred_ctx = extract_pred(pred_phrase);
                         let extra_ctx = extra_arg.to_fol(vg);
                         let extra_term = extra_ctx.term();
-                        Formula::Atom(pred_name, vec![Term::Var(var.to_string()), extra_term])
+                        build_binary_restriction(&pred_ctx, Term::Var(var.to_string()), extra_term)
                     }
                 }
             }
@@ -611,7 +613,9 @@ fn build_bp_restriction(phrase: &BinaryPredicatePhrase, var: &str) -> Formula {
             Formula::Not(Box::new(build_bp_restriction(inner, var)))
         }
         // Transposition has no effect on a unary predicate.
-        BinaryPredicatePhrase::Three(_trans, inner) => build_bp_restriction(inner, var),
+        BinaryPredicatePhrase::Three(_trans, inner) => {
+            Formula::Atom(inner.get_string(), vec![Term::Var(var.to_string())])
+        }
         BinaryPredicatePhrase::Four(_op, p1, p2) => Formula::And(
             Box::new(build_bp_restriction(p1, var)),
             Box::new(build_bp_restriction(p2, var)),
@@ -619,19 +623,25 @@ fn build_bp_restriction(phrase: &BinaryPredicatePhrase, var: &str) -> Formula {
     }
 }
 
-/// Extract just the surface predicate name (ignoring modifiers) for binary restrictions.
-fn extract_bp_name(phrase: &PostModifiedBinaryPredicatePhrase) -> String {
-    match phrase {
-        PostModifiedBinaryPredicatePhrase::One(bp, _) => extract_bp_name_inner(bp),
-    }
-}
-
-fn extract_bp_name_inner(phrase: &BinaryPredicatePhrase) -> String {
-    match phrase {
-        BinaryPredicatePhrase::One(pred) => pred.get_string(),
-        BinaryPredicatePhrase::Two(_neg, inner) => extract_bp_name_inner(inner),
-        BinaryPredicatePhrase::Three(_trans, inner) => extract_bp_name_inner(inner),
-        BinaryPredicatePhrase::Four(_op, p1, _p2) => extract_bp_name_inner(p1),
+/// Build a binary restriction formula from a `PredCtx` and two terms, respecting `re` (Trans).
+fn build_binary_restriction(pred: &PredCtx, t1: Term, t2: Term) -> Formula {
+    match pred {
+        PredCtx::Simple(name) => Formula::Atom(name.clone(), vec![t1, t2]),
+        PredCtx::Trans(inner) => build_binary_restriction(inner, t2, t1),
+        PredCtx::Neg(inner) => Formula::Not(Box::new(build_binary_restriction(inner, t1, t2))),
+        PredCtx::Coord {
+            and_op,
+            left,
+            right,
+        } => {
+            let f1 = build_binary_restriction(left, t1.clone(), t2.clone());
+            let f2 = build_binary_restriction(right, t1, t2);
+            if *and_op {
+                Formula::And(Box::new(f1), Box::new(f2))
+            } else {
+                Formula::Or(Box::new(f1), Box::new(f2))
+            }
+        }
     }
 }
 
@@ -728,7 +738,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_関係節_私はあなたのパートナーを愛している() {
         check(
             "parobe mi si ro re paparatanera du ba",

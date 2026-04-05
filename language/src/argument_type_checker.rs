@@ -235,11 +235,11 @@ impl BinaryPredicatePhrase {
         match self {
             BinaryPredicatePhrase::One(_binary_predicate) => Ok(()),
             BinaryPredicatePhrase::Two(_negation, _binary_predicate) => Ok(()),
-            BinaryPredicatePhrase::Three(_argument_phrase_transposer, binary_predicate_phrase) => {
-                let (_, t2) = binary_predicate_phrase.get_argument_types();
+            BinaryPredicatePhrase::Three(_argument_phrase_transposer, binary_predicate) => {
+                let (_, t2) = binary_predicate.get_argument_types();
                 if t2 == vec![ArgumentType::Epsilon] {
                     return Err(TypeMismatch {
-                        range: binary_predicate_phrase.get_range().clone(),
+                        range: binary_predicate.get_range().clone(),
                         actual: t2,
                         expected: vec![
                             ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
@@ -282,8 +282,8 @@ impl BinaryPredicatePhrase {
             BinaryPredicatePhrase::Two(_, binary_predicate_phrase) => {
                 binary_predicate_phrase.get_argument_types()
             }
-            BinaryPredicatePhrase::Three(_, binary_predicate_phrase) => {
-                let (t1, t2) = binary_predicate_phrase.get_argument_types();
+            BinaryPredicatePhrase::Three(_, binary_predicate) => {
+                let (t1, t2) = binary_predicate.get_argument_types();
                 (t2, t1)
             }
             BinaryPredicatePhrase::Four(_, binary_predicate1, _) => {
