@@ -307,57 +307,71 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
 /// Translate an `Ast` to a first-order logic `Formula`.
 pub fn to_fol(ast: &Ast) -> Formula {
     let mut vg = VarGen::new();
-    translate_s(ast.get_s(), &mut vg)
+    ast.get_s().to_fol(&mut vg)
 }
 
 // ---------------------------------------------------------------------------
 // AST traversal — pass-through layers (modality / tense / aspect ignored)
 // ---------------------------------------------------------------------------
 
-fn translate_s(s: &S, vg: &mut VarGen) -> Formula {
-    match s {
-        S::One(d) => translate_decl(d, vg),
-        S::Two(i) => translate_interr(i, vg),
+impl S {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            S::One(d) => d.to_fol(vg),
+            S::Two(i) => i.to_fol(vg),
+        }
     }
 }
 
-fn translate_decl(d: &DeclarativeSentence, vg: &mut VarGen) -> Formula {
-    match d {
-        DeclarativeSentence::One(pm) => translate_pm(pm, vg),
+impl DeclarativeSentence {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            DeclarativeSentence::One(pm) => pm.to_fol(vg),
+        }
     }
 }
 
-fn translate_interr(i: &InterrogativeSentence, vg: &mut VarGen) -> Formula {
-    match i {
-        InterrogativeSentence::One(_, pm) => translate_pm(pm, vg),
+impl InterrogativeSentence {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            InterrogativeSentence::One(_, pm) => pm.to_fol(vg),
+        }
     }
 }
 
-fn translate_pm(pm: &PostModifiedMtaEvent, vg: &mut VarGen) -> Formula {
-    match pm {
-        // PostMtaEventExpression (da …) is ignored in the FOL translation.
-        PostModifiedMtaEvent::One(mta, _post) => translate_mta(mta, vg),
+impl PostModifiedMtaEvent {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            // PostMtaEventExpression (da …) is ignored in the FOL translation.
+            PostModifiedMtaEvent::One(mta, _post) => mta.to_fol(vg),
+        }
     }
 }
 
-fn translate_mta(mta: &MtaEvent, vg: &mut VarGen) -> Formula {
-    match mta {
-        // Modality is ignored.
-        MtaEvent::One(_mod_expr, ta) => translate_ta(ta, vg),
+impl MtaEvent {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            // Modality is ignored.
+            MtaEvent::One(_mod_expr, ta) => ta.to_fol(vg),
+        }
     }
 }
 
-fn translate_ta(ta: &TaEvent, vg: &mut VarGen) -> Formula {
-    match ta {
-        // Tense is ignored.
-        TaEvent::One(_tense_expr, a) => translate_a(a, vg),
+impl TaEvent {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            // Tense is ignored.
+            TaEvent::One(_tense_expr, a) => a.to_fol(vg),
+        }
     }
 }
 
-fn translate_a(a: &AEvent, vg: &mut VarGen) -> Formula {
-    match a {
-        // Aspect is ignored.
-        AEvent::One(_asp_expr, event) => translate_event(event, vg),
+impl AEvent {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            // Aspect is ignored.
+            AEvent::One(_asp_expr, event) => event.to_fol(vg),
+        }
     }
 }
 
@@ -365,20 +379,22 @@ fn translate_a(a: &AEvent, vg: &mut VarGen) -> Formula {
 // Event translation
 // ---------------------------------------------------------------------------
 
-fn translate_event(event: &Event, vg: &mut VarGen) -> Formula {
-    match event {
-        Event::One(pred_phrase, arg1_phrase, arg2_or_eps) => {
-            let pred = extract_pred(pred_phrase);
-            let arg1 = translate_arg(arg1_phrase, vg);
-            match arg2_or_eps {
-                ArgumentPhraseOrEpsilon::One(_sep, arg2_phrase) => {
-                    let arg2 = translate_arg(arg2_phrase, vg);
-                    build_event_inner(&pred, arg1, arg2)
-                }
-                ArgumentPhraseOrEpsilon::Epsilon => {
-                    // Existential closure over the second argument slot: ∃y. pred(arg1, y)
-                    let y = vg.next();
-                    build_event_inner(&pred, arg1, ArgCtx::ExistOnly(y))
+impl Event {
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            Event::One(pred_phrase, arg1_phrase, arg2_or_eps) => {
+                let pred = extract_pred(pred_phrase);
+                let arg1 = arg1_phrase.to_fol(vg);
+                match arg2_or_eps {
+                    ArgumentPhraseOrEpsilon::One(_sep, arg2_phrase) => {
+                        let arg2 = arg2_phrase.to_fol(vg);
+                        build_event_inner(&pred, arg1, arg2)
+                    }
+                    ArgumentPhraseOrEpsilon::Epsilon => {
+                        // Existential closure over the second argument slot: ∃y. pred(arg1, y)
+                        let y = vg.next();
+                        build_event_inner(&pred, arg1, ArgCtx::ExistOnly(y))
+                    }
                 }
             }
         }
@@ -465,46 +481,50 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx) -> Formula {
 // Argument phrase translation
 // ---------------------------------------------------------------------------
 
-fn translate_arg(phrase: &ArgumentPhrase, vg: &mut VarGen) -> ArgCtx {
-    match phrase {
-        // Bare pronoun → individual constant.
-        ArgumentPhrase::One(arg) => ArgCtx::Const(arg.get_string()),
+impl ArgumentPhrase {
+    fn to_fol(&self, vg: &mut VarGen) -> ArgCtx {
+        match self {
+            // Bare pronoun → individual constant.
+            ArgumentPhrase::One(arg) => ArgCtx::Const(arg.get_string()),
 
-        // Negated argument phrase.
-        ArgumentPhrase::Two(_neg, inner) => ArgCtx::Neg(Box::new(translate_arg(inner, vg))),
+            // Negated argument phrase.
+            ArgumentPhrase::Two(_neg, inner) => ArgCtx::Neg(Box::new(inner.to_fol(vg))),
 
-        // Coordinated argument phrases (binary_operator arg1 arg2).
-        ArgumentPhrase::Three(_op, left, right) => ArgCtx::Coord {
-            and_op: true, // binary_operator は論理積として扱う
-            left: Box::new(translate_arg(left, vg)),
-            right: Box::new(translate_arg(right, vg)),
-        },
+            // Coordinated argument phrases (binary_operator arg1 arg2).
+            ArgumentPhrase::Three(_op, left, right) => ArgCtx::Coord {
+                and_op: true, // binary_operator は論理積として扱う
+                left: Box::new(left.to_fol(vg)),
+                right: Box::new(right.to_fol(vg)),
+            },
 
-        // Quantified argument phrase.
-        ArgumentPhrase::Four(quant_arg) => translate_quant_arg(quant_arg, vg),
+            // Quantified argument phrase.
+            ArgumentPhrase::Four(quant_arg) => quant_arg.to_fol(vg),
 
-        // Event nominalization: se MtaEvent so.
-        ArgumentPhrase::Five(_se, mta_event, _so) => {
-            let var = vg.next();
-            let inner = translate_mta(mta_event, vg);
-            ArgCtx::Nominal {
-                var,
-                inner: Box::new(inner),
+            // Event nominalization: se MtaEvent so.
+            ArgumentPhrase::Five(_se, mta_event, _so) => {
+                let var = vg.next();
+                let inner = mta_event.to_fol(vg);
+                ArgCtx::Nominal {
+                    var,
+                    inner: Box::new(inner),
+                }
             }
         }
     }
 }
 
-fn translate_quant_arg(qa: &QuantifiedArgument, vg: &mut VarGen) -> ArgCtx {
-    match qa {
-        QuantifiedArgument::One(quant_mod, det_arg) => {
-            let kind = extract_quant_kind(quant_mod);
-            let var = vg.next();
-            let restriction = translate_determined_arg(det_arg, &var, vg);
-            ArgCtx::Quant {
-                var,
-                kind,
-                restriction,
+impl QuantifiedArgument {
+    fn to_fol(&self, vg: &mut VarGen) -> ArgCtx {
+        match self {
+            QuantifiedArgument::One(quant_mod, det_arg) => {
+                let kind = extract_quant_kind(quant_mod);
+                let var = vg.next();
+                let restriction = det_arg.to_fol(&var, vg);
+                ArgCtx::Quant {
+                    var,
+                    kind,
+                    restriction,
+                }
             }
         }
     }
@@ -524,47 +544,51 @@ fn extract_quant_kind(qm: &QuantifierModifier) -> QuantKind {
     }
 }
 
-fn translate_determined_arg(da: &DeterminedArgument, var: &str, vg: &mut VarGen) -> Formula {
-    match da {
-        DeterminedArgument::One(det_mod, ret_arg) => {
-            let base = translate_retrieved_arg(ret_arg, var, vg);
-            match det_mod {
-                // Determiner mo/bo/go adds a property predicate: mo(x), bo(x), go(x).
-                DeterminerModifier::One(det) => Formula::And(
-                    Box::new(Formula::Atom(
-                        det.get_string(),
-                        vec![Term::Var(var.to_string())],
-                    )),
-                    Box::new(base),
-                ),
-                DeterminerModifier::Epsilon => base,
+impl DeterminedArgument {
+    fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
+        match self {
+            DeterminedArgument::One(det_mod, ret_arg) => {
+                let base = ret_arg.to_fol(var, vg);
+                match det_mod {
+                    // Determiner mo/bo/go adds a property predicate: mo(x), bo(x), go(x).
+                    DeterminerModifier::One(det) => Formula::And(
+                        Box::new(Formula::Atom(
+                            det.get_string(),
+                            vec![Term::Var(var.to_string())],
+                        )),
+                        Box::new(base),
+                    ),
+                    DeterminerModifier::Epsilon => base,
+                }
             }
         }
     }
 }
 
-fn translate_retrieved_arg(ra: &RetrievedArgument, var: &str, vg: &mut VarGen) -> Formula {
-    match ra {
-        RetrievedArgument::One(_ro, pred) => translate_retrieval_pred(pred, var, vg),
+impl RetrievedArgument {
+    fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
+        match self {
+            RetrievedArgument::One(_ro, pred) => pred.to_fol(var, vg),
+        }
     }
 }
 
-fn translate_retrieval_pred(
-    pred: &ArgumentRetrievalBinaryPredicate,
-    var: &str,
-    vg: &mut VarGen,
-) -> Formula {
-    match pred {
-        ArgumentRetrievalBinaryPredicate::One(pred_phrase, with_arg) => {
-            match with_arg {
-                // ro pred — unary use: pred(x)
-                ArgumentRetrievalWithArgumentPhrase::Epsilon => build_restriction(pred_phrase, var),
-                // ro pred du extra_arg — binary use: pred(x, extra_arg)
-                ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
-                    let pred_name = extract_bp_name(pred_phrase);
-                    let extra_ctx = translate_arg(extra_arg, vg);
-                    let extra_term = extra_ctx.term();
-                    Formula::Atom(pred_name, vec![Term::Var(var.to_string()), extra_term])
+impl ArgumentRetrievalBinaryPredicate {
+    fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
+        match self {
+            ArgumentRetrievalBinaryPredicate::One(pred_phrase, with_arg) => {
+                match with_arg {
+                    // ro pred — unary use: pred(x)
+                    ArgumentRetrievalWithArgumentPhrase::Epsilon => {
+                        build_restriction(pred_phrase, var)
+                    }
+                    // ro pred du extra_arg — binary use: pred(x, extra_arg)
+                    ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
+                        let pred_name = extract_bp_name(pred_phrase);
+                        let extra_ctx = extra_arg.to_fol(vg);
+                        let extra_term = extra_ctx.term();
+                        Formula::Atom(pred_name, vec![Term::Var(var.to_string()), extra_term])
+                    }
                 }
             }
         }
