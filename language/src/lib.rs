@@ -4,7 +4,7 @@ pub mod parser;
 pub mod tokenizer;
 
 use argument_type_checker::type_check as argument_type_check;
-use formal_semantics::type_check as formal_type_check;
+use formal_semantics::{find_contradiction_index, to_fol, type_check as formal_type_check};
 use parser::{Ast, parse};
 use tokenizer::{Range, add_eos_to_last_sentence, tokenize};
 
@@ -27,9 +27,13 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
 
     // parsing
     let sentences = add_eos_to_last_sentence(tokenize_result.unwrap());
-    let mut asts = Vec::new();
+    let mut ast_with_ranges: Vec<(Ast, Range)> = Vec::new();
     let mut diagnostics = Vec::new();
     for sentence in sentences {
+        let sentence_range = Range::new(
+            sentence[0].range().start(),
+            sentence.last().unwrap().range().end(),
+        );
         let parse_result = parse(sentence.clone());
         if let Err(e) = parse_result {
             let diagnostics_item = Diagnostic {
@@ -38,9 +42,10 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
             };
             diagnostics.push(diagnostics_item);
         } else {
-            asts.push(parse_result.unwrap());
+            ast_with_ranges.push((parse_result.unwrap(), sentence_range));
         }
     }
+    let asts: Vec<Ast> = ast_with_ranges.iter().map(|(a, _)| a.clone()).collect();
 
     // argument type checking
     for ast in &asts {
@@ -64,6 +69,15 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
             };
             diagnostics.push(diagnostics_item);
         }
+    }
+
+    // contradiction checking
+    let formulas: Vec<_> = ast_with_ranges.iter().map(|(a, _)| to_fol(a)).collect();
+    if let Some(idx) = find_contradiction_index(&formulas) {
+        diagnostics.push(Diagnostic {
+            range: ast_with_ranges[idx].1.clone(),
+            message: "contradiction".to_string(),
+        });
     }
 
     if !diagnostics.is_empty() {
