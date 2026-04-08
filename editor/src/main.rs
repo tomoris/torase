@@ -71,30 +71,48 @@ impl Editor {
     fn view(&self) -> Element<'_, Message> {
         let content = text_editor(&self.content).on_action(Message::Edit);
         let viewer = match &self.viewer {
-            Viewer::Full(asts) => column![
-                row![
-                    text("Full View"),
-                    Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
-                    button("Compact View").on_press(Message::ToCompact),
-                ],
-                scrollable(asts[0].view(true)).direction(scrollable::Direction::Both {
-                    vertical: scrollable::Scrollbar::new(),
-                    horizontal: scrollable::Scrollbar::new(),
-                }),
-            ]
-            .into(),
-            Viewer::Compact(asts) => column![
-                row![
-                    button("Full View").on_press(Message::ToFull),
-                    Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
-                    text("Compact View"),
-                ],
-                scrollable(asts[0].view(false)).direction(scrollable::Direction::Both {
-                    vertical: scrollable::Scrollbar::new(),
-                    horizontal: scrollable::Scrollbar::new(),
-                }),
-            ]
-            .into(),
+            Viewer::Full(asts) => {
+                let body: Element<_> = if let Some(ast) = asts.first() {
+                    scrollable(ast.view(true))
+                        .direction(scrollable::Direction::Both {
+                            vertical: scrollable::Scrollbar::new(),
+                            horizontal: scrollable::Scrollbar::new(),
+                        })
+                        .into()
+                } else {
+                    text("").into()
+                };
+                column![
+                    row![
+                        text("Full View"),
+                        Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
+                        button("Compact View").on_press(Message::ToCompact),
+                    ],
+                    body,
+                ]
+                .into()
+            }
+            Viewer::Compact(asts) => {
+                let body: Element<_> = if let Some(ast) = asts.first() {
+                    scrollable(ast.view(false))
+                        .direction(scrollable::Direction::Both {
+                            vertical: scrollable::Scrollbar::new(),
+                            horizontal: scrollable::Scrollbar::new(),
+                        })
+                        .into()
+                } else {
+                    text("").into()
+                };
+                column![
+                    row![
+                        button("Full View").on_press(Message::ToFull),
+                        Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
+                        text("Compact View"),
+                    ],
+                    body,
+                ]
+                .into()
+            }
             Viewer::Error(diagnostics) => {
                 let mut error_string = String::new();
                 for diagnostic in diagnostics {
