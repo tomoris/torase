@@ -1,7 +1,24 @@
-use iced::widget::{Space, button, column, container, row, scrollable, text, text_editor};
-use iced::{Alignment, Element, Task};
+use iced::advanced::graphics::text::Paragraph as ConcreteParagraph;
+use iced::advanced::text::{self as adv_text, Paragraph as ParagraphTrait, Shaping, Wrapping};
+use iced::mouse;
+use iced::widget::canvas::{Frame, Path, Stroke};
+use iced::widget::{
+    Space, button, canvas, column, container, row, scrollable, stack, text, text_editor,
+};
+use iced::{
+    Alignment, Color, Element, Font, Pixels, Point, Rectangle, Renderer, Size, Task, Theme,
+};
 
 use language::{Diagnostic, diagnose, parser::*};
+
+// text_editor に設定するフォントサイズと行高さ（波線位置計算用）
+const FONT_SIZE: f32 = 14.0;
+const LINE_HEIGHT: f32 = FONT_SIZE * 1.3;
+// text_editor のデフォルト内部パディング
+const TEXT_EDITOR_PADDING: f32 = 5.0;
+// 波線の振幅・波長
+const WAVE_AMPLITUDE: f32 = 1.5;
+const WAVE_LENGTH: f32 = 5.0;
 
 fn main() -> iced::Result {
     iced::run("Artificial Language Editor", Editor::update, Editor::view)
@@ -24,6 +41,7 @@ enum Viewer {
 struct Editor {
     content: text_editor::Content,
     viewer: Viewer,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl Editor {
@@ -33,6 +51,7 @@ impl Editor {
         Self {
             content: text_editor::Content::with_text(text),
             viewer: Viewer::Compact(asts),
+            diagnostics: vec![],
         }
     }
 
@@ -57,10 +76,12 @@ impl Editor {
             }
             Message::Diagnosing(diagnostics_result) => match diagnostics_result {
                 Err(diagnostics) => {
+                    self.diagnostics = diagnostics.clone();
                     self.viewer = Viewer::Error(diagnostics);
                     Task::none()
                 }
                 Ok(asts) => {
+                    self.diagnostics = vec![];
                     self.viewer = Viewer::Compact(asts);
                     Task::none()
                 }
@@ -69,7 +90,10 @@ impl Editor {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let content = text_editor(&self.content).on_action(Message::Edit);
+        let content = text_editor(&self.content)
+            .on_action(Message::Edit)
+            .font(Font::MONOSPACE)
+            .size(FONT_SIZE);
         let viewer = match &self.viewer {
             Viewer::Full(asts) => {
                 let body: Element<_> = if let Some(ast) = asts.first() {
@@ -130,8 +154,23 @@ impl Editor {
             }
         };
 
+        let lines: Vec<String> = (0..self.content.line_count())
+            .filter_map(|i| self.content.line(i).map(|l| l.to_string()))
+            .collect();
+
+        let overlay = canvas(DiagnosticOverlay {
+            diagnostics: self.diagnostics.clone(),
+            lines,
+        })
+        .width(iced::Length::Fill)
+        .height(iced::Length::Fill);
+
+        let editor_stack = stack![content, overlay]
+            .width(iced::Length::Fill)
+            .height(iced::Length::Fill);
+
         container(row![
-            container(content)
+            container(editor_stack)
                 .padding(20)
                 .width(iced::Length::Fill)
                 .height(iced::Length::Fill),
@@ -148,6 +187,113 @@ impl Editor {
 
 fn viewer(s: String) -> Element<'static, Message> {
     container(text(s)).style(container::bordered_box).into()
+}
+
+// Diagnostic の範囲に波線を描画するキャンバスオーバーレイ
+struct DiagnosticOverlay {
+    diagnostics: Vec<Diagnostic>,
+    lines: Vec<String>,
+}
+
+impl canvas::Program<Message> for DiagnosticOverlay {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<canvas::Geometry<Renderer>> {
+        let mut frame = Frame::new(renderer, bounds.size());
+
+        // 等幅フォントの実際の文字幅を計測（grapheme_position はスペースをカウントしないためズレる）
+        let char_width = ConcreteParagraph::with_text(adv_text::Text {
+            content: "A",
+            bounds: Size::INFINITY,
+            size: Pixels(FONT_SIZE),
+            line_height: adv_text::LineHeight::Relative(1.3),
+            font: Font::MONOSPACE,
+            horizontal_alignment: iced::alignment::Horizontal::Left,
+            vertical_alignment: iced::alignment::Vertical::Top,
+            shaping: Shaping::Basic,
+            wrapping: Wrapping::None,
+        })
+        .min_bounds()
+        .width;
+
+        for diagnostic in &self.diagnostics {
+            let start = diagnostic.range.start();
+            let end = diagnostic.range.end();
+
+            // 開始行と終了行それぞれに波線を描画
+            let ranges: &[(usize, usize, usize)] = if start.line() == end.line() {
+                &[(start.line(), start.character(), end.character())]
+            } else {
+                &[
+                    (start.line(), start.character(), usize::MAX),
+                    (end.line(), 0, end.character()),
+                ]
+            };
+
+            for &(line_idx, col_start, col_end) in ranges {
+                // 末尾の改行を除いた行テキストで paragraph を作成
+                let line_text = self
+                    .lines
+                    .get(line_idx)
+                    .map(|s| s.trim_end_matches('\n'))
+                    .unwrap_or("");
+                let char_count = line_text.chars().count();
+                let col_end = col_end.min(char_count);
+
+                if col_end <= col_start {
+                    continue;
+                }
+
+                let x_start = TEXT_EDITOR_PADDING + col_start as f32 * char_width;
+                let x_end = TEXT_EDITOR_PADDING + col_end as f32 * char_width;
+
+                // y は LINE_HEIGHT ベースで計算（grapheme_position の y は glyph トップ座標で小さすぎる）
+                // 行底端の少し手前 = ちょうど文字の下に来る
+                let y = TEXT_EDITOR_PADDING + (line_idx as f32 + 1.0) * LINE_HEIGHT - 2.0;
+
+                if x_end <= x_start {
+                    continue;
+                }
+
+                let path = Path::new(|builder| {
+                    builder.move_to(Point::new(x_start, y));
+                    let mut x = x_start;
+                    let mut going_up = true;
+                    while x < x_end {
+                        let next_x = (x + WAVE_LENGTH).min(x_end);
+                        let control_x = x + (next_x - x) / 2.0;
+                        let control_y = if going_up {
+                            y - WAVE_AMPLITUDE
+                        } else {
+                            y + WAVE_AMPLITUDE
+                        };
+                        builder.quadratic_curve_to(
+                            Point::new(control_x, control_y),
+                            Point::new(next_x, y),
+                        );
+                        x = next_x;
+                        going_up = !going_up;
+                    }
+                });
+
+                frame.stroke(
+                    &path,
+                    Stroke::default()
+                        .with_color(Color::from_rgb(1.0, 0.0, 0.0))
+                        .with_width(1.5),
+                );
+            }
+        }
+
+        vec![frame.into_geometry()]
+    }
 }
 
 fn category_box(
