@@ -1,28 +1,34 @@
 use iced::advanced::graphics::text::Paragraph as ConcreteParagraph;
 use iced::advanced::text::{self as adv_text, Paragraph as ParagraphTrait, Shaping, Wrapping};
+use iced::keyboard::key::Named;
+use iced::keyboard::{Key, Modifiers};
 use iced::mouse;
 use iced::widget::canvas::{Frame, Path, Stroke};
 use iced::widget::{
     Space, button, canvas, column, container, row, scrollable, stack, text, text_editor,
 };
 use iced::{
-    Alignment, Color, Element, Font, Pixels, Point, Rectangle, Renderer, Size, Task, Theme,
+    Alignment, Color, Element, Font, Pixels, Point, Rectangle, Renderer, Size, Subscription, Task,
+    Theme,
 };
 
 use language::{Diagnostic, diagnose, parser::*};
 
-// text_editor に設定するフォントサイズと行高さ（波線位置計算用）
-const FONT_SIZE: f32 = 14.0;
-const LINE_HEIGHT: f32 = FONT_SIZE * 1.3;
 // text_editor のデフォルト内部パディング
 const TEXT_EDITOR_PADDING: f32 = 5.0;
 // 波線の振幅・波長
 const WAVE_AMPLITUDE: f32 = 1.5;
 const WAVE_LENGTH: f32 = 5.0;
+// フォントサイズの初期値・最小・最大
+const DEFAULT_FONT_SIZE: f32 = 14.0;
+const MIN_FONT_SIZE: f32 = 8.0;
+const MAX_FONT_SIZE: f32 = 48.0;
+const FONT_SIZE_STEP: f32 = 2.0;
 
 fn main() -> iced::Result {
     iced::application(Editor::new, Editor::update, Editor::view)
         .title("Artificial Language Editor")
+        .subscription(Editor::subscription)
         .run()
 }
 
@@ -32,6 +38,8 @@ enum Message {
     ToFull,
     ToCompact,
     Diagnosing(Result<Vec<Ast>, Vec<Diagnostic>>),
+    IncreaseFontSize,
+    DecreaseFontSize,
 }
 
 enum Viewer {
@@ -44,6 +52,7 @@ struct Editor {
     content: text_editor::Content,
     viewer: Viewer,
     diagnostics: Vec<Diagnostic>,
+    font_size: f32,
 }
 
 impl Editor {
@@ -54,6 +63,7 @@ impl Editor {
             content: text_editor::Content::with_text(text),
             viewer: Viewer::Compact(asts),
             diagnostics: vec![],
+            font_size: DEFAULT_FONT_SIZE,
         }
     }
 
@@ -76,6 +86,14 @@ impl Editor {
                 }
                 Task::none()
             }
+            Message::IncreaseFontSize => {
+                self.font_size = (self.font_size + FONT_SIZE_STEP).min(MAX_FONT_SIZE);
+                Task::none()
+            }
+            Message::DecreaseFontSize => {
+                self.font_size = (self.font_size - FONT_SIZE_STEP).max(MIN_FONT_SIZE);
+                Task::none()
+            }
             Message::Diagnosing(diagnostics_result) => match diagnostics_result {
                 Err(diagnostics) => {
                     self.diagnostics = diagnostics.clone();
@@ -91,11 +109,32 @@ impl Editor {
         }
     }
 
+    fn subscription(&self) -> Subscription<Message> {
+        iced::keyboard::listen().filter_map(|event| match event {
+            iced::keyboard::Event::KeyPressed { key, modifiers, .. }
+                if modifiers.contains(Modifiers::CTRL) =>
+            {
+                match &key {
+                    Key::Character(c) if c.as_str() == "+" || c.as_str() == "=" => {
+                        Some(Message::IncreaseFontSize)
+                    }
+                    Key::Character(c) if c.as_str() == "-" => Some(Message::DecreaseFontSize),
+                    Key::Named(Named::ArrowUp) => Some(Message::IncreaseFontSize),
+                    Key::Named(Named::ArrowDown) => Some(Message::DecreaseFontSize),
+                    _ => None,
+                }
+            }
+            _ => None,
+        })
+    }
+
     fn view(&self) -> Element<'_, Message> {
+        let font_size = self.font_size;
+        let line_height = font_size * 1.3;
         let content = text_editor(&self.content)
             .on_action(Message::Edit)
             .font(Font::MONOSPACE)
-            .size(FONT_SIZE);
+            .size(font_size);
         let viewer = match &self.viewer {
             Viewer::Full(asts) => {
                 let body: Element<_> = if let Some(ast) = asts.first() {
@@ -163,6 +202,8 @@ impl Editor {
         let overlay = canvas(DiagnosticOverlay {
             diagnostics: self.diagnostics.clone(),
             lines,
+            font_size,
+            line_height,
         })
         .width(iced::Length::Fill)
         .height(iced::Length::Fill);
@@ -195,6 +236,8 @@ fn viewer(s: String) -> Element<'static, Message> {
 struct DiagnosticOverlay {
     diagnostics: Vec<Diagnostic>,
     lines: Vec<String>,
+    font_size: f32,
+    line_height: f32,
 }
 
 impl canvas::Program<Message> for DiagnosticOverlay {
@@ -214,7 +257,7 @@ impl canvas::Program<Message> for DiagnosticOverlay {
         let char_width = ConcreteParagraph::with_text(adv_text::Text {
             content: "A",
             bounds: Size::INFINITE,
-            size: Pixels(FONT_SIZE),
+            size: Pixels(self.font_size),
             line_height: adv_text::LineHeight::Relative(1.3),
             font: Font::MONOSPACE,
             align_x: adv_text::Alignment::Left,
@@ -258,7 +301,7 @@ impl canvas::Program<Message> for DiagnosticOverlay {
 
                 // y は LINE_HEIGHT ベースで計算（grapheme_position の y は glyph トップ座標で小さすぎる）
                 // 行底端の少し手前 = ちょうど文字の下に来る
-                let y = TEXT_EDITOR_PADDING + (line_idx as f32 + 1.0) * LINE_HEIGHT - 2.0;
+                let y = TEXT_EDITOR_PADDING + (line_idx as f32 + 1.0) * self.line_height - 2.0;
 
                 if x_end <= x_start {
                     continue;
