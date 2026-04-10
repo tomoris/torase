@@ -12,6 +12,7 @@ use iced::{
     Theme,
 };
 
+use language::tokenizer::{TerminalType, tokenize};
 use language::{Diagnostic, diagnose, parser::*};
 
 // text_editor のデフォルト内部パディング
@@ -53,17 +54,22 @@ struct Editor {
     viewer: Viewer,
     diagnostics: Vec<Diagnostic>,
     font_size: f32,
+    tokens: Vec<TerminalType>,
 }
 
 impl Editor {
     fn new() -> Self {
         let text = "parobe mi si ba";
         let asts = diagnose(text.to_string()).unwrap();
+        let tokens = tokenize(text)
+            .map(|sentences| sentences.into_iter().flatten().collect())
+            .unwrap_or_default();
         Self {
             content: text_editor::Content::with_text(text),
             viewer: Viewer::Compact(asts),
             diagnostics: vec![],
             font_size: DEFAULT_FONT_SIZE,
+            tokens,
         }
     }
 
@@ -72,6 +78,9 @@ impl Editor {
             Message::Edit(action) => {
                 self.content.perform(action);
                 let text = self.content.text();
+                self.tokens = tokenize(&text)
+                    .map(|sentences| sentences.into_iter().flatten().collect())
+                    .unwrap_or_default();
                 Task::perform(async { diagnose(text) }, Message::Diagnosing)
             }
             Message::ToFull => {
@@ -201,6 +210,7 @@ impl Editor {
 
         let overlay = canvas(DiagnosticOverlay {
             diagnostics: self.diagnostics.clone(),
+            tokens: self.tokens.clone(),
             lines,
             font_size,
             line_height,
@@ -232,9 +242,41 @@ fn viewer(s: String) -> Element<'static, Message> {
     container(text(s)).style(container::bordered_box).into()
 }
 
-// Diagnostic の範囲に波線を描画するキャンバスオーバーレイ
+// トークン種別ごとの強調色（半透明）
+fn token_color(token: &TerminalType) -> Option<Color> {
+    match token {
+        TerminalType::BinaryPredicate(_) => Some(Color::from_rgba8(80, 180, 80, 0.25)),
+        TerminalType::Argument(_) => Some(Color::from_rgba8(80, 130, 220, 0.25)),
+        TerminalType::Tense(_) => Some(Color::from_rgba8(160, 80, 220, 0.25)),
+        TerminalType::Aspect(_) => Some(Color::from_rgba8(220, 80, 160, 0.25)),
+        TerminalType::Modality(_) => Some(Color::from_rgba8(60, 200, 200, 0.25)),
+        TerminalType::Negation(_) => Some(Color::from_rgba8(220, 60, 60, 0.25)),
+        TerminalType::ModalityNegation(_)
+        | TerminalType::TenseNegation(_)
+        | TerminalType::AspectNegation(_) => Some(Color::from_rgba8(230, 120, 60, 0.25)),
+        TerminalType::InterrogativeMarker(_) => Some(Color::from_rgba8(210, 210, 50, 0.25)),
+        TerminalType::ArgumentPhraseSeparator(_) => Some(Color::from_rgba8(200, 160, 60, 0.25)),
+        TerminalType::ArgumentPhraseTransposer(_) => Some(Color::from_rgba8(200, 110, 110, 0.25)),
+        TerminalType::BinaryOperator(_) => Some(Color::from_rgba8(130, 130, 130, 0.25)),
+        TerminalType::ArgumentRetriever(_) => Some(Color::from_rgba8(160, 60, 160, 0.25)),
+        TerminalType::Quantifier(_) => Some(Color::from_rgba8(60, 170, 170, 0.25)),
+        TerminalType::Number(_) => Some(Color::from_rgba8(120, 120, 210, 0.25)),
+        TerminalType::Determiner(_) => Some(Color::from_rgba8(170, 120, 60, 0.25)),
+        TerminalType::MtaEventToArgumentPhraseConverter(_)
+        | TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => {
+            Some(Color::from_rgba8(210, 60, 210, 0.25))
+        }
+        TerminalType::PostMtaEventModifier(_)
+        | TerminalType::PostBinaryPredicatePhraseModifier(_)
+        | TerminalType::PostArgumentPhraseModifier(_) => Some(Color::from_rgba8(60, 60, 180, 0.25)),
+        TerminalType::Eos(_) => None,
+    }
+}
+
+// トークン強調と Diagnostic 波線を描画するキャンバスオーバーレイ
 struct DiagnosticOverlay {
     diagnostics: Vec<Diagnostic>,
+    tokens: Vec<TerminalType>,
     lines: Vec<String>,
     font_size: f32,
     line_height: f32,
@@ -267,6 +309,24 @@ impl canvas::Program<Message> for DiagnosticOverlay {
         })
         .min_bounds()
         .width;
+
+        // トークン種別ごとに背景色矩形を描画
+        for token in &self.tokens {
+            if let Some(color) = token_color(token) {
+                let start = token.start();
+                let end = token.end();
+                if start.line() == end.line() {
+                    let x = TEXT_EDITOR_PADDING + start.character() as f32 * char_width;
+                    let y = TEXT_EDITOR_PADDING + start.line() as f32 * self.line_height;
+                    let width = (end.character() - start.character()) as f32 * char_width;
+                    frame.fill_rectangle(
+                        Point::new(x, y),
+                        Size::new(width, self.line_height),
+                        color,
+                    );
+                }
+            }
+        }
 
         for diagnostic in &self.diagnostics {
             let start = diagnostic.range.start();
