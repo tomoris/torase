@@ -21,7 +21,9 @@ const WAVE_AMPLITUDE: f32 = 1.5;
 const WAVE_LENGTH: f32 = 5.0;
 
 fn main() -> iced::Result {
-    iced::run("Artificial Language Editor", Editor::update, Editor::view)
+    iced::application(Editor::new, Editor::update, Editor::view)
+        .title("Artificial Language Editor")
+        .run()
 }
 
 #[derive(Debug, Clone)]
@@ -109,7 +111,7 @@ impl Editor {
                 column![
                     row![
                         text("Full View"),
-                        Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
+                        Space::new().width(iced::Length::Fill),
                         button("Compact View").on_press(Message::ToCompact),
                     ],
                     body,
@@ -130,7 +132,7 @@ impl Editor {
                 column![
                     row![
                         button("Full View").on_press(Message::ToFull),
-                        Space::new(iced::Length::Fill, iced::Length::Fixed(0.0)),
+                        Space::new().width(iced::Length::Fill),
                         text("Compact View"),
                     ],
                     body,
@@ -155,7 +157,7 @@ impl Editor {
         };
 
         let lines: Vec<String> = (0..self.content.line_count())
-            .filter_map(|i| self.content.line(i).map(|l| l.to_string()))
+            .filter_map(|i| self.content.line(i).map(|l| l.text.to_string()))
             .collect();
 
         let overlay = canvas(DiagnosticOverlay {
@@ -211,12 +213,12 @@ impl canvas::Program<Message> for DiagnosticOverlay {
         // 等幅フォントの実際の文字幅を計測（grapheme_position はスペースをカウントしないためズレる）
         let char_width = ConcreteParagraph::with_text(adv_text::Text {
             content: "A",
-            bounds: Size::INFINITY,
+            bounds: Size::INFINITE,
             size: Pixels(FONT_SIZE),
             line_height: adv_text::LineHeight::Relative(1.3),
             font: Font::MONOSPACE,
-            horizontal_alignment: iced::alignment::Horizontal::Left,
-            vertical_alignment: iced::alignment::Vertical::Top,
+            align_x: adv_text::Alignment::Left,
+            align_y: iced::alignment::Vertical::Top,
             shaping: Shaping::Basic,
             wrapping: Wrapping::None,
         })
@@ -309,7 +311,7 @@ where
 
     // main コンテンツ（中央より少し右に配置）
     let content = row![
-        Space::new(iced::Length::Fixed(50.0), iced::Length::Fixed(0.0)), // 左に空白
+        Space::new().width(iced::Length::Fixed(50.0)), // 左に空白
         main_content
     ]
     .align_y(Alignment::Center);
@@ -317,7 +319,7 @@ where
     // 全体を縦に積む
     let column = column![
         header,
-        Space::with_height(iced::Length::Fixed(1.0)),
+        Space::new().height(iced::Length::Fixed(1.0)),
         content
     ];
 
@@ -397,7 +399,7 @@ impl TreeViewer for InterrogativeSentence {
                 let category = "InterrogativeSentence".to_string();
                 let content = row![
                     text(interrogative_marker.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     post_modified_mta_event.view(is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -420,10 +422,7 @@ impl TreeViewer for PostModifiedMtaEvent {
                 let mut content = row![mta_event.view(is_full),];
                 if is_full || !post_mta_event_expression.is_empty() {
                     content = content
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ))
+                        .push(Space::new().width(iced::Length::Fixed(1.0)))
                         .push(post_mta_event_expression.view(is_full))
                 }
                 content = content.align_y(Alignment::Center);
@@ -444,7 +443,7 @@ impl TreeViewer for PostMtaEventExpression {
                 let category = "PostMtaEventExpression".to_string();
                 let content = row![
                     text(post_mta_event_modifier.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     mta_event.view(is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -497,7 +496,7 @@ impl TreeViewer for ModifiedModality {
                 let category = "ModifiedModality".to_string();
                 let content = row![
                     text(modality_negation.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     modified_modality.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -545,7 +544,7 @@ impl TreeViewer for ModifiedTense {
                 let category = "ModifiedTense".to_string();
                 let content = row![
                     text(tense_negation.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     modified_tense.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -593,7 +592,7 @@ impl TreeViewer for ModifiedAspect {
                 let category = "ModifiedAspect".to_string();
                 let content = row![
                     text(aspect_negation.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     modified_aspect.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -617,10 +616,7 @@ impl TreeViewer for MtaEvent {
                 if is_full || !modality_expression.is_empty() {
                     content = content
                         .push(modality_expression.view(is_full))
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ));
+                        .push(Space::new().width(iced::Length::Fixed(1.0)));
                 }
                 content = content
                     .push(ta_event.view(is_full))
@@ -645,10 +641,7 @@ impl TreeViewer for TaEvent {
                 if is_full || !tense_expression.is_empty() {
                     content = content
                         .push(tense_expression.view(is_full))
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ));
+                        .push(Space::new().width(iced::Length::Fixed(1.0)));
                 }
                 content = content
                     .push(a_event.view(is_full))
@@ -672,10 +665,7 @@ impl TreeViewer for AEvent {
                 if is_full || !aspect_expression.is_empty() {
                     content = content
                         .push(aspect_expression.view(is_full))
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ));
+                        .push(Space::new().width(iced::Length::Fixed(1.0)));
                 }
                 content = content.push(event.view(is_full)).align_y(Alignment::Center);
                 category_box(category, content.into(), background)
@@ -699,15 +689,12 @@ impl TreeViewer for Event {
                 let category = "Event".to_string();
                 let mut content = row![
                     post_modified_binary_predicate_phrase.view(is_full),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     argument_phrase.view(is_full),
                 ];
                 if is_full || !argument_phrase_or_epsilon.is_empty() {
                     content = content
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ))
+                        .push(Space::new().width(iced::Length::Fixed(1.0)))
                         .push(argument_phrase_or_epsilon.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
@@ -732,10 +719,7 @@ impl TreeViewer for PostModifiedBinaryPredicatePhrase {
                 let mut content = row![binary_predicate_phrase.view(is_full)];
                 if is_full || !post_binary_predicate_phrase_expression.is_empty() {
                     content = content
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ))
+                        .push(Space::new().width(iced::Length::Fixed(1.0)))
                         .push(post_binary_predicate_phrase_expression.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
@@ -759,7 +743,7 @@ impl TreeViewer for PostBinaryPredicatePhraseExpression {
                 let category = "PostBinaryPredicatePhraseExpression".to_string();
                 let content = row![
                     text(post_binary_predicate_phrase_modifier.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     binary_predicate_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -791,7 +775,7 @@ impl TreeViewer for BinaryPredicatePhrase {
                 let category = "BinaryPredicatePhrase".to_string();
                 let content = row![
                     text(negation.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     binary_predicate_phrase.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -802,7 +786,7 @@ impl TreeViewer for BinaryPredicatePhrase {
                 let category = "BinaryPredicatePhrase".to_string();
                 let content = row![
                     text(argument_phrase_transposer.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     text(binary_predicate.get_string()),
                 ]
                 .align_y(Alignment::Center)
@@ -817,9 +801,9 @@ impl TreeViewer for BinaryPredicatePhrase {
                 let category = "BinaryPredicatePhrase".to_string();
                 let content = row![
                     text(binary_operator.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     binary_predicate_phrase1.view(_is_full),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     binary_predicate_phrase2.view(_is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -846,7 +830,7 @@ impl TreeViewer for ArgumentPhrase {
                 let category = "ArgumentPhrase".to_string();
                 let content = row![
                     text(negation.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     argument_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -857,9 +841,9 @@ impl TreeViewer for ArgumentPhrase {
                 let category = "ArgumentPhrase".to_string();
                 let content = row![
                     text(binary_operator.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     argument_phrase1.view(is_full),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     argument_phrase2.view(is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -881,9 +865,9 @@ impl TreeViewer for ArgumentPhrase {
                 let category = "ArgumentPhrase".to_string();
                 let content = row![
                     text(mta_event_to_argument_phrase_converter.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     mta_event.view(is_full),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     text(mta_event_to_argument_phrase_converter_end.get_string()),
                 ]
                 .align_y(Alignment::Center)
@@ -905,7 +889,7 @@ impl TreeViewer for ArgumentPhraseOrEpsilon {
                 let category = "ArgumentPhraseOrEpsilon".to_string();
                 let content = row![
                     text(argument_phrase_separator.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     argument_phrase.view(is_full)
                 ]
                 .align_y(Alignment::Center)
@@ -930,10 +914,7 @@ impl TreeViewer for QuantifiedArgument {
                 if is_full || !quantifier_modifier.is_empty() {
                     content = content
                         .push(quantifier_modifier.view(is_full))
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ));
+                        .push(Space::new().width(iced::Length::Fixed(1.0)));
                 }
                 content = content
                     .push(determined_argument.view(is_full))
@@ -957,10 +938,7 @@ impl TreeViewer for DeterminedArgument {
                 if is_full || !determiner_modifier.is_empty() {
                     content = content
                         .push(determiner_modifier.view(is_full))
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ));
+                        .push(Space::new().width(iced::Length::Fixed(1.0)));
                 }
                 content = content
                     .push(retrieved_argument.view(is_full))
@@ -982,7 +960,7 @@ impl TreeViewer for RetrievedArgument {
                 let category = "RetrievedArgument".to_string();
                 let content = row![
                     text(argument_retriever.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     argument_retrieval_binary_predicate.view(is_full),
                 ]
                 .align_y(Alignment::Center)
@@ -1008,10 +986,7 @@ impl TreeViewer for ArgumentRetrievalBinaryPredicate {
                 let mut content = row![post_modified_binary_predicate_phrase.view(is_full)];
                 if is_full || !argument_retrieval_with_argument_phrase.is_empty() {
                     content = content
-                        .push(Space::new(
-                            iced::Length::Fixed(1.0),
-                            iced::Length::Fixed(0.0),
-                        ))
+                        .push(Space::new().width(iced::Length::Fixed(1.0)))
                         .push(argument_retrieval_with_argument_phrase.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
@@ -1035,7 +1010,7 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
                 let category = "ArgumentRetrievalWithArgumentPhrase".to_string();
                 let content = row![
                     text(post_argument_phrase_modifier.get_string()),
-                    Space::new(iced::Length::Fixed(1.0), iced::Length::Fixed(0.0)),
+                    Space::new().width(iced::Length::Fixed(1.0)),
                     argument_phrase.view(is_full),
                 ]
                 .align_y(Alignment::Center)
