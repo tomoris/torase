@@ -414,8 +414,8 @@ impl ArgumentRetrievalBinaryPredicate {
                 post_modified_binary_predicate_phrase,
                 _argument_retrieval_with_argument_phrase,
             ) => {
-                let (t1, _) = post_modified_binary_predicate_phrase.get_argument_types();
-                t1
+                let (_, t2) = post_modified_binary_predicate_phrase.get_argument_types();
+                t2
             }
         }
     }
@@ -473,7 +473,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの型検査が成功する() {
-        let source = "bahomo mi eos";
+        let source = "pisarepa mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -482,7 +482,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの第一項の型が間違っている場合にerr型を返す() {
-        let source = "bahomo ro didora eos";
+        let source = "pusatanada ro bahomo eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -491,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateで第二項の型が入力された場合にerr型を返す() {
-        let source = "bahomo mi si ba eos";
+        let source = "pisarepa mi si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -517,8 +517,8 @@ mod tests {
     }
 
     #[test]
-    fn test_unary_predicateを項転置するとerr型を返す() {
-        let source = "bahomo mi si ro re bidoga eos";
+    fn test_unary_predicateを項転置しないとerr型を返す() {
+        let source = "parobe mi si ro re pisarepa eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);

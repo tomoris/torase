@@ -944,7 +944,7 @@ impl Negation {
 impl BinaryPredicate {
     fn is_match(string: &str) -> bool {
         let re_binary_predicate =
-            Regex::new(r"^(?:[bdgmnr][aeiuo]|[pk]a)(?:[ptkshbdgmnr][aeiuo])+$").unwrap();
+            Regex::new(r"^(?:[bdgmnrpk][aeiuo])(?:[ptkshbdgmnr][aeiuo])+$").unwrap();
         re_binary_predicate.is_match(string)
     }
     fn new(
@@ -992,20 +992,23 @@ impl BinaryPredicate {
         if b.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
-                vec![ArgumentType::Epsilon],
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             )
         } else if d.is_match(&self.string) {
             (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
-                vec![ArgumentType::Epsilon],
             )
         } else if n.is_match(&self.string) {
             (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::NOther)],
-                vec![ArgumentType::Epsilon],
             )
         } else if g.is_match(&self.string) || m.is_match(&self.string) || r.is_match(&self.string) {
-            (vec![ArgumentType::Abstraction], vec![ArgumentType::Epsilon])
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Abstraction],
+            )
         } else if pa.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
