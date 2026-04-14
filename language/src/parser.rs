@@ -181,8 +181,16 @@ fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonT
         DummyNonTerminalType::BinaryPredicatePhrase => {
             NonTerminalType::BinaryPredicatePhrase(BinaryPredicatePhrase::new(rhs))
         }
+        DummyNonTerminalType::NonNegatedBinaryPredicatePhrase => {
+            NonTerminalType::NonNegatedBinaryPredicatePhrase(NonNegatedBinaryPredicatePhrase::new(
+                rhs,
+            ))
+        }
         DummyNonTerminalType::ArgumentPhrase => {
             NonTerminalType::ArgumentPhrase(ArgumentPhrase::new(rhs))
+        }
+        DummyNonTerminalType::NonNegatedArgumentPhrase => {
+            NonTerminalType::NonNegatedArgumentPhrase(NonNegatedArgumentPhrase::new(rhs))
         }
         DummyNonTerminalType::ArgumentPhraseOrEpsilon => {
             NonTerminalType::ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon::new(rhs))
@@ -242,7 +250,11 @@ fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRh
             PostBinaryPredicatePhraseExpression::parse_table(t)
         }
         DummyNonTerminalType::BinaryPredicatePhrase => BinaryPredicatePhrase::parse_table(t),
+        DummyNonTerminalType::NonNegatedBinaryPredicatePhrase => {
+            NonNegatedBinaryPredicatePhrase::parse_table(t)
+        }
         DummyNonTerminalType::ArgumentPhrase => ArgumentPhrase::parse_table(t),
+        DummyNonTerminalType::NonNegatedArgumentPhrase => NonNegatedArgumentPhrase::parse_table(t),
         DummyNonTerminalType::ArgumentPhraseOrEpsilon => ArgumentPhraseOrEpsilon::parse_table(t),
         DummyNonTerminalType::QuantifiedArgument => QuantifiedArgument::parse_table(t),
         DummyNonTerminalType::DeterminedArgument => DeterminedArgument::parse_table(t),
@@ -327,7 +339,9 @@ pub enum NonTerminalType {
     PostModifiedBinaryPredicatePhrase(PostModifiedBinaryPredicatePhrase),
     PostBinaryPredicatePhraseExpression(PostBinaryPredicatePhraseExpression),
     BinaryPredicatePhrase(BinaryPredicatePhrase),
+    NonNegatedBinaryPredicatePhrase(NonNegatedBinaryPredicatePhrase),
     ArgumentPhrase(ArgumentPhrase),
+    NonNegatedArgumentPhrase(NonNegatedArgumentPhrase),
     ArgumentPhraseOrEpsilon(ArgumentPhraseOrEpsilon),
     QuantifiedArgument(QuantifiedArgument),
     DeterminedArgument(DeterminedArgument),
@@ -359,7 +373,9 @@ pub enum DummyNonTerminalType {
     PostModifiedBinaryPredicatePhrase,
     PostBinaryPredicatePhraseExpression,
     BinaryPredicatePhrase,
+    NonNegatedBinaryPredicatePhrase,
     ArgumentPhrase,
+    NonNegatedArgumentPhrase,
     ArgumentPhraseOrEpsilon,
     QuantifiedArgument,
     DeterminedArgument,
@@ -409,7 +425,7 @@ pub enum ModalityExpression {
 #[derive(Clone, Debug)]
 pub enum ModifiedModality {
     One(Modality),
-    Two(ModalityNegation, Box<ModifiedModality>),
+    Two(ModalityNegation, Modality),
 }
 
 #[derive(Clone, Debug)]
@@ -421,7 +437,7 @@ pub enum TenseExpression {
 #[derive(Clone, Debug)]
 pub enum ModifiedTense {
     One(Tense),
-    Two(TenseNegation, Box<ModifiedTense>),
+    Two(TenseNegation, Tense),
 }
 
 #[derive(Clone, Debug)]
@@ -433,7 +449,7 @@ pub enum AspectExpression {
 #[derive(Clone, Debug)]
 pub enum ModifiedAspect {
     One(Aspect),
-    Two(AspectNegation, Box<ModifiedAspect>),
+    Two(AspectNegation, Aspect),
 }
 
 #[derive(Clone, Debug)]
@@ -501,6 +517,14 @@ pub enum ArgumentPhraseOrEpsilon {
     One(ArgumentPhraseSeparator, ArgumentPhrase),
     Epsilon,
 }
+
+/// BinaryPredicatePhrase の否定なしバリアント（多重否定防止用）
+#[derive(Clone, Debug)]
+pub struct NonNegatedBinaryPredicatePhrase(pub BinaryPredicatePhrase);
+
+/// ArgumentPhrase の否定なしバリアント（多重否定防止用）
+#[derive(Clone, Debug)]
+pub struct NonNegatedArgumentPhrase(pub ArgumentPhrase);
 
 #[derive(Clone, Debug)]
 pub enum QuantifiedArgument {
@@ -879,7 +903,7 @@ impl ModifiedModality {
             }
             DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ModalityNegation),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedModality),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Modality),
             ])),
             _ => Err(()),
         }
@@ -890,8 +914,8 @@ impl ModifiedModality {
                 [SymbolType::Terminal(TerminalType::Modality(child1))] => Self::One(child1.clone()),
                 [
                     SymbolType::Terminal(TerminalType::ModalityNegation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedModality(child2)),
-                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
+                    SymbolType::Terminal(TerminalType::Modality(child2)),
+                ] => Self::Two(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -950,7 +974,7 @@ impl ModifiedTense {
             }
             DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::TenseNegation),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedTense),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Tense),
             ])),
             _ => Err(()),
         }
@@ -961,8 +985,8 @@ impl ModifiedTense {
                 [SymbolType::Terminal(TerminalType::Tense(child1))] => Self::One(child1.clone()),
                 [
                     SymbolType::Terminal(TerminalType::TenseNegation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedTense(child2)),
-                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
+                    SymbolType::Terminal(TerminalType::Tense(child2)),
+                ] => Self::Two(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1019,7 +1043,7 @@ impl ModifiedAspect {
             }
             DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::AspectNegation),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModifiedAspect),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Aspect),
             ])),
             _ => Err(()),
         }
@@ -1030,8 +1054,8 @@ impl ModifiedAspect {
                 [SymbolType::Terminal(TerminalType::Aspect(child1))] => Self::One(child1.clone()),
                 [
                     SymbolType::Terminal(TerminalType::AspectNegation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ModifiedAspect(child2)),
-                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
+                    SymbolType::Terminal(TerminalType::Aspect(child2)),
+                ] => Self::Two(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1362,7 +1386,9 @@ impl BinaryPredicatePhrase {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::NonNegatedBinaryPredicatePhrase,
+                ),
             ])),
             DummyTerminalType::BinaryPredicate => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
@@ -1386,8 +1412,10 @@ impl BinaryPredicatePhrase {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::Terminal(TerminalType::Negation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
-                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
+                    SymbolType::NonTerminal(NonTerminalType::NonNegatedBinaryPredicatePhrase(
+                        child2,
+                    )),
+                ] => Self::Two(child1.clone(), Box::new(child2.0.clone())),
                 [SymbolType::Terminal(TerminalType::BinaryPredicate(child1))] => {
                     Self::One(child1.clone())
                 }
@@ -1420,7 +1448,7 @@ impl ArgumentPhrase {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::Negation),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::NonNegatedArgumentPhrase),
             ])),
             DummyTerminalType::Argument => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
@@ -1469,8 +1497,8 @@ impl ArgumentPhrase {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::Terminal(TerminalType::Negation(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => Self::Two(child1.clone(), Box::new(child2.clone())),
+                    SymbolType::NonTerminal(NonTerminalType::NonNegatedArgumentPhrase(child2)),
+                ] => Self::Two(child1.clone(), Box::new(child2.0.clone())),
                 [SymbolType::Terminal(TerminalType::Argument(child1))] => Self::One(child1.clone()),
                 [
                     SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
@@ -1499,6 +1527,81 @@ impl ArgumentPhrase {
                 panic!("Unexpected epsilon");
             }
         }
+    }
+}
+
+impl NonNegatedBinaryPredicatePhrase {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
+        match current_token {
+            DummyTerminalType::BinaryPredicate => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::BinaryPredicate,
+                )]))
+            }
+            DummyTerminalType::ArgumentPhraseTransposer => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentPhraseTransposer),
+                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryPredicate),
+            ])),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
+            ])),
+            _ => Err(()),
+        }
+    }
+    fn new(rhs: Rhs) -> Self {
+        Self(BinaryPredicatePhrase::new(rhs))
+    }
+}
+
+impl NonNegatedArgumentPhrase {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
+        match current_token {
+            DummyTerminalType::Argument => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::Argument,
+                )]))
+            }
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
+            ])),
+            DummyTerminalType::Quantifier => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
+            DummyTerminalType::Number => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
+            DummyTerminalType::Determiner => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
+            DummyTerminalType::ArgumentRetriever => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::QuantifiedArgument,
+                )]))
+            }
+            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(
+                    DummyTerminalType::MtaEventToArgumentPhraseConverter,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyTerminal(
+                    DummyTerminalType::MtaEventToArgumentPhraseConverterEnd,
+                ),
+            ])),
+            _ => Err(()),
+        }
+    }
+    fn new(rhs: Rhs) -> Self {
+        Self(ArgumentPhrase::new(rhs))
     }
 }
 
@@ -2302,8 +2405,22 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let non_negated_binary_predicate_phrase = grammar::NonTerminal(
+            type_name::<NonNegatedBinaryPredicatePhrase>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
         let argument_phrase = grammar::NonTerminal(
             type_name::<ArgumentPhrase>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let non_negated_argument_phrase = grammar::NonTerminal(
+            type_name::<NonNegatedArgumentPhrase>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2581,7 +2698,7 @@ mod tests {
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(modality.clone())]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(modality_negation_.clone()),
-                    grammar::Symbol::NonTerminal(modified_modality.clone()),
+                    grammar::Symbol::Terminal(modality.clone()),
                 ]),
             ],
         );
@@ -2598,7 +2715,7 @@ mod tests {
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(tense.clone())]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(tense_negation_.clone()),
-                    grammar::Symbol::NonTerminal(modified_tense.clone()),
+                    grammar::Symbol::Terminal(tense.clone()),
                 ]),
             ],
         );
@@ -2615,7 +2732,7 @@ mod tests {
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(aspect.clone())]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(aspect_negation_.clone()),
-                    grammar::Symbol::NonTerminal(modified_aspect.clone()),
+                    grammar::Symbol::Terminal(aspect.clone()),
                 ]),
             ],
         );
@@ -2680,6 +2797,21 @@ mod tests {
                 ]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(negation.clone()),
+                    grammar::Symbol::NonTerminal(non_negated_binary_predicate_phrase.clone()),
+                ]),
+            ],
+        );
+        rules.insert(
+            non_negated_binary_predicate_phrase.clone(),
+            vec![
+                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(binary_predicate.clone())]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(argument_phrase_transposer.clone()),
+                    grammar::Symbol::Terminal(binary_predicate.clone()),
+                ]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(binary_operator.clone()),
+                    grammar::Symbol::NonTerminal(binary_predicate_phrase.clone()),
                     grammar::Symbol::NonTerminal(binary_predicate_phrase.clone()),
                 ]),
             ],
@@ -2698,6 +2830,25 @@ mod tests {
                 ]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(negation.clone()),
+                    grammar::Symbol::NonTerminal(non_negated_argument_phrase.clone()),
+                ]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter.clone()),
+                    grammar::Symbol::NonTerminal(mta_event.clone()),
+                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter_end.clone()),
+                ]),
+            ],
+        );
+        rules.insert(
+            non_negated_argument_phrase.clone(),
+            vec![
+                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(argument.clone())]),
+                grammar::Rhs::Sequence(vec![grammar::Symbol::NonTerminal(
+                    quantified_argument.clone(),
+                )]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(binary_operator.clone()),
+                    grammar::Symbol::NonTerminal(argument_phrase.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                 ]),
                 grammar::Rhs::Sequence(vec![
@@ -2859,7 +3010,9 @@ mod tests {
                 PostBinaryPredicatePhraseExpression::parse_table(tt)
             }
             "BinaryPredicatePhrase" => BinaryPredicatePhrase::parse_table(tt),
+            "NonNegatedBinaryPredicatePhrase" => NonNegatedBinaryPredicatePhrase::parse_table(tt),
             "ArgumentPhrase" => ArgumentPhrase::parse_table(tt),
+            "NonNegatedArgumentPhrase" => NonNegatedArgumentPhrase::parse_table(tt),
             "ArgumentPhraseOrEpsilon" => ArgumentPhraseOrEpsilon::parse_table(tt),
             "QuantifiedArgument" => QuantifiedArgument::parse_table(tt),
             "DeterminedArgument" => DeterminedArgument::parse_table(tt),
@@ -2913,7 +3066,9 @@ mod tests {
                                                 DummyNonTerminalType::PostModifiedBinaryPredicatePhrase => "PostModifiedBinaryPredicatePhrase",
                                                 DummyNonTerminalType::PostBinaryPredicatePhraseExpression => "PostBinaryPredicatePhraseExpression",
                                                 DummyNonTerminalType::BinaryPredicatePhrase => "BinaryPredicatePhrase",
+                                                DummyNonTerminalType::NonNegatedBinaryPredicatePhrase => "NonNegatedBinaryPredicatePhrase",
                                                 DummyNonTerminalType::ArgumentPhrase => "ArgumentPhrase",
+                                                DummyNonTerminalType::NonNegatedArgumentPhrase => "NonNegatedArgumentPhrase",
                                                 DummyNonTerminalType::ArgumentPhraseOrEpsilon => "ArgumentPhraseOrEpsilon",
                                                 DummyNonTerminalType::QuantifiedArgument => "QuantifiedArgument",
                                                 DummyNonTerminalType::DeterminedArgument => "DeterminedArgument",

@@ -252,6 +252,62 @@ mod tests {
     }
 
     #[test]
+    fn test_私はりんごを食べない_二重否定がエラーになる() {
+        let text = "ne ne pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_私はりんごを食べるな() {
+        let text = "hane haka pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はりんごを食べるな_二重否定がエラーになる() {
+        let text = "hane hane haka pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_私はりんごを過去じゃないときに食べた() {
+        let text = "hine hita pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はりんごを過去じゃないときに食べた_二重否定がエラーになる() {
+        let text = "hine hine hita pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_私はりんごを食べ始めてない() {
+        let text = "hune hude pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はりんごを食べ始めてない_二重否定がエラーになる() {
+        let text = "hune hune hude pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_私はりんごを過去じゃないときに食べないを開始してないと事実性高く思わない() {
+        let text = "hane hame hine hita hune hude ne pahete mi si ro behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_私はりんごを食べられない_りんごがないので状況的に食べられない() {
         let text = "hane hate pahete mi si ro behapare".to_string();
         let result = diagnose(text);

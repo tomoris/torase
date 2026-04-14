@@ -595,12 +595,12 @@ impl TreeViewer for ModifiedModality {
                 let content = text(modality.get_string()).into();
                 category_box(category, content, background)
             }
-            ModifiedModality::Two(modality_negation, modified_modality) => {
+            ModifiedModality::Two(modality_negation, modality) => {
                 let category = "ModifiedModality".to_string();
                 let content = row![
                     text(modality_negation.get_string()),
                     Space::new().width(iced::Length::Fixed(1.0)),
-                    modified_modality.view(_is_full),
+                    text(modality.get_string()),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -643,12 +643,12 @@ impl TreeViewer for ModifiedTense {
                 let content = text(tense.get_string()).into();
                 category_box(category, content, background)
             }
-            ModifiedTense::Two(tense_negation, modified_tense) => {
+            ModifiedTense::Two(tense_negation, tense) => {
                 let category = "ModifiedTense".to_string();
                 let content = row![
                     text(tense_negation.get_string()),
                     Space::new().width(iced::Length::Fixed(1.0)),
-                    modified_tense.view(_is_full),
+                    text(tense.get_string()),
                 ]
                 .align_y(Alignment::Center)
                 .into();
@@ -691,12 +691,12 @@ impl TreeViewer for ModifiedAspect {
                 let content = text(aspect.get_string()).into();
                 category_box(category, content, background)
             }
-            ModifiedAspect::Two(aspect_negation, modified_aspect) => {
+            ModifiedAspect::Two(aspect_negation, aspect) => {
                 let category = "ModifiedAspect".to_string();
                 let content = row![
                     text(aspect_negation.get_string()),
                     Space::new().width(iced::Length::Fixed(1.0)),
-                    modified_aspect.view(_is_full),
+                    text(aspect.get_string()),
                 ]
                 .align_y(Alignment::Center)
                 .into();
