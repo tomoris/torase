@@ -338,7 +338,7 @@ impl ArgumentPhrase {
 impl ArgumentPhraseOrEpsilon {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            ArgumentPhraseOrEpsilon::One(_argument_phrase_separator, argument_phrase) => {
+            ArgumentPhraseOrEpsilon::One(_accusative_preposition, argument_phrase) => {
                 argument_phrase.type_check()
             }
             ArgumentPhraseOrEpsilon::Epsilon => Ok(()),

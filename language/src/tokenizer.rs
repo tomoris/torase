@@ -67,9 +67,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if ArgumentPhraseSeparator::is_match(token.0) {
-            doc.push(TerminalType::ArgumentPhraseSeparator(
-                ArgumentPhraseSeparator::new(token.0, token.1, token.2, token.3, token.4),
+        } else if AccusativePreposition::is_match(token.0) {
+            doc.push(TerminalType::AccusativePreposition(
+                AccusativePreposition::new(token.0, token.1, token.2, token.3, token.4),
             ));
         } else if ArgumentPhraseTransposer::is_match(token.0) {
             doc.push(TerminalType::ArgumentPhraseTransposer(
@@ -226,7 +226,7 @@ pub enum TerminalType {
     BinaryPredicate(BinaryPredicate),
     NominativePreposition(NominativePreposition),
     Argument(Argument),
-    ArgumentPhraseSeparator(ArgumentPhraseSeparator),
+    AccusativePreposition(AccusativePreposition),
     ArgumentPhraseTransposer(ArgumentPhraseTransposer),
     BinaryOperator(BinaryOperator),
     ArgumentRetriever(ArgumentRetriever),
@@ -254,7 +254,7 @@ pub enum DummyTerminalType {
     BinaryPredicate,
     NominativePreposition,
     Argument,
-    ArgumentPhraseSeparator,
+    AccusativePreposition,
     ArgumentPhraseTransposer,
     BinaryOperator,
     ArgumentRetriever,
@@ -282,7 +282,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::BinaryPredicate(_) => DummyTerminalType::BinaryPredicate,
         TerminalType::NominativePreposition(_) => DummyTerminalType::NominativePreposition,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
-        TerminalType::ArgumentPhraseSeparator(_) => DummyTerminalType::ArgumentPhraseSeparator,
+        TerminalType::AccusativePreposition(_) => DummyTerminalType::AccusativePreposition,
         TerminalType::ArgumentPhraseTransposer(_) => DummyTerminalType::ArgumentPhraseTransposer,
         TerminalType::BinaryOperator(_) => DummyTerminalType::BinaryOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
@@ -320,7 +320,7 @@ impl TerminalType {
             TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
             TerminalType::NominativePreposition(prep) => prep.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
-            TerminalType::ArgumentPhraseSeparator(separator) => separator.range.start.clone(),
+            TerminalType::AccusativePreposition(prep) => prep.range.start.clone(),
             TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.start.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
@@ -354,7 +354,7 @@ impl TerminalType {
             TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
             TerminalType::NominativePreposition(prep) => prep.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
-            TerminalType::ArgumentPhraseSeparator(separator) => separator.range.end.clone(),
+            TerminalType::AccusativePreposition(prep) => prep.range.end.clone(),
             TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.end.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
@@ -517,7 +517,7 @@ enum ArgumentKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ArgumentPhraseSeparator {
+pub struct AccusativePreposition {
     range: Range,
 }
 
@@ -1209,7 +1209,7 @@ impl Argument {
     }
 }
 
-impl ArgumentPhraseSeparator {
+impl AccusativePreposition {
     fn is_match(string: &str) -> bool {
         string == "si"
     }
@@ -1221,9 +1221,9 @@ impl ArgumentPhraseSeparator {
         end_character: usize,
     ) -> Self {
         if !Self::is_match(string) {
-            panic!("Invalid argument phrase separator surface: {}", string);
+            panic!("Invalid accusative preposition surface: {}", string);
         }
-        ArgumentPhraseSeparator {
+        AccusativePreposition {
             range: Range {
                 start: Position {
                     line: start_line,
@@ -1757,19 +1757,19 @@ mod tests {
 
     #[test]
     fn test_split_with_utf8_ranges() {
-        let input = "binary_predicate argument argument_phrase_separator argument eos\nbinary_predicate argument argument_phrase_separator argument eos";
+        let input = "binary_predicate argument accusative_preposition argument eos\nbinary_predicate argument accusative_preposition argument eos";
         let tokens = split_with_utf8_ranges(input);
         assert_eq!(tokens.len(), 10);
         assert_eq!(tokens[0], ("binary_predicate", 0, 0, 0, 16));
         assert_eq!(tokens[1], ("argument", 0, 17, 0, 25));
-        assert_eq!(tokens[2], ("argument_phrase_separator", 0, 26, 0, 51));
-        assert_eq!(tokens[3], ("argument", 0, 52, 0, 60));
-        assert_eq!(tokens[4], ("eos", 0, 61, 0, 64));
+        assert_eq!(tokens[2], ("accusative_preposition", 0, 26, 0, 48));
+        assert_eq!(tokens[3], ("argument", 0, 49, 0, 57));
+        assert_eq!(tokens[4], ("eos", 0, 58, 0, 61));
         assert_eq!(tokens[5], ("binary_predicate", 1, 0, 1, 16));
         assert_eq!(tokens[6], ("argument", 1, 17, 1, 25));
-        assert_eq!(tokens[7], ("argument_phrase_separator", 1, 26, 1, 51));
-        assert_eq!(tokens[8], ("argument", 1, 52, 1, 60));
-        assert_eq!(tokens[9], ("eos", 1, 61, 1, 64));
+        assert_eq!(tokens[7], ("accusative_preposition", 1, 26, 1, 48));
+        assert_eq!(tokens[8], ("argument", 1, 49, 1, 57));
+        assert_eq!(tokens[9], ("eos", 1, 58, 1, 61));
     }
 
     #[test]
@@ -1789,7 +1789,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][2],
-            TerminalType::ArgumentPhraseSeparator(ArgumentPhraseSeparator::new("si", 0, 10, 0, 12))
+            TerminalType::AccusativePreposition(AccusativePreposition::new("si", 0, 10, 0, 12))
         );
         assert_eq!(
             sentences[0][3],
@@ -1830,7 +1830,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][5],
-            TerminalType::ArgumentPhraseSeparator(ArgumentPhraseSeparator {
+            TerminalType::AccusativePreposition(AccusativePreposition {
                 range: Range {
                     start: Position {
                         line: 0,

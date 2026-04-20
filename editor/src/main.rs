@@ -256,7 +256,7 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         | TerminalType::AspectNegation(_) => Some(Color::from_rgba8(230, 120, 60, 0.25)),
         TerminalType::InterrogativeMarker(_) => Some(Color::from_rgba8(210, 210, 50, 0.25)),
         TerminalType::NominativePreposition(_) => Some(Color::from_rgba8(80, 200, 130, 0.25)),
-        TerminalType::ArgumentPhraseSeparator(_) => Some(Color::from_rgba8(200, 160, 60, 0.25)),
+        TerminalType::AccusativePreposition(_) => Some(Color::from_rgba8(200, 160, 60, 0.25)),
         TerminalType::ArgumentPhraseTransposer(_) => Some(Color::from_rgba8(200, 110, 110, 0.25)),
         TerminalType::BinaryOperator(_) => Some(Color::from_rgba8(130, 130, 130, 0.25)),
         TerminalType::ArgumentRetriever(_) => Some(Color::from_rgba8(160, 60, 160, 0.25)),
@@ -992,10 +992,10 @@ impl TreeViewer for ArgumentPhraseOrEpsilon {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(250, 240, 205);
         match self {
-            ArgumentPhraseOrEpsilon::One(argument_phrase_separator, argument_phrase) => {
+            ArgumentPhraseOrEpsilon::One(accusative_preposition, argument_phrase) => {
                 let category = "ArgumentPhraseOrEpsilon".to_string();
                 let content = row![
-                    text(argument_phrase_separator.get_string()),
+                    text(accusative_preposition.get_string()),
                     Space::new().width(iced::Length::Fixed(10.0)),
                     argument_phrase.view(is_full)
                 ]

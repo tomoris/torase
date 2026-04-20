@@ -515,7 +515,7 @@ be
 あれ
 ge
 
-argument_phrase_separator
+accusative_preposition
 si
 
 argument_phrase_transposer

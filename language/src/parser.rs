@@ -515,7 +515,7 @@ pub enum ArgumentPhrase {
 
 #[derive(Clone, Debug)]
 pub enum ArgumentPhraseOrEpsilon {
-    One(ArgumentPhraseSeparator, ArgumentPhrase),
+    One(AccusativePreposition, ArgumentPhrase),
     Epsilon,
 }
 
@@ -1356,7 +1356,7 @@ impl PostBinaryPredicatePhraseExpression {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AccusativePreposition => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
@@ -1620,8 +1620,8 @@ impl NonNegatedArgumentPhrase {
 impl ArgumentPhraseOrEpsilon {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentPhraseSeparator),
+            DummyTerminalType::AccusativePreposition => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::AccusativePreposition),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
@@ -1634,7 +1634,7 @@ impl ArgumentPhraseOrEpsilon {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::ArgumentPhraseSeparator(child1)),
+                    SymbolType::Terminal(TerminalType::AccusativePreposition(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
                 ] => Self::One(child1.clone(), child2.clone()),
                 _ => {
@@ -1815,7 +1815,7 @@ impl ArgumentRetrievalWithArgumentPhrase {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentPhraseSeparator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AccusativePreposition => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
@@ -2574,8 +2574,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let argument_phrase_separator = grammar::Terminal(
-            type_name::<ArgumentPhraseSeparator>()
+        let accusative_preposition = grammar::Terminal(
+            type_name::<AccusativePreposition>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2882,7 +2882,7 @@ mod tests {
             argument_phrase_or_epsilon.clone(),
             vec![
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(argument_phrase_separator.clone()),
+                    grammar::Symbol::Terminal(accusative_preposition.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                 ]),
                 grammar::Rhs::Epsilon,
@@ -2970,7 +2970,7 @@ mod tests {
                     "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
                     "NominativePreposition" => DummyTerminalType::NominativePreposition,
                     "Argument" => DummyTerminalType::Argument,
-                    "ArgumentPhraseSeparator" => DummyTerminalType::ArgumentPhraseSeparator,
+                    "AccusativePreposition" => DummyTerminalType::AccusativePreposition,
                     "ArgumentPhraseTransposer" => DummyTerminalType::ArgumentPhraseTransposer,
                     "BinaryOperator" => DummyTerminalType::BinaryOperator,
                     "ArgumentRetriever" => DummyTerminalType::ArgumentRetriever,
@@ -3125,8 +3125,8 @@ mod tests {
                                             "NominativePreposition"
                                         }
                                         DummyTerminalType::Argument => "Argument",
-                                        DummyTerminalType::ArgumentPhraseSeparator => {
-                                            "ArgumentPhraseSeparator"
+                                        DummyTerminalType::AccusativePreposition => {
+                                            "AccusativePreposition"
                                         }
                                         DummyTerminalType::ArgumentPhraseTransposer => {
                                             "ArgumentPhraseTransposer"
