@@ -384,7 +384,7 @@ impl AEvent {
 impl Event {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            Event::One(pred_phrase, arg1_phrase, arg2_or_eps) => {
+            Event::One(pred_phrase, _nom, arg1_phrase, arg2_or_eps) => {
                 let pred = extract_pred(pred_phrase);
                 let arg1 = arg1_phrase.to_fol(vg);
                 match arg2_or_eps {
@@ -668,7 +668,7 @@ mod tests {
     #[test]
     fn test_存在量化_私はりんごを食べる() {
         check(
-            "pahete mi si ro behapare",
+            "pahete sa mi si ro behapare",
             "∃x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -676,7 +676,7 @@ mod tests {
     #[test]
     fn test_全称量化_私は全てのりんごを食べる() {
         check(
-            "pahete mi si ta ro behapare",
+            "pahete sa mi si ta ro behapare",
             "∀x.(behapare(x) ⇒ pahete(mi, x))",
         );
     }
@@ -684,7 +684,7 @@ mod tests {
     #[test]
     fn test_述語否定_私はりんごを食べない() {
         check(
-            "ne pahete mi si ro behapare",
+            "ne pahete sa mi si ro behapare",
             "¬∃x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -692,7 +692,7 @@ mod tests {
     #[test]
     fn test_転置_りんごは食べられない() {
         check(
-            "hapo re pahete ro behapare",
+            "hapo re pahete sa ro behapare",
             "∃y.∃x.(behapare(x) ∧ pahete(y, x))",
         );
     }
@@ -700,7 +700,7 @@ mod tests {
     #[test]
     fn test_転置と否定_みかんは私に食べられていない() {
         check(
-            "ne re pahete ro behoranage si mi",
+            "ne re pahete sa ro behoranage si mi",
             "¬∃x.(behoranage(x) ∧ pahete(mi, x))",
         );
     }
@@ -708,7 +708,7 @@ mod tests {
     #[test]
     fn test_指示詞_このりんご() {
         check(
-            "pahete mi si mo ro behapare",
+            "pahete sa mi si mo ro behapare",
             "∃x.((mo(x) ∧ behapare(x)) ∧ pahete(mi, x))",
         );
     }
@@ -716,7 +716,7 @@ mod tests {
     #[test]
     fn test_数量化_数のりんご() {
         check(
-            "pahete mi si number ro behapare",
+            "pahete sa mi si number ro behapare",
             "∃_# x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -724,7 +724,7 @@ mod tests {
     #[test]
     fn test_多量化_多くのりんご() {
         check(
-            "pahete mi si te ro behapare",
+            "pahete sa mi si te ro behapare",
             "∃_many x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -732,7 +732,7 @@ mod tests {
     #[test]
     fn test_関係節_私はあなたをパートナーとする人を愛している() {
         check(
-            "parobe mi si ro paparatanera du ba",
+            "parobe sa mi si ro paparatanera du ba",
             "∃x.(paparatanera(x, ba) ∧ parobe(mi, x))",
         );
     }
@@ -740,7 +740,7 @@ mod tests {
     #[test]
     fn test_関係節_私はあなたのパートナーを愛している() {
         check(
-            "parobe mi si ro re paparatanera du ba",
+            "parobe sa mi si ro re paparatanera du ba",
             "∃x.(paparatanera(ba, x) ∧ parobe(mi, x))",
         );
     }

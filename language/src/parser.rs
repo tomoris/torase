@@ -471,6 +471,7 @@ pub enum AEvent {
 pub enum Event {
     One(
         PostModifiedBinaryPredicatePhrase,
+        NominativePreposition,
         ArgumentPhrase,
         ArgumentPhraseOrEpsilon,
     ),
@@ -1242,6 +1243,7 @@ impl Event {
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
+                DummySymbolType::DummyTerminal(DummyTerminalType::NominativePreposition),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
@@ -1249,6 +1251,7 @@ impl Event {
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
+                DummySymbolType::DummyTerminal(DummyTerminalType::NominativePreposition),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
@@ -1256,6 +1259,7 @@ impl Event {
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
+                DummySymbolType::DummyTerminal(DummyTerminalType::NominativePreposition),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
@@ -1263,6 +1267,7 @@ impl Event {
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
+                DummySymbolType::DummyTerminal(DummyTerminalType::NominativePreposition),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhraseOrEpsilon),
             ])),
@@ -1276,9 +1281,15 @@ impl Event {
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(
                         child1,
                     )),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(child3)),
-                ] => Self::One(child1.clone(), child2.clone(), child3.clone()),
+                    SymbolType::Terminal(TerminalType::NominativePreposition(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhraseOrEpsilon(child4)),
+                ] => Self::One(
+                    child1.clone(),
+                    child2.clone(),
+                    child3.clone(),
+                    child4.clone(),
+                ),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1354,6 +1365,7 @@ impl PostBinaryPredicatePhraseExpression {
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::NominativePreposition => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostBinaryPredicatePhraseModifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(
                     DummyTerminalType::PostBinaryPredicatePhraseModifier,
@@ -2181,7 +2193,7 @@ impl AspectExpression {
 impl Event {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            Event::One(pred, arg1, arg2) => {
+            Event::One(pred, _nom, arg1, arg2) => {
                 let start = pred.get_range().start();
                 let end = match arg2 {
                     ArgumentPhraseOrEpsilon::One(_, a2) => a2.get_range().end(),
@@ -2548,6 +2560,13 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let nominative_preposition = grammar::Terminal(
+            type_name::<NominativePreposition>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
         let argument = grammar::Terminal(
             type_name::<Argument>()
                 .split("::")
@@ -2761,6 +2780,7 @@ mod tests {
             event.clone(),
             vec![grammar::Rhs::Sequence(vec![
                 grammar::Symbol::NonTerminal(post_modified_binary_predicate_phrase.clone()),
+                grammar::Symbol::Terminal(nominative_preposition.clone()),
                 grammar::Symbol::NonTerminal(argument_phrase.clone()),
                 grammar::Symbol::NonTerminal(argument_phrase_or_epsilon.clone()),
             ])],
@@ -2948,6 +2968,7 @@ mod tests {
                     "AspectNegation" => DummyTerminalType::AspectNegation,
                     "Negation" => DummyTerminalType::Negation,
                     "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
+                    "NominativePreposition" => DummyTerminalType::NominativePreposition,
                     "Argument" => DummyTerminalType::Argument,
                     "ArgumentPhraseSeparator" => DummyTerminalType::ArgumentPhraseSeparator,
                     "ArgumentPhraseTransposer" => DummyTerminalType::ArgumentPhraseTransposer,
@@ -3100,6 +3121,9 @@ mod tests {
                                         DummyTerminalType::AspectNegation => "AspectNegation",
                                         DummyTerminalType::Negation => "Negation",
                                         DummyTerminalType::BinaryPredicate => "BinaryPredicate",
+                                        DummyTerminalType::NominativePreposition => {
+                                            "NominativePreposition"
+                                        }
                                         DummyTerminalType::Argument => "Argument",
                                         DummyTerminalType::ArgumentPhraseSeparator => {
                                             "ArgumentPhraseSeparator"
@@ -3175,7 +3199,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let input = "parobe ma si ba eos";
+        let input = "parobe sa ma si ba eos";
         let sentences = tokenize(input).unwrap();
         let _ = parse(sentences[0].clone());
     }

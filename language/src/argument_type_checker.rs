@@ -160,6 +160,7 @@ impl Event {
         match self {
             Event::One(
                 post_modified_binary_predicate_phrase,
+                _nominative_preposition,
                 argument_phrase,
                 argument_phrase_or_epsilon,
             ) => {
@@ -446,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_型検査が成功する() {
-        let source = "parobe ma si ba eos";
+        let source = "parobe sa ma si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -455,7 +456,7 @@ mod tests {
 
     #[test]
     fn test_第一項の型が間違っている場合にerr型を返す() {
-        let source = "parobe ro didora si ba eos";
+        let source = "parobe sa ro didora si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -464,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_第二項の型が間違っている場合にerr型を返す() {
-        let source = "kahoraka mi si ba eos";
+        let source = "kahoraka sa mi si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -473,7 +474,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの型検査が成功する() {
-        let source = "pisarepa mi eos";
+        let source = "pisarepa sa mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -482,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの第一項の型が間違っている場合にerr型を返す() {
-        let source = "pusatanada ro bahomo eos";
+        let source = "pusatanada sa ro bahomo eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -491,7 +492,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateで第二項の型が入力された場合にerr型を返す() {
-        let source = "pisarepa mi si ba eos";
+        let source = "pisarepa sa mi si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -500,7 +501,7 @@ mod tests {
 
     #[test]
     fn test_項抽出の型検査が成功する() {
-        let source = "parobe ro bahomo si ro bidoga eos";
+        let source = "parobe sa ro bahomo si ro bidoga eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -509,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_項転置したあと項抽出の型検査が成功する() {
-        let source = "parobe ro re patirada si ro patirada eos";
+        let source = "parobe sa ro re patirada si ro patirada eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -518,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateを項転置しないとerr型を返す() {
-        let source = "parobe mi si ro re pisarepa eos";
+        let source = "parobe sa mi si ro re pisarepa eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);

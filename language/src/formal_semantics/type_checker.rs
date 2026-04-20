@@ -238,7 +238,7 @@ impl Event {
     /// If arg2 is omitted, existential closure applies:  ∃x. pred(arg1)(x) : t
     fn infer_type(&self) -> TCResult {
         match self {
-            Event::One(pred_phrase, arg1, arg2_or_eps) => {
+            Event::One(pred_phrase, _nom, arg1, arg2_or_eps) => {
                 // pred_phrase : e → e → t
                 let pred_type = pred_phrase.infer_type()?;
 

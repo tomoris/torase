@@ -59,6 +59,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::BinaryPredicate(BinaryPredicate::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
+        } else if NominativePreposition::is_match(token.0) {
+            doc.push(TerminalType::NominativePreposition(
+                NominativePreposition::new(token.0, token.1, token.2, token.3, token.4),
+            ));
         } else if Argument::is_match(token.0) {
             doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -220,6 +224,7 @@ pub enum TerminalType {
     AspectNegation(AspectNegation),
     Negation(Negation),
     BinaryPredicate(BinaryPredicate),
+    NominativePreposition(NominativePreposition),
     Argument(Argument),
     ArgumentPhraseSeparator(ArgumentPhraseSeparator),
     ArgumentPhraseTransposer(ArgumentPhraseTransposer),
@@ -247,6 +252,7 @@ pub enum DummyTerminalType {
     AspectNegation,
     Negation,
     BinaryPredicate,
+    NominativePreposition,
     Argument,
     ArgumentPhraseSeparator,
     ArgumentPhraseTransposer,
@@ -274,6 +280,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::AspectNegation(_) => DummyTerminalType::AspectNegation,
         TerminalType::Negation(_) => DummyTerminalType::Negation,
         TerminalType::BinaryPredicate(_) => DummyTerminalType::BinaryPredicate,
+        TerminalType::NominativePreposition(_) => DummyTerminalType::NominativePreposition,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
         TerminalType::ArgumentPhraseSeparator(_) => DummyTerminalType::ArgumentPhraseSeparator,
         TerminalType::ArgumentPhraseTransposer(_) => DummyTerminalType::ArgumentPhraseTransposer,
@@ -311,6 +318,7 @@ impl TerminalType {
             TerminalType::AspectNegation(negation) => negation.range.start.clone(),
             TerminalType::Negation(negation) => negation.range.start.clone(),
             TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
+            TerminalType::NominativePreposition(prep) => prep.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
             TerminalType::ArgumentPhraseSeparator(separator) => separator.range.start.clone(),
             TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.start.clone(),
@@ -344,6 +352,7 @@ impl TerminalType {
             TerminalType::AspectNegation(negation) => negation.range.end.clone(),
             TerminalType::Negation(negation) => negation.range.end.clone(),
             TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
+            TerminalType::NominativePreposition(prep) => prep.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
             TerminalType::ArgumentPhraseSeparator(separator) => separator.range.end.clone(),
             TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.end.clone(),
@@ -479,6 +488,11 @@ enum NegationKind {
 pub struct BinaryPredicate {
     range: Range,
     string: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NominativePreposition {
+    range: Range,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1070,6 +1084,38 @@ impl BinaryPredicate {
     }
     pub fn get_string(&self) -> String {
         self.string.clone()
+    }
+}
+
+impl NominativePreposition {
+    fn is_match(string: &str) -> bool {
+        string == "sa"
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid nominative preposition surface: {}", string);
+        }
+        NominativePreposition {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+    pub fn get_string(&self) -> String {
+        "sa".to_string()
     }
 }
 

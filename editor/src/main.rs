@@ -255,6 +255,7 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         | TerminalType::TenseNegation(_)
         | TerminalType::AspectNegation(_) => Some(Color::from_rgba8(230, 120, 60, 0.25)),
         TerminalType::InterrogativeMarker(_) => Some(Color::from_rgba8(210, 210, 50, 0.25)),
+        TerminalType::NominativePreposition(_) => Some(Color::from_rgba8(80, 200, 130, 0.25)),
         TerminalType::ArgumentPhraseSeparator(_) => Some(Color::from_rgba8(200, 160, 60, 0.25)),
         TerminalType::ArgumentPhraseTransposer(_) => Some(Color::from_rgba8(200, 110, 110, 0.25)),
         TerminalType::BinaryOperator(_) => Some(Color::from_rgba8(130, 130, 130, 0.25)),
@@ -786,6 +787,7 @@ impl TreeViewer for Event {
         match self {
             Event::One(
                 post_modified_binary_predicate_phrase,
+                nominative_preposition,
                 argument_phrase,
                 argument_phrase_or_epsilon,
             ) => {
@@ -793,6 +795,8 @@ impl TreeViewer for Event {
                 let mut content = row![
                     post_modified_binary_predicate_phrase.view(is_full),
                     Space::new().width(iced::Length::Fixed(10.0)),
+                    text(nominative_preposition.get_string()).size(14),
+                    Space::new().width(iced::Length::Fixed(5.0)),
                     argument_phrase.view(is_full),
                 ];
                 if is_full || !argument_phrase_or_epsilon.is_empty() {
