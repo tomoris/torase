@@ -257,7 +257,6 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::InterrogativeMarker(_) => Some(Color::from_rgba8(210, 210, 50, 0.25)),
         TerminalType::NominativePreposition(_) => Some(Color::from_rgba8(80, 200, 130, 0.25)),
         TerminalType::AccusativePreposition(_) => Some(Color::from_rgba8(200, 160, 60, 0.25)),
-        TerminalType::ArgumentPhraseTransposer(_) => Some(Color::from_rgba8(200, 110, 110, 0.25)),
         TerminalType::BinaryOperator(_) => Some(Color::from_rgba8(130, 130, 130, 0.25)),
         TerminalType::ArgumentRetriever(_) => Some(Color::from_rgba8(160, 60, 160, 0.25)),
         TerminalType::Quantifier(_) => Some(Color::from_rgba8(60, 170, 170, 0.25)),
@@ -785,24 +784,13 @@ impl TreeViewer for Event {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(240, 255, 240);
         match self {
-            Event::One(
-                post_modified_binary_predicate_phrase,
-                nominative_preposition,
-                argument_phrase,
-                argument_phrase_or_epsilon,
-            ) => {
+            Event::One(post_modified_binary_predicate_phrase, event_arguments) => {
                 let category = "Event".to_string();
-                let mut content = row![
-                    post_modified_binary_predicate_phrase.view(is_full),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(nominative_preposition.get_string()).size(14),
-                    Space::new().width(iced::Length::Fixed(5.0)),
-                    argument_phrase.view(is_full),
-                ];
-                if is_full || !argument_phrase_or_epsilon.is_empty() {
+                let mut content = row![post_modified_binary_predicate_phrase.view(is_full),];
+                if is_full || !event_arguments.is_empty() {
                     content = content
                         .push(Space::new().width(iced::Length::Fixed(10.0)))
-                        .push(argument_phrase_or_epsilon.view(is_full));
+                        .push(event_arguments.view(is_full));
                 }
                 content = content.align_y(Alignment::Center);
                 category_box(category, content.into(), background)
@@ -889,18 +877,7 @@ impl TreeViewer for BinaryPredicatePhrase {
                 .into();
                 category_box(category, content, background)
             }
-            BinaryPredicatePhrase::Three(argument_phrase_transposer, binary_predicate) => {
-                let category = "BinaryPredicatePhrase".to_string();
-                let content = row![
-                    text(argument_phrase_transposer.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(binary_predicate.get_string()),
-                ]
-                .align_y(Alignment::Center)
-                .into();
-                category_box(category, content, background)
-            }
-            BinaryPredicatePhrase::Four(
+            BinaryPredicatePhrase::Three(
                 binary_operator,
                 binary_predicate_phrase1,
                 binary_predicate_phrase2,
@@ -988,26 +965,97 @@ impl TreeViewer for ArgumentPhrase {
     }
 }
 
-impl TreeViewer for ArgumentPhraseOrEpsilon {
+impl TreeViewer for EventArguments {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(250, 240, 205);
         match self {
-            ArgumentPhraseOrEpsilon::One(accusative_preposition, argument_phrase) => {
-                let category = "ArgumentPhraseOrEpsilon".to_string();
-                let content = row![
-                    text(accusative_preposition.get_string()),
+            EventArguments::NominativeFirst(nom, arg1, opt_acc) => {
+                let category = "EventArguments".to_string();
+                let mut content = row![
+                    text(nom.get_string()),
                     Space::new().width(iced::Length::Fixed(10.0)),
-                    argument_phrase.view(is_full)
+                    arg1.view(is_full),
+                ];
+                if is_full || !opt_acc.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(opt_acc.view(is_full));
+                }
+                category_box(
+                    category,
+                    content.align_y(Alignment::Center).into(),
+                    background,
+                )
+            }
+            EventArguments::AccusativeFirst(acc, arg2, opt_nom) => {
+                let category = "EventArguments".to_string();
+                let mut content = row![
+                    text(acc.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    arg2.view(is_full),
+                ];
+                if is_full || !opt_nom.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(opt_nom.view(is_full));
+                }
+                category_box(
+                    category,
+                    content.align_y(Alignment::Center).into(),
+                    background,
+                )
+            }
+            EventArguments::Epsilon => text("ε").into(),
+        }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, EventArguments::Epsilon)
+    }
+}
+
+impl TreeViewer for OptionalAccusativeArg {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 240, 205);
+        match self {
+            OptionalAccusativeArg::One(acc, arg) => {
+                let category = "OptionalAccusativeArg".to_string();
+                let content = row![
+                    text(acc.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    arg.view(is_full),
                 ]
                 .align_y(Alignment::Center)
                 .into();
                 category_box(category, content, background)
             }
-            ArgumentPhraseOrEpsilon::Epsilon => text("ε").into(),
+            OptionalAccusativeArg::Epsilon => text("ε").into(),
         }
     }
     fn is_empty(&self) -> bool {
-        matches!(self, ArgumentPhraseOrEpsilon::Epsilon)
+        matches!(self, OptionalAccusativeArg::Epsilon)
+    }
+}
+
+impl TreeViewer for OptionalNominativeArg {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 240, 205);
+        match self {
+            OptionalNominativeArg::One(nom, arg) => {
+                let category = "OptionalNominativeArg".to_string();
+                let content = row![
+                    text(nom.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    arg.view(is_full),
+                ]
+                .align_y(Alignment::Center)
+                .into();
+                category_box(category, content, background)
+            }
+            OptionalNominativeArg::Epsilon => text("ε").into(),
+        }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, OptionalNominativeArg::Epsilon)
     }
 }
 

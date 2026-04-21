@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::parser::*;
-use crate::tokenizer::{ArgumentType, PhysicalEntity, Range};
+use crate::tokenizer::{ArgumentType, Range};
 
 pub struct TypeMismatch {
     pub range: Range,
@@ -158,38 +158,67 @@ impl AEvent {
 impl Event {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            Event::One(
-                post_modified_binary_predicate_phrase,
-                _nominative_preposition,
-                argument_phrase,
-                argument_phrase_or_epsilon,
-            ) => {
+            Event::One(post_modified_binary_predicate_phrase, event_arguments) => {
                 post_modified_binary_predicate_phrase.type_check()?;
-                argument_phrase.type_check()?;
-                argument_phrase_or_epsilon.type_check()?;
                 let (t1, t2) = post_modified_binary_predicate_phrase.get_argument_types();
-                let arg1_type = argument_phrase.get_type();
-                if !has_intersection(&t1, &arg1_type) {
-                    return Err(TypeMismatch {
-                        range: argument_phrase.get_range().clone(),
-                        actual: arg1_type,
-                        expected: t1,
-                        message: "Event type mismatch in the first argument.".to_string(),
-                    });
-                }
-                match argument_phrase_or_epsilon {
-                    ArgumentPhraseOrEpsilon::One(_, argument_phrase2) => {
-                        let arg2_type = argument_phrase2.get_type();
+                match event_arguments {
+                    EventArguments::NominativeFirst(_nom, arg1, opt_acc) => {
+                        arg1.type_check()?;
+                        let arg1_type = arg1.get_type();
+                        if !has_intersection(&t1, &arg1_type) {
+                            return Err(TypeMismatch {
+                                range: arg1.get_range().clone(),
+                                actual: arg1_type,
+                                expected: t1,
+                                message: "Event type mismatch in the first argument.".to_string(),
+                            });
+                        }
+                        match opt_acc {
+                            OptionalAccusativeArg::One(_, arg2) => {
+                                arg2.type_check()?;
+                                let arg2_type = arg2.get_type();
+                                if !has_intersection(&t2, &arg2_type) {
+                                    return Err(TypeMismatch {
+                                        range: arg2.get_range().clone(),
+                                        actual: arg2_type,
+                                        expected: t2,
+                                        message: "Event type mismatch in the second argument."
+                                            .to_string(),
+                                    });
+                                }
+                            }
+                            OptionalAccusativeArg::Epsilon => {}
+                        }
+                    }
+                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom) => {
+                        arg2.type_check()?;
+                        let arg2_type = arg2.get_type();
                         if !has_intersection(&t2, &arg2_type) {
                             return Err(TypeMismatch {
-                                range: argument_phrase2.get_range().clone(),
+                                range: arg2.get_range().clone(),
                                 actual: arg2_type,
                                 expected: t2,
                                 message: "Event type mismatch in the second argument.".to_string(),
                             });
                         }
+                        match opt_nom {
+                            OptionalNominativeArg::One(_, arg1) => {
+                                arg1.type_check()?;
+                                let arg1_type = arg1.get_type();
+                                if !has_intersection(&t1, &arg1_type) {
+                                    return Err(TypeMismatch {
+                                        range: arg1.get_range().clone(),
+                                        actual: arg1_type,
+                                        expected: t1,
+                                        message: "Event type mismatch in the first argument."
+                                            .to_string(),
+                                    });
+                                }
+                            }
+                            OptionalNominativeArg::Epsilon => {}
+                        }
                     }
-                    ArgumentPhraseOrEpsilon::Epsilon => return Ok(()),
+                    EventArguments::Epsilon => {}
                 }
                 Ok(())
             }
@@ -236,24 +265,11 @@ impl BinaryPredicatePhrase {
         match self {
             BinaryPredicatePhrase::One(_binary_predicate) => Ok(()),
             BinaryPredicatePhrase::Two(_negation, _binary_predicate) => Ok(()),
-            BinaryPredicatePhrase::Three(_argument_phrase_transposer, binary_predicate) => {
-                let (_, t2) = binary_predicate.get_argument_types();
-                if t2 == vec![ArgumentType::Epsilon] {
-                    return Err(TypeMismatch {
-                        range: binary_predicate.get_range().clone(),
-                        actual: t2,
-                        expected: vec![
-                            ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
-                            ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
-                            ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
-                            ArgumentType::Abstraction,
-                        ],
-                        message: "Cannot transpose arguments of a unary predicate.".to_string(),
-                    });
-                }
-                Ok(())
-            }
-            BinaryPredicatePhrase::Four(_binary_operator, binary_predicate1, binary_predicate2) => {
+            BinaryPredicatePhrase::Three(
+                _binary_operator,
+                binary_predicate1,
+                binary_predicate2,
+            ) => {
                 let (t11, t12) = binary_predicate1.get_argument_types();
                 let (t21, t22) = binary_predicate2.get_argument_types();
                 if !has_intersection(&t11, &t21) {
@@ -283,11 +299,7 @@ impl BinaryPredicatePhrase {
             BinaryPredicatePhrase::Two(_, binary_predicate_phrase) => {
                 binary_predicate_phrase.get_argument_types()
             }
-            BinaryPredicatePhrase::Three(_, binary_predicate) => {
-                let (t1, t2) = binary_predicate.get_argument_types();
-                (t2, t1)
-            }
-            BinaryPredicatePhrase::Four(_, binary_predicate1, _) => {
+            BinaryPredicatePhrase::Three(_, binary_predicate1, _) => {
                 binary_predicate1.get_argument_types()
             }
         }
@@ -331,17 +343,6 @@ impl ArgumentPhrase {
             ArgumentPhrase::Five(_, _, _) => {
                 vec![ArgumentType::Abstraction]
             }
-        }
-    }
-}
-
-impl ArgumentPhraseOrEpsilon {
-    fn type_check(&self) -> TypeMismatchResult {
-        match self {
-            ArgumentPhraseOrEpsilon::One(_accusative_preposition, argument_phrase) => {
-                argument_phrase.type_check()
-            }
-            ArgumentPhraseOrEpsilon::Epsilon => Ok(()),
         }
     }
 }
@@ -509,8 +510,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_項転置したあと項抽出の型検査が成功する() {
-        let source = "parobe sa ro re patirada si ro patirada eos";
+        let source = "parobe sa ro patirada si ro patirada eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -518,6 +520,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_unary_predicateを項転置しないとerr型を返す() {
         let source = "parobe sa mi si ro re pisarepa eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();

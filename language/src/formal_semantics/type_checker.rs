@@ -115,14 +115,6 @@ impl LexicalType for crate::tokenizer::ArgumentRetriever {
     }
 }
 
-impl LexicalType for crate::tokenizer::ArgumentPhraseTransposer {
-    /// Argument transposition: swaps the two GQ argument slots.
-    /// re  ↦  λP Q₁ Q₂. P(Q₂)(Q₁)  :  pred2 → pred2
-    fn lexical_type(&self) -> Type {
-        Type::arrow(Type::pred2(), Type::pred2())
-    }
-}
-
 impl LexicalType for crate::tokenizer::MtaEventToArgumentPhraseConverter {
     /// Event nominalization opener: converts a proposition into a GQ.
     /// se…so  ↦  λt. ιQ. Q = ↑t  :  t → GQ
@@ -238,26 +230,61 @@ impl Event {
     /// If arg2 is omitted, existential closure applies:  ∃x. pred(arg1)(x) : t
     fn infer_type(&self) -> TCResult {
         match self {
-            Event::One(pred_phrase, _nom, arg1, arg2_or_eps) => {
-                // pred_phrase : e → e → t
+            Event::One(pred_phrase, event_args) => {
                 let pred_type = pred_phrase.infer_type()?;
-
-                // Apply predicate to first argument: (e → e → t)(e) = e → t
-                let arg1_type = arg1.infer_type()?;
-                let after_arg1 = apply(pred_type, arg1_type, arg1.get_range())?;
-
-                match arg2_or_eps {
-                    ArgumentPhraseOrEpsilon::One(_sep, arg2) => {
-                        // Apply (e → t)(e) = t
-                        let arg2_type = arg2.infer_type()?;
-                        apply(after_arg1, arg2_type, arg2.get_range())
+                match event_args {
+                    EventArguments::NominativeFirst(_nom, arg1, opt_acc) => {
+                        let arg1_type = arg1.infer_type()?;
+                        let after_arg1 = apply(pred_type, arg1_type, arg1.get_range())?;
+                        match opt_acc {
+                            OptionalAccusativeArg::One(_, arg2) => {
+                                let arg2_type = arg2.infer_type()?;
+                                apply(after_arg1, arg2_type, arg2.get_range())
+                            }
+                            OptionalAccusativeArg::Epsilon => {
+                                let gq_to_t = Type::arrow(Type::gq(), Type::T);
+                                if after_arg1 != gq_to_t {
+                                    return Err(TypeMismatch::new(
+                                        arg1.get_range(),
+                                        after_arg1,
+                                        gq_to_t,
+                                    ));
+                                }
+                                Ok(Type::T)
+                            }
+                        }
                     }
-                    ArgumentPhraseOrEpsilon::Epsilon => {
-                        // Existential closure: ∃Q. after_arg1(Q) : t
-                        // after_arg1 must be (e → t) → t → t  (i.e. GQ → t)
-                        let gq_to_t = Type::arrow(Type::gq(), Type::T);
-                        if after_arg1 != gq_to_t {
-                            return Err(TypeMismatch::new(arg1.get_range(), after_arg1, gq_to_t));
+                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom) => {
+                        // pred : GQ → GQ → t; arg2 fills the second slot
+                        let inner_type = match pred_type.clone() {
+                            Type::Arrow(_, b) => *b,
+                            _ => {
+                                return Err(TypeMismatch::new(
+                                    arg2.get_range(),
+                                    pred_type,
+                                    Type::pred2(),
+                                ));
+                            }
+                        };
+                        let arg2_type = arg2.infer_type()?;
+                        apply(inner_type, arg2_type, arg2.get_range())?;
+                        match opt_nom {
+                            OptionalNominativeArg::One(_, arg1) => {
+                                let arg1_type = arg1.infer_type()?;
+                                apply(pred_type, arg1_type, arg1.get_range())?;
+                            }
+                            OptionalNominativeArg::Epsilon => {}
+                        }
+                        Ok(Type::T)
+                    }
+                    EventArguments::Epsilon => {
+                        let expected = Type::pred2();
+                        if pred_type != expected {
+                            return Err(TypeMismatch::new(
+                                pred_phrase.get_range(),
+                                pred_type,
+                                expected,
+                            ));
                         }
                         Ok(Type::T)
                     }
@@ -290,25 +317,12 @@ impl BinaryPredicatePhrase {
     ///
     /// All constructors preserve the binary predicate type:
     /// - negation   ¬P          : same type as P
-    /// - transposition re P     : same type as P  (argument order swapped semantically)
     /// - coordination P₁ ∧/∨ P₂ : both must have matching types
     fn infer_type(&self) -> TCResult {
         match self {
-            // Lexical binary predicate: type comes from the token's lexical entry
             BinaryPredicatePhrase::One(pred) => Ok(pred.lexical_type()),
-
-            // Negation is type-preserving: ¬P has the same type as P
             BinaryPredicatePhrase::Two(_neg, phrase) => phrase.infer_type(),
-
-            // Argument transposition: re : pred2 → pred2
-            BinaryPredicatePhrase::Three(trans, pred) => {
-                let trans_type = trans.lexical_type();
-                let pred_type = pred.lexical_type();
-                apply(trans_type, pred_type, trans.get_range())
-            }
-
-            // Boolean coordination: both operands must have the same type
-            BinaryPredicatePhrase::Four(_op, p1, p2) => {
+            BinaryPredicatePhrase::Three(_op, p1, p2) => {
                 let t1 = p1.infer_type()?;
                 let t2 = p2.infer_type()?;
                 if t1 != t2 {

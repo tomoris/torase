@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_りんごは食べられない_りんごの性質として可食でなくなった() {
-        let text = "hapo re pahete sa ro behapare".to_string();
+        let text = "hapo pahete si ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -369,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_あのりんごは食べられそうだ() {
-        let text = "hako re padaropa sa bo ro behapare".to_string();
+        let text = "hako padaropa si bo ro behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -613,7 +613,7 @@ mod tests {
 
     #[test]
     fn test_みかんは私に食べられていない() {
-        let text = "ne re pahete sa ro behoranage si mi".to_string();
+        let text = "ne pahete sa mi si ro behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -628,7 +628,7 @@ mod tests {
 
     #[test]
     fn test_りんごは彼によって私に食べさせられた() {
-        let text = "re kareta sa se re pahete sa ro behapare si ba so si gi".to_string();
+        let text = "kareta si se pahete si ro behapare sa ba so sa gi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

@@ -71,10 +71,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::AccusativePreposition(
                 AccusativePreposition::new(token.0, token.1, token.2, token.3, token.4),
             ));
-        } else if ArgumentPhraseTransposer::is_match(token.0) {
-            doc.push(TerminalType::ArgumentPhraseTransposer(
-                ArgumentPhraseTransposer::new(token.0, token.1, token.2, token.3, token.4),
-            ));
         } else if BinaryOperator::is_match(token.0) {
             doc.push(TerminalType::BinaryOperator(BinaryOperator::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -227,7 +223,6 @@ pub enum TerminalType {
     NominativePreposition(NominativePreposition),
     Argument(Argument),
     AccusativePreposition(AccusativePreposition),
-    ArgumentPhraseTransposer(ArgumentPhraseTransposer),
     BinaryOperator(BinaryOperator),
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
@@ -255,7 +250,6 @@ pub enum DummyTerminalType {
     NominativePreposition,
     Argument,
     AccusativePreposition,
-    ArgumentPhraseTransposer,
     BinaryOperator,
     ArgumentRetriever,
     Quantifier,
@@ -283,7 +277,6 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::NominativePreposition(_) => DummyTerminalType::NominativePreposition,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
         TerminalType::AccusativePreposition(_) => DummyTerminalType::AccusativePreposition,
-        TerminalType::ArgumentPhraseTransposer(_) => DummyTerminalType::ArgumentPhraseTransposer,
         TerminalType::BinaryOperator(_) => DummyTerminalType::BinaryOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
@@ -321,7 +314,6 @@ impl TerminalType {
             TerminalType::NominativePreposition(prep) => prep.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
             TerminalType::AccusativePreposition(prep) => prep.range.start.clone(),
-            TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.start.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
@@ -355,7 +347,6 @@ impl TerminalType {
             TerminalType::NominativePreposition(prep) => prep.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
             TerminalType::AccusativePreposition(prep) => prep.range.end.clone(),
-            TerminalType::ArgumentPhraseTransposer(transposer) => transposer.range.end.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
@@ -518,11 +509,6 @@ enum ArgumentKind {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AccusativePreposition {
-    range: Range,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ArgumentPhraseTransposer {
     range: Range,
 }
 
@@ -1238,41 +1224,6 @@ impl AccusativePreposition {
     }
     pub fn get_string(&self) -> String {
         "si".to_string()
-    }
-}
-
-impl ArgumentPhraseTransposer {
-    fn is_match(string: &str) -> bool {
-        string == "re"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid argument phrase transposer surface: {}", string);
-        }
-        ArgumentPhraseTransposer {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        "re".to_string()
     }
 }
 
