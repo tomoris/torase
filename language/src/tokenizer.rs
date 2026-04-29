@@ -520,6 +520,13 @@ pub struct BinaryOperator {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArgumentRetriever {
     range: Range,
+    kind: ArgumentRetrieverKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ArgumentRetrieverKind {
+    Nominative, // ra
+    Accusative, // ri
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1264,7 +1271,7 @@ impl BinaryOperator {
 
 impl ArgumentRetriever {
     fn is_match(string: &str) -> bool {
-        string == "ro"
+        matches!(string, "ra" | "ri")
     }
     fn new(
         string: &str,
@@ -1273,9 +1280,11 @@ impl ArgumentRetriever {
         end_line: usize,
         end_character: usize,
     ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid argument retriever surface: {}", string);
-        }
+        let kind = match string {
+            "ra" => ArgumentRetrieverKind::Nominative,
+            "ri" => ArgumentRetrieverKind::Accusative,
+            _ => panic!("Invalid argument retriever surface: {}", string),
+        };
         ArgumentRetriever {
             range: Range {
                 start: Position {
@@ -1287,13 +1296,20 @@ impl ArgumentRetriever {
                     character: end_character,
                 },
             },
+            kind,
         }
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_kind(&self) -> &ArgumentRetrieverKind {
+        &self.kind
+    }
     pub fn get_string(&self) -> String {
-        "ro".to_string()
+        match self.kind {
+            ArgumentRetrieverKind::Nominative => "ra".to_string(),
+            ArgumentRetrieverKind::Accusative => "ri".to_string(),
+        }
     }
 }
 
@@ -1802,7 +1818,7 @@ mod tests {
 
     #[test]
     fn test_2文のトークン分割が成功する() {
-        let input = "parobe me si ba eos ro parobe bu si gu";
+        let input = "parobe me si ba eos ri parobe bu si gu";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 2);

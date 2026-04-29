@@ -1,5 +1,5 @@
 use crate::parser::*;
-use crate::tokenizer::Range;
+use crate::tokenizer::{ArgumentRetrieverKind, Range};
 
 // ---------------------------------------------------------------------------
 // Semantic types (Montague-style)
@@ -397,14 +397,13 @@ impl DeterminedArgument {
 impl RetrievedArgument {
     /// RetrievedArgument : (e → t) → t
     ///
-    /// `ro P` = ιQ. P(Q)  where P : GQ → t  →  GQ = (e → t) → t
+    /// `ra/ri P` = ιQ. P(Q)  where P : GQ → t  →  GQ = (e → t) → t
     fn infer_type(&self) -> TCResult {
         match self {
             RetrievedArgument::One(retriever, pred) => {
-                // ro : (GQ → t) → GQ
-                let ro_type = retriever.lexical_type();
-                let pred_type = pred.infer_type()?;
-                apply(ro_type, pred_type, retriever.get_range())
+                let retriever_type = retriever.lexical_type();
+                let pred_type = pred.infer_type(retriever.get_kind())?;
+                apply(retriever_type, pred_type, retriever.get_range())
             }
         }
     }
@@ -413,31 +412,34 @@ impl RetrievedArgument {
 impl ArgumentRetrievalBinaryPredicate {
     /// ArgumentRetrievalBinaryPredicate : GQ → t  (= ((e → t) → t) → t)
     ///
-    /// Given a binary predicate P : GQ → GQ → t and an optional extra argument Q : GQ,
-    /// this term represents  λR. P(R)(Q)  or  λR. ∃Q. P(R)(Q),  both of type GQ → t.
-    /// The iota operator in `RetrievedArgument` then picks the GQ.
-    fn infer_type(&self) -> TCResult {
+    /// ra (nominative retriever): λR. P(R)(Q)  — R is applied first (nominative slot)
+    /// ri (accusative retriever): λR. P(Q)(R)  — R is applied second (accusative slot)
+    fn infer_type(&self, kind: &ArgumentRetrieverKind) -> TCResult {
         match self {
             ArgumentRetrievalBinaryPredicate::One(pred_phrase, with_arg) => {
-                // P : GQ → GQ → t
                 let pred_type = pred_phrase.infer_type()?;
 
                 match with_arg {
                     ArgumentRetrievalWithArgumentPhrase::One(_modifier, extra_arg) => {
-                        // Semantic structure: λR. P(R)(extra_arg)
-                        // Apply P to the retrieved variable slot (GQ):  P(R) : GQ → t
-                        let after_r = apply(pred_type, Type::gq(), pred_phrase.get_range())?;
-                        // Apply P(R) to extra_arg: P(R)(extra_arg) : t
                         let extra_arg_type = extra_arg.infer_type()?;
-                        apply(after_r, extra_arg_type, extra_arg.get_range())?;
-                        // λR. P(R)(extra_arg) : GQ → t
+                        match kind {
+                            ArgumentRetrieverKind::Nominative => {
+                                // λR. P(R)(extra_arg): apply R first, then extra_arg
+                                let after_r =
+                                    apply(pred_type, Type::gq(), pred_phrase.get_range())?;
+                                apply(after_r, extra_arg_type, extra_arg.get_range())?;
+                            }
+                            ArgumentRetrieverKind::Accusative => {
+                                // λR. P(extra_arg)(R): apply extra_arg first, then R
+                                let after_extra =
+                                    apply(pred_type, extra_arg_type, extra_arg.get_range())?;
+                                apply(after_extra, Type::gq(), pred_phrase.get_range())?;
+                            }
+                        }
                         Ok(Type::arrow(Type::gq(), Type::T))
                     }
                     ArgumentRetrievalWithArgumentPhrase::Epsilon => {
-                        // Semantic structure: λR. ∃Q. P(R)(Q)
-                        // Verify the first argument slot accepts GQ
                         apply(pred_type, Type::gq(), pred_phrase.get_range())?;
-                        // λR. ∃Q. P(R)(Q) : GQ → t
                         Ok(Type::arrow(Type::gq(), Type::T))
                     }
                 }

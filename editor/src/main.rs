@@ -59,7 +59,7 @@ struct Editor {
 
 impl Editor {
     fn new() -> Self {
-        let text = "parobe mi si ba";
+        let text = "parobe sa mi si ba";
         let asts = diagnose(text.to_string()).unwrap();
         let tokens = tokenize(text)
             .map(|sentences| sentences.into_iter().flatten().collect())

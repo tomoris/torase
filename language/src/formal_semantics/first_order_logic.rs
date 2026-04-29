@@ -5,6 +5,7 @@ use crate::parser::{
     PostBinaryPredicatePhraseExpression, PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent,
     QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent,
 };
+use crate::tokenizer::ArgumentRetrieverKind;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -581,26 +582,41 @@ impl DeterminedArgument {
 impl RetrievedArgument {
     fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
         match self {
-            RetrievedArgument::One(_ro, pred) => pred.to_fol(var, vg),
+            RetrievedArgument::One(retriever, pred) => pred.to_fol(retriever.get_kind(), var, vg),
         }
     }
 }
 
 impl ArgumentRetrievalBinaryPredicate {
-    fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
+    fn to_fol(&self, kind: &ArgumentRetrieverKind, var: &str, vg: &mut VarGen) -> Formula {
         match self {
             ArgumentRetrievalBinaryPredicate::One(pred_phrase, with_arg) => {
                 match with_arg {
-                    // ro pred — unary use: pred(x)
                     ArgumentRetrievalWithArgumentPhrase::Epsilon => {
                         build_restriction(pred_phrase, var)
                     }
-                    // ro pred du extra_arg — binary use: pred(x, extra_arg), re swaps order
                     ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
                         let pred_ctx = extract_pred(pred_phrase);
                         let extra_ctx = extra_arg.to_fol(vg);
                         let extra_term = extra_ctx.term();
-                        build_binary_restriction(&pred_ctx, Term::Var(var.to_string()), extra_term)
+                        match kind {
+                            ArgumentRetrieverKind::Nominative => {
+                                // ra: var は主格（第1引数）、extra は対格（第2引数）
+                                build_binary_restriction(
+                                    &pred_ctx,
+                                    Term::Var(var.to_string()),
+                                    extra_term,
+                                )
+                            }
+                            ArgumentRetrieverKind::Accusative => {
+                                // ri: extra は主格（第1引数）、var は対格（第2引数）
+                                build_binary_restriction(
+                                    &pred_ctx,
+                                    extra_term,
+                                    Term::Var(var.to_string()),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -673,7 +689,7 @@ mod tests {
     #[test]
     fn test_存在量化_私はりんごを食べる() {
         check(
-            "pahete sa mi si ro behapare",
+            "pahete sa mi si ri behapare",
             "∃x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -681,7 +697,7 @@ mod tests {
     #[test]
     fn test_全称量化_私は全てのりんごを食べる() {
         check(
-            "pahete sa mi si ta ro behapare",
+            "pahete sa mi si ta ri behapare",
             "∀x.(behapare(x) ⇒ pahete(mi, x))",
         );
     }
@@ -689,7 +705,7 @@ mod tests {
     #[test]
     fn test_述語否定_私はりんごを食べない() {
         check(
-            "ne pahete sa mi si ro behapare",
+            "ne pahete sa mi si ri behapare",
             "¬∃x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -697,7 +713,7 @@ mod tests {
     #[test]
     fn test_転置_りんごは食べられない() {
         check(
-            "hapo pahete si ro behapare",
+            "hapo pahete si ri behapare",
             "∃y.∃x.(behapare(x) ∧ pahete(y, x))",
         );
     }
@@ -705,7 +721,7 @@ mod tests {
     #[test]
     fn test_転置と否定_みかんは私に食べられていない() {
         check(
-            "ne pahete sa mi si ro behoranage",
+            "ne pahete sa mi si ri behoranage",
             "¬∃x.(behoranage(x) ∧ pahete(mi, x))",
         );
     }
@@ -713,7 +729,7 @@ mod tests {
     #[test]
     fn test_指示詞_このりんご() {
         check(
-            "pahete sa mi si mo ro behapare",
+            "pahete sa mi si mo ri behapare",
             "∃x.((mo(x) ∧ behapare(x)) ∧ pahete(mi, x))",
         );
     }
@@ -721,7 +737,7 @@ mod tests {
     #[test]
     fn test_数量化_数のりんご() {
         check(
-            "pahete sa mi si number ro behapare",
+            "pahete sa mi si number ri behapare",
             "∃_# x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -729,7 +745,7 @@ mod tests {
     #[test]
     fn test_多量化_多くのりんご() {
         check(
-            "pahete sa mi si te ro behapare",
+            "pahete sa mi si te ri behapare",
             "∃_many x.(behapare(x) ∧ pahete(mi, x))",
         );
     }
@@ -737,8 +753,8 @@ mod tests {
     #[test]
     fn test_関係節_私はあなたをパートナーとする人を愛している() {
         check(
-            "parobe sa mi si ro paparatanera du ba",
-            "∃x.(paparatanera(x, ba) ∧ parobe(mi, x))",
+            "parobe sa mi si ri paparatanera du ba",
+            "∃x.(paparatanera(ba, x) ∧ parobe(mi, x))",
         );
     }
 
@@ -755,7 +771,7 @@ mod tests {
     #[ignore]
     fn test_事象名詞化_あなたは_私はりんごを食べる_と言った() {
         check(
-            "kasahi ba si se pahete mi si ro behapare so",
+            "kasahi ba si se pahete mi si ri behapare so",
             "kasahi(ba, ∃x.(behapare(x) ∧ pahete(mi, x))",
         );
     }

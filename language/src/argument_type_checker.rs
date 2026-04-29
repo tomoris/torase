@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::parser::*;
-use crate::tokenizer::{ArgumentType, Range};
+use crate::tokenizer::{ArgumentRetrieverKind, ArgumentType, Range};
 
 pub struct TypeMismatch {
     pub range: Range,
@@ -391,8 +391,8 @@ impl RetrievedArgument {
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
-            RetrievedArgument::One(_argument_retriever, argument_retrieval_binary_predicate) => {
-                argument_retrieval_binary_predicate.get_type()
+            RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
+                argument_retrieval_binary_predicate.get_type(argument_retriever.get_kind())
             }
         }
     }
@@ -410,14 +410,17 @@ impl ArgumentRetrievalBinaryPredicate {
             }
         }
     }
-    fn get_type(&self) -> Vec<ArgumentType> {
+    fn get_type(&self, kind: &ArgumentRetrieverKind) -> Vec<ArgumentType> {
         match self {
             ArgumentRetrievalBinaryPredicate::One(
                 post_modified_binary_predicate_phrase,
                 _argument_retrieval_with_argument_phrase,
             ) => {
-                let (_, t2) = post_modified_binary_predicate_phrase.get_argument_types();
-                t2
+                let (t1, t2) = post_modified_binary_predicate_phrase.get_argument_types();
+                match kind {
+                    ArgumentRetrieverKind::Nominative => t1,
+                    ArgumentRetrieverKind::Accusative => t2,
+                }
             }
         }
     }
@@ -457,7 +460,7 @@ mod tests {
 
     #[test]
     fn test_第一項の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa ro didora si ba eos";
+        let source = "parobe sa ri didora si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -484,7 +487,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの第一項の型が間違っている場合にerr型を返す() {
-        let source = "pusatanada sa ro bahomo eos";
+        let source = "pusatanada sa ra bahomo eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -502,7 +505,7 @@ mod tests {
 
     #[test]
     fn test_項抽出の型検査が成功する() {
-        let source = "parobe sa ro bahomo si ro bidoga eos";
+        let source = "parobe sa ra bahomo si ri bidoga eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -512,7 +515,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_項転置したあと項抽出の型検査が成功する() {
-        let source = "parobe sa ro patirada si ro patirada eos";
+        let source = "parobe sa ra patirada si ri patirada eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
