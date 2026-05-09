@@ -233,7 +233,7 @@ impl Event {
             Event::One(pred_phrase, event_args) => {
                 let pred_type = pred_phrase.infer_type()?;
                 match event_args {
-                    EventArguments::NominativeFirst(_nom, arg1, opt_acc) => {
+                    EventArguments::NominativeFirst(_nom, arg1, opt_acc, _other) => {
                         let arg1_type = arg1.infer_type()?;
                         let after_arg1 = apply(pred_type, arg1_type, arg1.get_range())?;
                         match opt_acc {
@@ -254,7 +254,7 @@ impl Event {
                             }
                         }
                     }
-                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom) => {
+                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom, _other) => {
                         // pred : GQ → GQ → t; arg2 fills the second slot
                         let inner_type = match pred_type.clone() {
                             Type::Arrow(_, b) => *b,
@@ -277,6 +277,7 @@ impl Event {
                         }
                         Ok(Type::T)
                     }
+                    EventArguments::OtherCaseFirst(_prep, _label, _arg, _rest) => Ok(Type::T),
                     EventArguments::Epsilon => {
                         let expected = Type::pred2();
                         if pred_type != expected {

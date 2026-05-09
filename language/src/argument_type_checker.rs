@@ -162,7 +162,7 @@ impl Event {
                 post_modified_binary_predicate_phrase.type_check()?;
                 let (t1, t2) = post_modified_binary_predicate_phrase.get_argument_types();
                 match event_arguments {
-                    EventArguments::NominativeFirst(_nom, arg1, opt_acc) => {
+                    EventArguments::NominativeFirst(_nom, arg1, opt_acc, _other) => {
                         arg1.type_check()?;
                         let arg1_type = arg1.get_type();
                         if !has_intersection(&t1, &arg1_type) {
@@ -190,7 +190,7 @@ impl Event {
                             OptionalAccusativeArg::Epsilon => {}
                         }
                     }
-                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom) => {
+                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom, _other) => {
                         arg2.type_check()?;
                         let arg2_type = arg2.get_type();
                         if !has_intersection(&t2, &arg2_type) {
@@ -218,6 +218,7 @@ impl Event {
                             OptionalNominativeArg::Epsilon => {}
                         }
                     }
+                    EventArguments::OtherCaseFirst(_prep, _label, _arg, _rest) => {}
                     EventArguments::Epsilon => {}
                 }
                 Ok(())

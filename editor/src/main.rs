@@ -257,6 +257,8 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::InterrogativeMarker(_) => Some(Color::from_rgba8(210, 210, 50, 0.25)),
         TerminalType::NominativePreposition(_) => Some(Color::from_rgba8(80, 200, 130, 0.25)),
         TerminalType::AccusativePreposition(_) => Some(Color::from_rgba8(200, 160, 60, 0.25)),
+        TerminalType::OtherCasePreposition(_) => Some(Color::from_rgba8(60, 180, 200, 0.25)),
+        TerminalType::CaseLabel(_) => Some(Color::from_rgba8(60, 160, 180, 0.25)),
         TerminalType::BinaryOperator(_) => Some(Color::from_rgba8(130, 130, 130, 0.25)),
         TerminalType::ArgumentRetriever(_) => Some(Color::from_rgba8(160, 60, 160, 0.25)),
         TerminalType::Quantifier(_) => Some(Color::from_rgba8(60, 170, 170, 0.25)),
@@ -969,7 +971,7 @@ impl TreeViewer for EventArguments {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(250, 240, 205);
         match self {
-            EventArguments::NominativeFirst(nom, arg1, opt_acc) => {
+            EventArguments::NominativeFirst(nom, arg1, opt_acc, opt_other) => {
                 let category = "EventArguments".to_string();
                 let mut content = row![
                     text(nom.get_string()),
@@ -981,13 +983,18 @@ impl TreeViewer for EventArguments {
                         .push(Space::new().width(iced::Length::Fixed(10.0)))
                         .push(opt_acc.view(is_full));
                 }
+                if is_full || !opt_other.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(opt_other.view(is_full));
+                }
                 category_box(
                     category,
                     content.align_y(Alignment::Center).into(),
                     background,
                 )
             }
-            EventArguments::AccusativeFirst(acc, arg2, opt_nom) => {
+            EventArguments::AccusativeFirst(acc, arg2, opt_nom, opt_other) => {
                 let category = "EventArguments".to_string();
                 let mut content = row![
                     text(acc.get_string()),
@@ -998,6 +1005,31 @@ impl TreeViewer for EventArguments {
                     content = content
                         .push(Space::new().width(iced::Length::Fixed(10.0)))
                         .push(opt_nom.view(is_full));
+                }
+                if is_full || !opt_other.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(opt_other.view(is_full));
+                }
+                category_box(
+                    category,
+                    content.align_y(Alignment::Center).into(),
+                    background,
+                )
+            }
+            EventArguments::OtherCaseFirst(prep, label, arg, opt_other) => {
+                let category = "EventArguments".to_string();
+                let mut content = row![
+                    text(prep.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    text(label.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    arg.view(is_full),
+                ];
+                if is_full || !opt_other.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(opt_other.view(is_full));
                 }
                 category_box(
                     category,
@@ -1010,6 +1042,38 @@ impl TreeViewer for EventArguments {
     }
     fn is_empty(&self) -> bool {
         matches!(self, EventArguments::Epsilon)
+    }
+}
+
+impl TreeViewer for OptionalOtherCaseArgs {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(250, 240, 205);
+        match self {
+            OptionalOtherCaseArgs::One(prep, label, arg, rest) => {
+                let category = "OptionalOtherCaseArgs".to_string();
+                let mut content = row![
+                    text(prep.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    text(label.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    arg.view(is_full),
+                ];
+                if is_full || !rest.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(rest.view(is_full));
+                }
+                category_box(
+                    category,
+                    content.align_y(Alignment::Center).into(),
+                    background,
+                )
+            }
+            OptionalOtherCaseArgs::Epsilon => text("ε").into(),
+        }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, OptionalOtherCaseArgs::Epsilon)
     }
 }
 

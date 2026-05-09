@@ -71,6 +71,14 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::AccusativePreposition(
                 AccusativePreposition::new(token.0, token.1, token.2, token.3, token.4),
             ));
+        } else if OtherCasePreposition::is_match(token.0) {
+            doc.push(TerminalType::OtherCasePreposition(
+                OtherCasePreposition::new(token.0, token.1, token.2, token.3, token.4),
+            ));
+        } else if CaseLabel::is_match(token.0) {
+            doc.push(TerminalType::CaseLabel(CaseLabel::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if BinaryOperator::is_match(token.0) {
             doc.push(TerminalType::BinaryOperator(BinaryOperator::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -223,6 +231,8 @@ pub enum TerminalType {
     NominativePreposition(NominativePreposition),
     Argument(Argument),
     AccusativePreposition(AccusativePreposition),
+    OtherCasePreposition(OtherCasePreposition),
+    CaseLabel(CaseLabel),
     BinaryOperator(BinaryOperator),
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
@@ -250,6 +260,8 @@ pub enum DummyTerminalType {
     NominativePreposition,
     Argument,
     AccusativePreposition,
+    OtherCasePreposition,
+    CaseLabel,
     BinaryOperator,
     ArgumentRetriever,
     Quantifier,
@@ -277,6 +289,8 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::NominativePreposition(_) => DummyTerminalType::NominativePreposition,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
         TerminalType::AccusativePreposition(_) => DummyTerminalType::AccusativePreposition,
+        TerminalType::OtherCasePreposition(_) => DummyTerminalType::OtherCasePreposition,
+        TerminalType::CaseLabel(_) => DummyTerminalType::CaseLabel,
         TerminalType::BinaryOperator(_) => DummyTerminalType::BinaryOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
@@ -314,6 +328,8 @@ impl TerminalType {
             TerminalType::NominativePreposition(prep) => prep.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
             TerminalType::AccusativePreposition(prep) => prep.range.start.clone(),
+            TerminalType::OtherCasePreposition(prep) => prep.range.start.clone(),
+            TerminalType::CaseLabel(label) => label.range.start.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
@@ -347,6 +363,8 @@ impl TerminalType {
             TerminalType::NominativePreposition(prep) => prep.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
             TerminalType::AccusativePreposition(prep) => prep.range.end.clone(),
+            TerminalType::OtherCasePreposition(prep) => prep.range.end.clone(),
+            TerminalType::CaseLabel(label) => label.range.end.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
@@ -510,6 +528,26 @@ enum ArgumentKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AccusativePreposition {
     range: Range,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OtherCasePreposition {
+    range: Range,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CaseLabel {
+    range: Range,
+    kind: CaseLabelKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CaseLabelKind {
+    Ca, // 与格
+    Ce, // 属格
+    Ci, // 所格
+    Co, // 具格
+    Cu, // 奪格
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1231,6 +1269,89 @@ impl AccusativePreposition {
     }
     pub fn get_string(&self) -> String {
         "si".to_string()
+    }
+}
+
+impl OtherCasePreposition {
+    fn is_match(string: &str) -> bool {
+        string == "su"
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid other case preposition surface: {}", string);
+        }
+        OtherCasePreposition {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+    pub fn get_string(&self) -> String {
+        "su".to_string()
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+}
+
+impl CaseLabel {
+    fn is_match(string: &str) -> bool {
+        let re = Regex::new(r"^c[aeiou]$").unwrap();
+        re.is_match(string)
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "ca" => CaseLabelKind::Ca,
+            "ce" => CaseLabelKind::Ce,
+            "ci" => CaseLabelKind::Ci,
+            "co" => CaseLabelKind::Co,
+            "cu" => CaseLabelKind::Cu,
+            _ => panic!("Invalid case label surface: {}", string),
+        };
+        CaseLabel {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            CaseLabelKind::Ca => "ca".to_string(),
+            CaseLabelKind::Ce => "ce".to_string(),
+            CaseLabelKind::Ci => "ci".to_string(),
+            CaseLabelKind::Co => "co".to_string(),
+            CaseLabelKind::Cu => "cu".to_string(),
+        }
+    }
+    pub fn get_kind(&self) -> &CaseLabelKind {
+        &self.kind
     }
 }
 

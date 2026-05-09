@@ -383,7 +383,7 @@ impl Event {
             Event::One(pred_phrase, event_args) => {
                 let pred = extract_pred(pred_phrase);
                 match event_args {
-                    EventArguments::NominativeFirst(_nom, arg1_phrase, opt_acc) => {
+                    EventArguments::NominativeFirst(_nom, arg1_phrase, opt_acc, _other) => {
                         let arg1 = arg1_phrase.to_fol(vg);
                         match opt_acc {
                             OptionalAccusativeArg::One(_, arg2_phrase) => {
@@ -396,7 +396,7 @@ impl Event {
                             }
                         }
                     }
-                    EventArguments::AccusativeFirst(_acc, arg2_phrase, opt_nom) => {
+                    EventArguments::AccusativeFirst(_acc, arg2_phrase, opt_nom, _other) => {
                         let arg2 = arg2_phrase.to_fol(vg);
                         match opt_nom {
                             OptionalNominativeArg::One(_, arg1_phrase) => {
@@ -408,6 +408,11 @@ impl Event {
                                 build_event_inner(&pred, ArgCtx::ExistOnly(y), arg2)
                             }
                         }
+                    }
+                    EventArguments::OtherCaseFirst(_prep, _label, _arg, _rest) => {
+                        let x = vg.next();
+                        let y = vg.next();
+                        build_event_inner(&pred, ArgCtx::ExistOnly(x), ArgCtx::ExistOnly(y))
                     }
                     EventArguments::Epsilon => {
                         let x = vg.next();
