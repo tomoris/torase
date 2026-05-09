@@ -99,21 +99,34 @@ impl std::fmt::Display for Formula {
 // Variable generator
 // ---------------------------------------------------------------------------
 
-struct VarGen(usize);
+struct VarGen {
+    obj: usize,
+    evt: usize,
+}
 
 impl VarGen {
     fn new() -> Self {
-        VarGen(0)
+        VarGen { obj: 0, evt: 0 }
     }
 
     fn next(&mut self) -> String {
-        let n = self.0;
-        self.0 += 1;
+        let n = self.obj;
+        self.obj += 1;
         match n {
             0 => "x".to_string(),
             1 => "y".to_string(),
             2 => "z".to_string(),
             _ => format!("x{}", n - 2),
+        }
+    }
+
+    fn next_event(&mut self) -> String {
+        let n = self.evt;
+        self.evt += 1;
+        if n == 0 {
+            "e".to_string()
+        } else {
+            format!("e{n}")
         }
     }
 }
@@ -388,11 +401,11 @@ impl Event {
                         match opt_acc {
                             OptionalAccusativeArg::One(_, arg2_phrase) => {
                                 let arg2 = arg2_phrase.to_fol(vg);
-                                build_event_inner(&pred, arg1, arg2)
+                                build_event_inner(&pred, arg1, arg2, vg)
                             }
                             OptionalAccusativeArg::Epsilon => {
                                 let y = vg.next();
-                                build_event_inner(&pred, arg1, ArgCtx::ExistOnly(y))
+                                build_event_inner(&pred, arg1, ArgCtx::ExistOnly(y), vg)
                             }
                         }
                     }
@@ -401,23 +414,23 @@ impl Event {
                         match opt_nom {
                             OptionalNominativeArg::One(_, arg1_phrase) => {
                                 let arg1 = arg1_phrase.to_fol(vg);
-                                build_event_inner(&pred, arg1, arg2)
+                                build_event_inner(&pred, arg1, arg2, vg)
                             }
                             OptionalNominativeArg::Epsilon => {
                                 let y = vg.next();
-                                build_event_inner(&pred, ArgCtx::ExistOnly(y), arg2)
+                                build_event_inner(&pred, ArgCtx::ExistOnly(y), arg2, vg)
                             }
                         }
                     }
                     EventArguments::OtherCaseFirst(_prep, _label, _arg, _rest) => {
                         let x = vg.next();
                         let y = vg.next();
-                        build_event_inner(&pred, ArgCtx::ExistOnly(x), ArgCtx::ExistOnly(y))
+                        build_event_inner(&pred, ArgCtx::ExistOnly(x), ArgCtx::ExistOnly(y), vg)
                     }
                     EventArguments::Epsilon => {
                         let x = vg.next();
                         let y = vg.next();
-                        build_event_inner(&pred, ArgCtx::ExistOnly(x), ArgCtx::ExistOnly(y))
+                        build_event_inner(&pred, ArgCtx::ExistOnly(x), ArgCtx::ExistOnly(y), vg)
                     }
                 }
             }
@@ -425,15 +438,15 @@ impl Event {
     }
 }
 
-/// Build a scoped formula for `pred(arg1, arg2)`, handling all coordination and
-/// scoping rules recursively.
+/// Build a scoped formula for `pred(arg1, arg2)` in neo-Davidsonian event semantics:
+/// `∃e.(pred(e) ∧ Agent(e, arg1) ∧ Patient(e, arg2))`
 ///
 /// Scope order: arg2 is inner (narrow scope), arg1 is outer (wide scope).
-fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx) -> Formula {
+fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx, vg: &mut VarGen) -> Formula {
     match pred {
         PredCtx::Neg(inner) => {
             // ¬ scopes over everything (Montague-style wide-scope negation).
-            Formula::Not(Box::new(build_event_inner(inner, arg1, arg2)))
+            Formula::Not(Box::new(build_event_inner(inner, arg1, arg2, vg)))
         }
 
         PredCtx::Coord {
@@ -442,8 +455,8 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx) -> Formula {
             right,
         } => {
             // P di Q / binary_operator P Q: both predicates apply to the same args.
-            let f1 = build_event_inner(left, arg1.clone(), arg2.clone());
-            let f2 = build_event_inner(right, arg1, arg2);
+            let f1 = build_event_inner(left, arg1.clone(), arg2.clone(), vg);
+            let f2 = build_event_inner(right, arg1, arg2, vg);
             if *and_op {
                 Formula::And(Box::new(f1), Box::new(f2))
             } else {
@@ -460,8 +473,8 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx) -> Formula {
             } = arg1
             {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, *left, arg2.clone());
-                let f2 = build_event_inner(&p, *right, arg2);
+                let f1 = build_event_inner(&p, *left, arg2.clone(), vg);
+                let f2 = build_event_inner(&p, *right, arg2, vg);
                 return if and_op {
                     Formula::And(Box::new(f1), Box::new(f2))
                 } else {
@@ -476,8 +489,8 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx) -> Formula {
             } = arg2
             {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, arg1.clone(), *left);
-                let f2 = build_event_inner(&p, arg1, *right);
+                let f1 = build_event_inner(&p, arg1.clone(), *left, vg);
+                let f2 = build_event_inner(&p, arg1, *right, vg);
                 return if and_op {
                     Formula::And(Box::new(f1), Box::new(f2))
                 } else {
@@ -485,12 +498,21 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx) -> Formula {
                 };
             }
 
-            // Base case: build atomic and apply quantifier scopes.
+            // Base case: ∃e.(pred(e) ∧ Agent(e, t1) ∧ Patient(e, t2))
             let t1 = arg1.term();
             let t2 = arg2.term();
-            let atomic = Formula::Atom(name.clone(), vec![t1, t2]);
+            let e = vg.next_event();
+            let ev = Term::Var(e.clone());
+            let pred_atom = Formula::Atom(name.clone(), vec![ev.clone()]);
+            let agent_atom = Formula::Atom("Agent".to_string(), vec![ev.clone(), t1]);
+            let patient_atom = Formula::Atom("Patient".to_string(), vec![ev, t2]);
+            let event_body = Formula::And(
+                Box::new(pred_atom),
+                Box::new(Formula::And(Box::new(agent_atom), Box::new(patient_atom))),
+            );
+            let event_formula = Formula::Exists(e, Box::new(event_body));
             // arg2 scopes inside (narrow), arg1 scopes outside (wide).
-            let with_q2 = arg2.scope(atomic);
+            let with_q2 = arg2.scope(event_formula);
             arg1.scope(with_q2)
         }
     }
@@ -611,6 +633,7 @@ impl ArgumentRetrievalBinaryPredicate {
                                     &pred_ctx,
                                     Term::Var(var.to_string()),
                                     extra_term,
+                                    vg,
                                 )
                             }
                             ArgumentRetrieverKind::Accusative => {
@@ -619,6 +642,7 @@ impl ArgumentRetrievalBinaryPredicate {
                                     &pred_ctx,
                                     extra_term,
                                     Term::Var(var.to_string()),
+                                    vg,
                                 )
                             }
                         }
@@ -651,17 +675,30 @@ fn build_bp_restriction(phrase: &BinaryPredicatePhrase, var: &str) -> Formula {
     }
 }
 
-fn build_binary_restriction(pred: &PredCtx, t1: Term, t2: Term) -> Formula {
+fn build_binary_restriction(pred: &PredCtx, t1: Term, t2: Term, vg: &mut VarGen) -> Formula {
     match pred {
-        PredCtx::Simple(name) => Formula::Atom(name.clone(), vec![t1, t2]),
-        PredCtx::Neg(inner) => Formula::Not(Box::new(build_binary_restriction(inner, t1, t2))),
+        PredCtx::Simple(name) => {
+            let e = vg.next_event();
+            let ev = Term::Var(e.clone());
+            let pred_atom = Formula::Atom(name.clone(), vec![ev.clone()]);
+            let agent_atom = Formula::Atom("Agent".to_string(), vec![ev.clone(), t1]);
+            let patient_atom = Formula::Atom("Patient".to_string(), vec![ev, t2]);
+            Formula::Exists(
+                e,
+                Box::new(Formula::And(
+                    Box::new(pred_atom),
+                    Box::new(Formula::And(Box::new(agent_atom), Box::new(patient_atom))),
+                )),
+            )
+        }
+        PredCtx::Neg(inner) => Formula::Not(Box::new(build_binary_restriction(inner, t1, t2, vg))),
         PredCtx::Coord {
             and_op,
             left,
             right,
         } => {
-            let f1 = build_binary_restriction(left, t1.clone(), t2.clone());
-            let f2 = build_binary_restriction(right, t1, t2);
+            let f1 = build_binary_restriction(left, t1.clone(), t2.clone(), vg);
+            let f2 = build_binary_restriction(right, t1, t2, vg);
             if *and_op {
                 Formula::And(Box::new(f1), Box::new(f2))
             } else {
@@ -695,7 +732,7 @@ mod tests {
     fn test_存在量化_私はりんごを食べる() {
         check(
             "pahete sa mi si ri behapare",
-            "∃x.(behapare(x) ∧ pahete(mi, x))",
+            "∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -703,7 +740,7 @@ mod tests {
     fn test_全称量化_私は全てのりんごを食べる() {
         check(
             "pahete sa mi si ta ri behapare",
-            "∀x.(behapare(x) ⇒ pahete(mi, x))",
+            "∀x.(behapare(x) ⇒ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -711,7 +748,7 @@ mod tests {
     fn test_述語否定_私はりんごを食べない() {
         check(
             "ne pahete sa mi si ri behapare",
-            "¬∃x.(behapare(x) ∧ pahete(mi, x))",
+            "¬∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -719,7 +756,7 @@ mod tests {
     fn test_転置_りんごは食べられない() {
         check(
             "hapo pahete si ri behapare",
-            "∃y.∃x.(behapare(x) ∧ pahete(y, x))",
+            "∃y.∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
         );
     }
 
@@ -727,7 +764,7 @@ mod tests {
     fn test_転置と否定_みかんは私に食べられていない() {
         check(
             "ne pahete sa mi si ri behoranage",
-            "¬∃x.(behoranage(x) ∧ pahete(mi, x))",
+            "¬∃x.(behoranage(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -735,7 +772,7 @@ mod tests {
     fn test_指示詞_このりんご() {
         check(
             "pahete sa mi si mo ri behapare",
-            "∃x.((mo(x) ∧ behapare(x)) ∧ pahete(mi, x))",
+            "∃x.((mo(x) ∧ behapare(x)) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -743,7 +780,7 @@ mod tests {
     fn test_数量化_数のりんご() {
         check(
             "pahete sa mi si number ri behapare",
-            "∃_# x.(behapare(x) ∧ pahete(mi, x))",
+            "∃_# x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -751,7 +788,7 @@ mod tests {
     fn test_多量化_多くのりんご() {
         check(
             "pahete sa mi si te ri behapare",
-            "∃_many x.(behapare(x) ∧ pahete(mi, x))",
+            "∃_many x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -759,7 +796,7 @@ mod tests {
     fn test_関係節_私はあなたをパートナーとする人を愛している() {
         check(
             "parobe sa mi si ri paparatanera du ba",
-            "∃x.(paparatanera(ba, x) ∧ parobe(mi, x))",
+            "∃x.(∃e.(paparatanera(e) ∧ (Agent(e, ba) ∧ Patient(e, x))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
         );
     }
 
@@ -768,7 +805,7 @@ mod tests {
     fn test_関係節_私はあなたのパートナーを愛している() {
         check(
             "parobe sa mi si ro re paparatanera du ba",
-            "∃x.(paparatanera(ba, x) ∧ parobe(mi, x))",
+            "∃x.(∃e.(paparatanera(e) ∧ (Agent(e, ba) ∧ Patient(e, x))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
         );
     }
 
@@ -777,7 +814,7 @@ mod tests {
     fn test_事象名詞化_あなたは_私はりんごを食べる_と言った() {
         check(
             "kasahi ba si se pahete mi si ri behapare so",
-            "kasahi(ba, ∃x.(behapare(x) ∧ pahete(mi, x))",
+            "∃x.(∃y.(behapare(y) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, y)))) ∧ ∃e1.(kasahi(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))))",
         );
     }
 }

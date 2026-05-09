@@ -9,7 +9,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use super::first_order_logic::{Formula, Term as FolTerm};
+use super::event_semantics::{Formula, Term as FolTerm};
 
 // ---------------------------------------------------------------------------
 // Term
@@ -544,7 +544,7 @@ pub fn find_contradiction_index(formulas: &[Formula]) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::first_order_logic::{Formula, Term as FolTerm};
+    use super::super::event_semantics::{Formula, Term as FolTerm};
     use super::*;
 
     fn var(name: &str) -> FolTerm {
