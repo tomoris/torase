@@ -59,24 +59,12 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::BinaryPredicate(BinaryPredicate::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if NominativePreposition::is_match(token.0) {
-            doc.push(TerminalType::NominativePreposition(
-                NominativePreposition::new(token.0, token.1, token.2, token.3, token.4),
-            ));
-        } else if Argument::is_match(token.0) {
-            doc.push(TerminalType::Argument(Argument::new(
-                token.0, token.1, token.2, token.3, token.4,
-            )));
-        } else if AccusativePreposition::is_match(token.0) {
-            doc.push(TerminalType::AccusativePreposition(
-                AccusativePreposition::new(token.0, token.1, token.2, token.3, token.4),
-            ));
-        } else if OtherCasePreposition::is_match(token.0) {
-            doc.push(TerminalType::OtherCasePreposition(
-                OtherCasePreposition::new(token.0, token.1, token.2, token.3, token.4),
-            ));
         } else if CaseLabel::is_match(token.0) {
             doc.push(TerminalType::CaseLabel(CaseLabel::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if Argument::is_match(token.0) {
+            doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if BinaryOperator::is_match(token.0) {
@@ -228,10 +216,7 @@ pub enum TerminalType {
     AspectNegation(AspectNegation),
     Negation(Negation),
     BinaryPredicate(BinaryPredicate),
-    NominativePreposition(NominativePreposition),
     Argument(Argument),
-    AccusativePreposition(AccusativePreposition),
-    OtherCasePreposition(OtherCasePreposition),
     CaseLabel(CaseLabel),
     BinaryOperator(BinaryOperator),
     ArgumentRetriever(ArgumentRetriever),
@@ -257,10 +242,7 @@ pub enum DummyTerminalType {
     AspectNegation,
     Negation,
     BinaryPredicate,
-    NominativePreposition,
     Argument,
-    AccusativePreposition,
-    OtherCasePreposition,
     CaseLabel,
     BinaryOperator,
     ArgumentRetriever,
@@ -286,10 +268,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::AspectNegation(_) => DummyTerminalType::AspectNegation,
         TerminalType::Negation(_) => DummyTerminalType::Negation,
         TerminalType::BinaryPredicate(_) => DummyTerminalType::BinaryPredicate,
-        TerminalType::NominativePreposition(_) => DummyTerminalType::NominativePreposition,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
-        TerminalType::AccusativePreposition(_) => DummyTerminalType::AccusativePreposition,
-        TerminalType::OtherCasePreposition(_) => DummyTerminalType::OtherCasePreposition,
         TerminalType::CaseLabel(_) => DummyTerminalType::CaseLabel,
         TerminalType::BinaryOperator(_) => DummyTerminalType::BinaryOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
@@ -325,10 +304,7 @@ impl TerminalType {
             TerminalType::AspectNegation(negation) => negation.range.start.clone(),
             TerminalType::Negation(negation) => negation.range.start.clone(),
             TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
-            TerminalType::NominativePreposition(prep) => prep.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
-            TerminalType::AccusativePreposition(prep) => prep.range.start.clone(),
-            TerminalType::OtherCasePreposition(prep) => prep.range.start.clone(),
             TerminalType::CaseLabel(label) => label.range.start.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
@@ -360,10 +336,7 @@ impl TerminalType {
             TerminalType::AspectNegation(negation) => negation.range.end.clone(),
             TerminalType::Negation(negation) => negation.range.end.clone(),
             TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
-            TerminalType::NominativePreposition(prep) => prep.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
-            TerminalType::AccusativePreposition(prep) => prep.range.end.clone(),
-            TerminalType::OtherCasePreposition(prep) => prep.range.end.clone(),
             TerminalType::CaseLabel(label) => label.range.end.clone(),
             TerminalType::BinaryOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
@@ -500,11 +473,6 @@ pub struct BinaryPredicate {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct NominativePreposition {
-    range: Range,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Argument {
     range: Range,
     kind: ArgumentKind,
@@ -523,16 +491,6 @@ enum ArgumentKind {
     Gi, // 彼、彼女
     Gu, // 彼ら
     Ge, // あれ
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AccusativePreposition {
-    range: Range,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OtherCasePreposition {
-    range: Range,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1132,38 +1090,6 @@ impl BinaryPredicate {
     }
 }
 
-impl NominativePreposition {
-    fn is_match(string: &str) -> bool {
-        string == "sa"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid nominative preposition surface: {}", string);
-        }
-        NominativePreposition {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub fn get_string(&self) -> String {
-        "sa".to_string()
-    }
-}
-
 impl Argument {
     fn is_match(string: &str) -> bool {
         let re_argument = Regex::new(r"^(:?(?:m[aiue])|(?:b[aue])|(?:g[aiue]))$").unwrap();
@@ -1254,76 +1180,9 @@ impl Argument {
     }
 }
 
-impl AccusativePreposition {
-    fn is_match(string: &str) -> bool {
-        string == "si"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid accusative preposition surface: {}", string);
-        }
-        AccusativePreposition {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub fn get_string(&self) -> String {
-        "si".to_string()
-    }
-}
-
-impl OtherCasePreposition {
-    fn is_match(string: &str) -> bool {
-        string == "su"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid other case preposition surface: {}", string);
-        }
-        OtherCasePreposition {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub fn get_string(&self) -> String {
-        "su".to_string()
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-}
-
 impl CaseLabel {
     fn is_match(string: &str) -> bool {
-        let re = Regex::new(r"^c[aeiou]$").unwrap();
+        let re = Regex::new(r"^(?:sa|si|he(?:bu|be|bo|ni|ne|no|gi|ge|go|du|te|to))$").unwrap();
         re.is_match(string)
     }
     fn new(
@@ -1909,7 +1768,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][2],
-            TerminalType::AccusativePreposition(AccusativePreposition::new("si", 0, 10, 0, 12))
+            TerminalType::CaseLabel(CaseLabel::new("si", 0, 10, 0, 12))
         );
         assert_eq!(
             sentences[0][3],
@@ -1950,18 +1809,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][5],
-            TerminalType::AccusativePreposition(AccusativePreposition {
-                range: Range {
-                    start: Position {
-                        line: 0,
-                        character: 27
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 29
-                    },
-                }
-            })
+            TerminalType::CaseLabel(CaseLabel::new("si", 0, 27, 0, 29))
         );
         assert_eq!(
             sentences[0][6],

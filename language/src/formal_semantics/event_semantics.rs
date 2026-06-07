@@ -1,11 +1,11 @@
 use crate::parser::{
     AEvent, ArgumentPhrase, ArgumentRetrievalBinaryPredicate, ArgumentRetrievalWithArgumentPhrase,
     Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument, DeterminerModifier, Event,
-    EventArguments, InterrogativeSentence, MtaEvent, OptionalAccusativeArg, OptionalNominativeArg,
-    PostBinaryPredicatePhraseExpression, PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent,
-    QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent,
+    InterrogativeSentence, MtaEvent, PostBinaryPredicatePhraseExpression,
+    PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent, QuantifiedArgument,
+    QuantifierModifier, RetrievedArgument, S, TaEvent,
 };
-use crate::tokenizer::ArgumentRetrieverKind;
+use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind};
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -392,49 +392,27 @@ impl AEvent {
 
 impl Event {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
-        match self {
-            Event::One(pred_phrase, event_args) => {
-                let pred = extract_pred(pred_phrase);
-                match event_args {
-                    EventArguments::NominativeFirst(_nom, arg1_phrase, opt_acc, _other) => {
-                        let arg1 = arg1_phrase.to_fol(vg);
-                        match opt_acc {
-                            OptionalAccusativeArg::One(_, arg2_phrase) => {
-                                let arg2 = arg2_phrase.to_fol(vg);
-                                build_event_inner(&pred, arg1, arg2, vg)
-                            }
-                            OptionalAccusativeArg::Epsilon => {
-                                let y = vg.next();
-                                build_event_inner(&pred, arg1, ArgCtx::ExistOnly(y), vg)
-                            }
-                        }
-                    }
-                    EventArguments::AccusativeFirst(_acc, arg2_phrase, opt_nom, _other) => {
-                        let arg2 = arg2_phrase.to_fol(vg);
-                        match opt_nom {
-                            OptionalNominativeArg::One(_, arg1_phrase) => {
-                                let arg1 = arg1_phrase.to_fol(vg);
-                                build_event_inner(&pred, arg1, arg2, vg)
-                            }
-                            OptionalNominativeArg::Epsilon => {
-                                let y = vg.next();
-                                build_event_inner(&pred, ArgCtx::ExistOnly(y), arg2, vg)
-                            }
-                        }
-                    }
-                    EventArguments::OtherCaseFirst(_prep, _label, _arg, _rest) => {
-                        let x = vg.next();
-                        let y = vg.next();
-                        build_event_inner(&pred, ArgCtx::ExistOnly(x), ArgCtx::ExistOnly(y), vg)
-                    }
-                    EventArguments::Epsilon => {
-                        let x = vg.next();
-                        let y = vg.next();
-                        build_event_inner(&pred, ArgCtx::ExistOnly(x), ArgCtx::ExistOnly(y), vg)
-                    }
-                }
-            }
-        }
+        let pred = extract_pred(self.get_pred());
+        let case_args = self.case_args();
+        let nom = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sa));
+        let acc = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Si));
+        let arg2 = if let Some((_, phrase)) = acc {
+            phrase.to_fol(vg)
+        } else {
+            let y = vg.next();
+            ArgCtx::ExistOnly(y)
+        };
+        let arg1 = if let Some((_, phrase)) = nom {
+            phrase.to_fol(vg)
+        } else {
+            let y = vg.next();
+            ArgCtx::ExistOnly(y)
+        };
+        build_event_inner(&pred, arg1, arg2, vg)
     }
 }
 

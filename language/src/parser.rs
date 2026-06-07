@@ -192,17 +192,8 @@ fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonT
         DummyNonTerminalType::NonNegatedArgumentPhrase => {
             NonTerminalType::NonNegatedArgumentPhrase(NonNegatedArgumentPhrase::new(rhs))
         }
-        DummyNonTerminalType::EventArguments => {
-            NonTerminalType::EventArguments(EventArguments::new(rhs))
-        }
-        DummyNonTerminalType::OptionalAccusativeArg => {
-            NonTerminalType::OptionalAccusativeArg(OptionalAccusativeArg::new(rhs))
-        }
-        DummyNonTerminalType::OptionalNominativeArg => {
-            NonTerminalType::OptionalNominativeArg(OptionalNominativeArg::new(rhs))
-        }
-        DummyNonTerminalType::OptionalOtherCaseArgs => {
-            NonTerminalType::OptionalOtherCaseArgs(OptionalOtherCaseArgs::new(rhs))
+        DummyNonTerminalType::OptionalCaseArgs => {
+            NonTerminalType::OptionalCaseArgs(OptionalCaseArgs::new(rhs))
         }
         DummyNonTerminalType::QuantifiedArgument => {
             NonTerminalType::QuantifiedArgument(QuantifiedArgument::new(rhs))
@@ -264,10 +255,7 @@ fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRh
         }
         DummyNonTerminalType::ArgumentPhrase => ArgumentPhrase::parse_table(t),
         DummyNonTerminalType::NonNegatedArgumentPhrase => NonNegatedArgumentPhrase::parse_table(t),
-        DummyNonTerminalType::EventArguments => EventArguments::parse_table(t),
-        DummyNonTerminalType::OptionalAccusativeArg => OptionalAccusativeArg::parse_table(t),
-        DummyNonTerminalType::OptionalNominativeArg => OptionalNominativeArg::parse_table(t),
-        DummyNonTerminalType::OptionalOtherCaseArgs => OptionalOtherCaseArgs::parse_table(t),
+        DummyNonTerminalType::OptionalCaseArgs => OptionalCaseArgs::parse_table(t),
         DummyNonTerminalType::QuantifiedArgument => QuantifiedArgument::parse_table(t),
         DummyNonTerminalType::DeterminedArgument => DeterminedArgument::parse_table(t),
         DummyNonTerminalType::RetrievedArgument => RetrievedArgument::parse_table(t),
@@ -354,10 +342,7 @@ pub enum NonTerminalType {
     NonNegatedBinaryPredicatePhrase(NonNegatedBinaryPredicatePhrase),
     ArgumentPhrase(ArgumentPhrase),
     NonNegatedArgumentPhrase(NonNegatedArgumentPhrase),
-    EventArguments(EventArguments),
-    OptionalAccusativeArg(OptionalAccusativeArg),
-    OptionalNominativeArg(OptionalNominativeArg),
-    OptionalOtherCaseArgs(OptionalOtherCaseArgs),
+    OptionalCaseArgs(OptionalCaseArgs),
     QuantifiedArgument(QuantifiedArgument),
     DeterminedArgument(DeterminedArgument),
     RetrievedArgument(RetrievedArgument),
@@ -391,10 +376,7 @@ pub enum DummyNonTerminalType {
     NonNegatedBinaryPredicatePhrase,
     ArgumentPhrase,
     NonNegatedArgumentPhrase,
-    EventArguments,
-    OptionalAccusativeArg,
-    OptionalNominativeArg,
-    OptionalOtherCaseArgs,
+    OptionalCaseArgs,
     QuantifiedArgument,
     DeterminedArgument,
     RetrievedArgument,
@@ -487,52 +469,13 @@ pub enum AEvent {
 
 #[derive(Clone, Debug)]
 pub enum Event {
-    One(PostModifiedBinaryPredicatePhrase, EventArguments),
+    Base(PostModifiedBinaryPredicatePhrase),
+    WithArg(Box<Event>, CaseLabel, ArgumentPhrase),
 }
 
 #[derive(Clone, Debug)]
-pub enum EventArguments {
-    NominativeFirst(
-        NominativePreposition,
-        ArgumentPhrase,
-        OptionalAccusativeArg,
-        OptionalOtherCaseArgs,
-    ),
-    AccusativeFirst(
-        AccusativePreposition,
-        ArgumentPhrase,
-        OptionalNominativeArg,
-        OptionalOtherCaseArgs,
-    ),
-    OtherCaseFirst(
-        OtherCasePreposition,
-        CaseLabel,
-        ArgumentPhrase,
-        OptionalOtherCaseArgs,
-    ),
-    Epsilon,
-}
-
-#[derive(Clone, Debug)]
-pub enum OptionalAccusativeArg {
-    One(AccusativePreposition, ArgumentPhrase),
-    Epsilon,
-}
-
-#[derive(Clone, Debug)]
-pub enum OptionalNominativeArg {
-    One(NominativePreposition, ArgumentPhrase),
-    Epsilon,
-}
-
-#[derive(Clone, Debug)]
-pub enum OptionalOtherCaseArgs {
-    One(
-        OtherCasePreposition,
-        CaseLabel,
-        ArgumentPhrase,
-        Box<OptionalOtherCaseArgs>,
-    ),
+pub enum OptionalCaseArgs {
+    One(CaseLabel, ArgumentPhrase, Box<OptionalCaseArgs>),
     Epsilon,
 }
 
@@ -1268,7 +1211,7 @@ impl Event {
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::EventArguments),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
             ])),
             _ => Err(()),
         }
@@ -1278,10 +1221,22 @@ impl Event {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(
-                        child1,
+                        pred,
                     )),
-                    SymbolType::NonTerminal(NonTerminalType::EventArguments(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
+                    SymbolType::NonTerminal(NonTerminalType::OptionalCaseArgs(args)),
+                ] => {
+                    let mut pairs: Vec<(CaseLabel, ArgumentPhrase)> = vec![];
+                    let mut current = args;
+                    while let OptionalCaseArgs::One(label, phrase, rest) = current {
+                        pairs.push((label.clone(), phrase.clone()));
+                        current = rest;
+                    }
+                    let mut event = Event::Base(pred.clone());
+                    for (label, phrase) in pairs {
+                        event = Event::WithArg(Box::new(event), label, phrase);
+                    }
+                    event
+                }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1293,26 +1248,13 @@ impl Event {
     }
 }
 
-impl EventArguments {
+impl OptionalCaseArgs {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::NominativePreposition => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::NominativePreposition),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalAccusativeArg),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalOtherCaseArgs),
-            ])),
-            DummyTerminalType::AccusativePreposition => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::AccusativePreposition),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalNominativeArg),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalOtherCaseArgs),
-            ])),
-            DummyTerminalType::OtherCasePreposition => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::OtherCasePreposition),
+            DummyTerminalType::CaseLabel => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::CaseLabel),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalOtherCaseArgs),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
             ])),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
             | DummyTerminalType::PostMtaEventModifier
@@ -1324,130 +1266,10 @@ impl EventArguments {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::NominativePreposition(child1)),
+                    SymbolType::Terminal(TerminalType::CaseLabel(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalAccusativeArg(child3)),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalOtherCaseArgs(child4)),
-                ] => Self::NominativeFirst(
-                    child1.clone(),
-                    child2.clone(),
-                    child3.clone(),
-                    child4.clone(),
-                ),
-                [
-                    SymbolType::Terminal(TerminalType::AccusativePreposition(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalNominativeArg(child3)),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalOtherCaseArgs(child4)),
-                ] => Self::AccusativeFirst(
-                    child1.clone(),
-                    child2.clone(),
-                    child3.clone(),
-                    child4.clone(),
-                ),
-                [
-                    SymbolType::Terminal(TerminalType::OtherCasePreposition(child1)),
-                    SymbolType::Terminal(TerminalType::CaseLabel(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalOtherCaseArgs(child4)),
-                ] => Self::OtherCaseFirst(
-                    child1.clone(),
-                    child2.clone(),
-                    child3.clone(),
-                    child4.clone(),
-                ),
-                _ => panic!("Unexpected symbols: {:?}", symbols),
-            },
-            Rhs::Epsilon => Self::Epsilon,
-        }
-    }
-}
-
-impl OptionalAccusativeArg {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
-        match current_token {
-            DummyTerminalType::AccusativePreposition => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::AccusativePreposition),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
-            ])),
-            DummyTerminalType::OtherCasePreposition
-            | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
-            | DummyTerminalType::PostMtaEventModifier
-            | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
-            _ => Err(()),
-        }
-    }
-    fn new(rhs: Rhs) -> Self {
-        match rhs {
-            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [
-                    SymbolType::Terminal(TerminalType::AccusativePreposition(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
-                _ => panic!("Unexpected symbols: {:?}", symbols),
-            },
-            Rhs::Epsilon => Self::Epsilon,
-        }
-    }
-}
-
-impl OptionalNominativeArg {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
-        match current_token {
-            DummyTerminalType::NominativePreposition => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::NominativePreposition),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
-            ])),
-            DummyTerminalType::OtherCasePreposition
-            | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
-            | DummyTerminalType::PostMtaEventModifier
-            | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
-            _ => Err(()),
-        }
-    }
-    fn new(rhs: Rhs) -> Self {
-        match rhs {
-            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [
-                    SymbolType::Terminal(TerminalType::NominativePreposition(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
-                _ => panic!("Unexpected symbols: {:?}", symbols),
-            },
-            Rhs::Epsilon => Self::Epsilon,
-        }
-    }
-}
-
-impl OptionalOtherCaseArgs {
-    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
-        match current_token {
-            DummyTerminalType::OtherCasePreposition => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::OtherCasePreposition),
-                DummySymbolType::DummyTerminal(DummyTerminalType::CaseLabel),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalOtherCaseArgs),
-            ])),
-            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
-            | DummyTerminalType::PostMtaEventModifier
-            | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
-            _ => Err(()),
-        }
-    }
-    fn new(rhs: Rhs) -> Self {
-        match rhs {
-            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [
-                    SymbolType::Terminal(TerminalType::OtherCasePreposition(child1)),
-                    SymbolType::Terminal(TerminalType::CaseLabel(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalOtherCaseArgs(child4)),
-                ] => Self::One(
-                    child1.clone(),
-                    child2.clone(),
-                    child3.clone(),
-                    Box::new(child4.clone()),
-                ),
+                    SymbolType::NonTerminal(NonTerminalType::OptionalCaseArgs(child3)),
+                ] => Self::One(child1.clone(), child2.clone(), Box::new(child3.clone())),
                 _ => panic!("Unexpected symbols: {:?}", symbols),
             },
             Rhs::Epsilon => Self::Epsilon,
@@ -1504,7 +1326,7 @@ impl PostBinaryPredicatePhraseExpression {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AccusativePreposition => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::CaseLabel => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
@@ -1513,8 +1335,6 @@ impl PostBinaryPredicatePhraseExpression {
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::NominativePreposition => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::OtherCasePreposition => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostBinaryPredicatePhraseModifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(
                     DummyTerminalType::PostBinaryPredicatePhraseModifier,
@@ -1915,9 +1735,7 @@ impl ArgumentRetrievalWithArgumentPhrase {
         match current_token {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::NominativePreposition => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AccusativePreposition => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::OtherCasePreposition => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::CaseLabel => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
@@ -2091,22 +1909,6 @@ impl PostModifiedBinaryPredicatePhrase {
                 let end = binary_predicate_phrase.get_range().end();
                 Range::new(start, end)
             }
-        }
-    }
-}
-
-impl OptionalOtherCaseArgs {
-    pub(crate) fn get_range(&self) -> Option<Range> {
-        match self {
-            OptionalOtherCaseArgs::One(prep, _label, _arg, rest) => {
-                let start = prep.get_range().start();
-                let end = rest
-                    .get_range()
-                    .map(|r| r.end())
-                    .unwrap_or_else(|| _arg.get_range().end());
-                Some(Range::new(start, end))
-            }
-            OptionalOtherCaseArgs::Epsilon => None,
         }
     }
 }
@@ -2306,32 +2108,29 @@ impl AspectExpression {
 impl Event {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            Event::One(pred, event_args) => {
-                let start = pred.get_range().start();
-                let end = match event_args {
-                    EventArguments::NominativeFirst(_nom, arg1, opt_acc, opt_other) => {
-                        let base = match opt_acc {
-                            OptionalAccusativeArg::One(_, a2) => a2.get_range().end(),
-                            OptionalAccusativeArg::Epsilon => arg1.get_range().end(),
-                        };
-                        opt_other.get_range().map(|r| r.end()).unwrap_or(base)
-                    }
-                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom, opt_other) => {
-                        let base = match opt_nom {
-                            OptionalNominativeArg::One(_, a1) => a1.get_range().end(),
-                            OptionalNominativeArg::Epsilon => arg2.get_range().end(),
-                        };
-                        opt_other.get_range().map(|r| r.end()).unwrap_or(base)
-                    }
-                    EventArguments::OtherCaseFirst(_prep, _label, arg, opt_other) => opt_other
-                        .get_range()
-                        .map(|r| r.end())
-                        .unwrap_or_else(|| arg.get_range().end()),
-                    EventArguments::Epsilon => pred.get_range().end(),
-                };
-                Range::new(start, end)
+            Event::Base(pred) => pred.get_range(),
+            Event::WithArg(inner, _label, phrase) => {
+                Range::new(inner.get_range().start(), phrase.get_range().end())
             }
         }
+    }
+
+    pub fn get_pred(&self) -> &PostModifiedBinaryPredicatePhrase {
+        match self {
+            Event::Base(pred) => pred,
+            Event::WithArg(inner, _, _) => inner.get_pred(),
+        }
+    }
+
+    pub fn case_args(&self) -> Vec<(&CaseLabel, &ArgumentPhrase)> {
+        let mut result = vec![];
+        let mut current = self;
+        while let Event::WithArg(inner, label, phrase) = current {
+            result.push((label, phrase));
+            current = inner;
+        }
+        result.reverse();
+        result
     }
 }
 
@@ -2568,29 +2367,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let event_arguments = grammar::NonTerminal(
-            type_name::<EventArguments>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let optional_accusative_arg = grammar::NonTerminal(
-            type_name::<OptionalAccusativeArg>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let optional_nominative_arg = grammar::NonTerminal(
-            type_name::<OptionalNominativeArg>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let optional_other_case_args = grammar::NonTerminal(
-            type_name::<OptionalOtherCaseArgs>()
+        let optional_case_args = grammar::NonTerminal(
+            type_name::<OptionalCaseArgs>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2711,29 +2489,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let nominative_preposition = grammar::Terminal(
-            type_name::<NominativePreposition>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
         let argument = grammar::Terminal(
             type_name::<Argument>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let accusative_preposition = grammar::Terminal(
-            type_name::<AccusativePreposition>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
-        let other_case_preposition = grammar::Terminal(
-            type_name::<OtherCasePreposition>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2938,61 +2695,16 @@ mod tests {
             event.clone(),
             vec![grammar::Rhs::Sequence(vec![
                 grammar::Symbol::NonTerminal(post_modified_binary_predicate_phrase.clone()),
-                grammar::Symbol::NonTerminal(event_arguments.clone()),
+                grammar::Symbol::NonTerminal(optional_case_args.clone()),
             ])],
         );
         rules.insert(
-            event_arguments.clone(),
+            optional_case_args.clone(),
             vec![
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(nominative_preposition.clone()),
-                    grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                    grammar::Symbol::NonTerminal(optional_accusative_arg.clone()),
-                    grammar::Symbol::NonTerminal(optional_other_case_args.clone()),
-                ]),
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(accusative_preposition.clone()),
-                    grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                    grammar::Symbol::NonTerminal(optional_nominative_arg.clone()),
-                    grammar::Symbol::NonTerminal(optional_other_case_args.clone()),
-                ]),
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(other_case_preposition.clone()),
                     grammar::Symbol::Terminal(case_label.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                    grammar::Symbol::NonTerminal(optional_other_case_args.clone()),
-                ]),
-                grammar::Rhs::Epsilon,
-            ],
-        );
-        rules.insert(
-            optional_accusative_arg.clone(),
-            vec![
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(accusative_preposition.clone()),
-                    grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                ]),
-                grammar::Rhs::Epsilon,
-            ],
-        );
-        rules.insert(
-            optional_nominative_arg.clone(),
-            vec![
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(nominative_preposition.clone()),
-                    grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                ]),
-                grammar::Rhs::Epsilon,
-            ],
-        );
-        rules.insert(
-            optional_other_case_args.clone(),
-            vec![
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(other_case_preposition.clone()),
-                    grammar::Symbol::Terminal(case_label.clone()),
-                    grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                    grammar::Symbol::NonTerminal(optional_other_case_args.clone()),
+                    grammar::Symbol::NonTerminal(optional_case_args.clone()),
                 ]),
                 grammar::Rhs::Epsilon,
             ],
@@ -3162,10 +2874,7 @@ mod tests {
                     "AspectNegation" => DummyTerminalType::AspectNegation,
                     "Negation" => DummyTerminalType::Negation,
                     "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
-                    "NominativePreposition" => DummyTerminalType::NominativePreposition,
                     "Argument" => DummyTerminalType::Argument,
-                    "AccusativePreposition" => DummyTerminalType::AccusativePreposition,
-                    "OtherCasePreposition" => DummyTerminalType::OtherCasePreposition,
                     "CaseLabel" => DummyTerminalType::CaseLabel,
                     "BinaryOperator" => DummyTerminalType::BinaryOperator,
                     "ArgumentRetriever" => DummyTerminalType::ArgumentRetriever,
@@ -3229,10 +2938,7 @@ mod tests {
             "NonNegatedBinaryPredicatePhrase" => NonNegatedBinaryPredicatePhrase::parse_table(tt),
             "ArgumentPhrase" => ArgumentPhrase::parse_table(tt),
             "NonNegatedArgumentPhrase" => NonNegatedArgumentPhrase::parse_table(tt),
-            "EventArguments" => EventArguments::parse_table(tt),
-            "OptionalAccusativeArg" => OptionalAccusativeArg::parse_table(tt),
-            "OptionalNominativeArg" => OptionalNominativeArg::parse_table(tt),
-            "OptionalOtherCaseArgs" => OptionalOtherCaseArgs::parse_table(tt),
+            "OptionalCaseArgs" => OptionalCaseArgs::parse_table(tt),
             "QuantifiedArgument" => QuantifiedArgument::parse_table(tt),
             "DeterminedArgument" => DeterminedArgument::parse_table(tt),
             "RetrievedArgument" => RetrievedArgument::parse_table(tt),
@@ -3288,10 +2994,7 @@ mod tests {
                                                 DummyNonTerminalType::NonNegatedBinaryPredicatePhrase => "NonNegatedBinaryPredicatePhrase",
                                                 DummyNonTerminalType::ArgumentPhrase => "ArgumentPhrase",
                                                 DummyNonTerminalType::NonNegatedArgumentPhrase => "NonNegatedArgumentPhrase",
-                                                DummyNonTerminalType::EventArguments => "EventArguments",
-                                                DummyNonTerminalType::OptionalAccusativeArg => "OptionalAccusativeArg",
-                                                DummyNonTerminalType::OptionalNominativeArg => "OptionalNominativeArg",
-                                                DummyNonTerminalType::OptionalOtherCaseArgs => "OptionalOtherCaseArgs",
+                                                DummyNonTerminalType::OptionalCaseArgs => "OptionalCaseArgs",
                                                 DummyNonTerminalType::QuantifiedArgument => "QuantifiedArgument",
                                                 DummyNonTerminalType::DeterminedArgument => "DeterminedArgument",
                                                 DummyNonTerminalType::RetrievedArgument => "RetrievedArgument",
@@ -3322,16 +3025,7 @@ mod tests {
                                         DummyTerminalType::AspectNegation => "AspectNegation",
                                         DummyTerminalType::Negation => "Negation",
                                         DummyTerminalType::BinaryPredicate => "BinaryPredicate",
-                                        DummyTerminalType::NominativePreposition => {
-                                            "NominativePreposition"
-                                        }
                                         DummyTerminalType::Argument => "Argument",
-                                        DummyTerminalType::AccusativePreposition => {
-                                            "AccusativePreposition"
-                                        }
-                                        DummyTerminalType::OtherCasePreposition => {
-                                            "OtherCasePreposition"
-                                        }
                                         DummyTerminalType::CaseLabel => "CaseLabel",
                                         DummyTerminalType::BinaryOperator => "BinaryOperator",
                                         DummyTerminalType::ArgumentRetriever => "ArgumentRetriever",

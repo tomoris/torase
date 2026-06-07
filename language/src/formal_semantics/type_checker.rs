@@ -1,5 +1,5 @@
 use crate::parser::*;
-use crate::tokenizer::{ArgumentRetrieverKind, Range};
+use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind, Range};
 
 // ---------------------------------------------------------------------------
 // Semantic types (Montague-style)
@@ -229,67 +229,58 @@ impl Event {
     ///
     /// If arg2 is omitted, existential closure applies:  ∃x. pred(arg1)(x) : t
     fn infer_type(&self) -> TCResult {
-        match self {
-            Event::One(pred_phrase, event_args) => {
-                let pred_type = pred_phrase.infer_type()?;
-                match event_args {
-                    EventArguments::NominativeFirst(_nom, arg1, opt_acc, _other) => {
-                        let arg1_type = arg1.infer_type()?;
-                        let after_arg1 = apply(pred_type, arg1_type, arg1.get_range())?;
-                        match opt_acc {
-                            OptionalAccusativeArg::One(_, arg2) => {
-                                let arg2_type = arg2.infer_type()?;
-                                apply(after_arg1, arg2_type, arg2.get_range())
-                            }
-                            OptionalAccusativeArg::Epsilon => {
-                                let gq_to_t = Type::arrow(Type::gq(), Type::T);
-                                if after_arg1 != gq_to_t {
-                                    return Err(TypeMismatch::new(
-                                        arg1.get_range(),
-                                        after_arg1,
-                                        gq_to_t,
-                                    ));
-                                }
-                                Ok(Type::T)
-                            }
-                        }
+        let pred_phrase = self.get_pred();
+        let pred_type = pred_phrase.infer_type()?;
+        let case_args = self.case_args();
+        let nom = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sa));
+        let acc = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Si));
+        match (nom, acc) {
+            (Some((_, arg1)), Some((_, arg2))) => {
+                let arg1_type = arg1.infer_type()?;
+                let after_arg1 = apply(pred_type, arg1_type, arg1.get_range())?;
+                let arg2_type = arg2.infer_type()?;
+                apply(after_arg1, arg2_type, arg2.get_range())
+            }
+            (Some((_, arg1)), None) => {
+                let arg1_type = arg1.infer_type()?;
+                let after_arg1 = apply(pred_type, arg1_type, arg1.get_range())?;
+                let gq_to_t = Type::arrow(Type::gq(), Type::T);
+                if after_arg1 != gq_to_t {
+                    return Err(TypeMismatch::new(arg1.get_range(), after_arg1, gq_to_t));
+                }
+                Ok(Type::T)
+            }
+            (None, Some((_, arg2))) => {
+                let inner_type = match pred_type.clone() {
+                    Type::Arrow(_, b) => *b,
+                    _ => {
+                        return Err(TypeMismatch::new(
+                            arg2.get_range(),
+                            pred_type,
+                            Type::pred2(),
+                        ));
                     }
-                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom, _other) => {
-                        // pred : GQ → GQ → t; arg2 fills the second slot
-                        let inner_type = match pred_type.clone() {
-                            Type::Arrow(_, b) => *b,
-                            _ => {
-                                return Err(TypeMismatch::new(
-                                    arg2.get_range(),
-                                    pred_type,
-                                    Type::pred2(),
-                                ));
-                            }
-                        };
-                        let arg2_type = arg2.infer_type()?;
-                        apply(inner_type, arg2_type, arg2.get_range())?;
-                        match opt_nom {
-                            OptionalNominativeArg::One(_, arg1) => {
-                                let arg1_type = arg1.infer_type()?;
-                                apply(pred_type, arg1_type, arg1.get_range())?;
-                            }
-                            OptionalNominativeArg::Epsilon => {}
-                        }
-                        Ok(Type::T)
-                    }
-                    EventArguments::OtherCaseFirst(_prep, _label, _arg, _rest) => Ok(Type::T),
-                    EventArguments::Epsilon => {
-                        let expected = Type::pred2();
-                        if pred_type != expected {
-                            return Err(TypeMismatch::new(
-                                pred_phrase.get_range(),
-                                pred_type,
-                                expected,
-                            ));
-                        }
-                        Ok(Type::T)
+                };
+                let arg2_type = arg2.infer_type()?;
+                apply(inner_type, arg2_type, arg2.get_range())?;
+                Ok(Type::T)
+            }
+            (None, None) => {
+                if case_args.is_empty() {
+                    let expected = Type::pred2();
+                    if pred_type != expected {
+                        return Err(TypeMismatch::new(
+                            pred_phrase.get_range(),
+                            pred_type,
+                            expected,
+                        ));
                     }
                 }
+                Ok(Type::T)
             }
         }
     }

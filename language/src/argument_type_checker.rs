@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::parser::*;
-use crate::tokenizer::{ArgumentRetrieverKind, ArgumentType, Range};
+use crate::tokenizer::{ArgumentRetrieverKind, ArgumentType, CaseLabelKind, Range};
 
 pub struct TypeMismatch {
     pub range: Range,
@@ -157,73 +157,38 @@ impl AEvent {
 
 impl Event {
     fn type_check(&self) -> TypeMismatchResult {
-        match self {
-            Event::One(post_modified_binary_predicate_phrase, event_arguments) => {
-                post_modified_binary_predicate_phrase.type_check()?;
-                let (t1, t2) = post_modified_binary_predicate_phrase.get_argument_types();
-                match event_arguments {
-                    EventArguments::NominativeFirst(_nom, arg1, opt_acc, _other) => {
-                        arg1.type_check()?;
-                        let arg1_type = arg1.get_type();
-                        if !has_intersection(&t1, &arg1_type) {
-                            return Err(TypeMismatch {
-                                range: arg1.get_range().clone(),
-                                actual: arg1_type,
-                                expected: t1,
-                                message: "Event type mismatch in the first argument.".to_string(),
-                            });
-                        }
-                        match opt_acc {
-                            OptionalAccusativeArg::One(_, arg2) => {
-                                arg2.type_check()?;
-                                let arg2_type = arg2.get_type();
-                                if !has_intersection(&t2, &arg2_type) {
-                                    return Err(TypeMismatch {
-                                        range: arg2.get_range().clone(),
-                                        actual: arg2_type,
-                                        expected: t2,
-                                        message: "Event type mismatch in the second argument."
-                                            .to_string(),
-                                    });
-                                }
-                            }
-                            OptionalAccusativeArg::Epsilon => {}
-                        }
+        let pred = self.get_pred();
+        pred.type_check()?;
+        let (t1, t2) = pred.get_argument_types();
+        for (label, arg) in self.case_args() {
+            arg.type_check()?;
+            match label.get_kind() {
+                CaseLabelKind::Sa => {
+                    let arg_type = arg.get_type();
+                    if !has_intersection(&t1, &arg_type) {
+                        return Err(TypeMismatch {
+                            range: arg.get_range().clone(),
+                            actual: arg_type,
+                            expected: t1.clone(),
+                            message: "Event type mismatch in the first argument.".to_string(),
+                        });
                     }
-                    EventArguments::AccusativeFirst(_acc, arg2, opt_nom, _other) => {
-                        arg2.type_check()?;
-                        let arg2_type = arg2.get_type();
-                        if !has_intersection(&t2, &arg2_type) {
-                            return Err(TypeMismatch {
-                                range: arg2.get_range().clone(),
-                                actual: arg2_type,
-                                expected: t2,
-                                message: "Event type mismatch in the second argument.".to_string(),
-                            });
-                        }
-                        match opt_nom {
-                            OptionalNominativeArg::One(_, arg1) => {
-                                arg1.type_check()?;
-                                let arg1_type = arg1.get_type();
-                                if !has_intersection(&t1, &arg1_type) {
-                                    return Err(TypeMismatch {
-                                        range: arg1.get_range().clone(),
-                                        actual: arg1_type,
-                                        expected: t1,
-                                        message: "Event type mismatch in the first argument."
-                                            .to_string(),
-                                    });
-                                }
-                            }
-                            OptionalNominativeArg::Epsilon => {}
-                        }
-                    }
-                    EventArguments::OtherCaseFirst(_prep, _label, _arg, _rest) => {}
-                    EventArguments::Epsilon => {}
                 }
-                Ok(())
+                CaseLabelKind::Si => {
+                    let arg_type = arg.get_type();
+                    if !has_intersection(&t2, &arg_type) {
+                        return Err(TypeMismatch {
+                            range: arg.get_range().clone(),
+                            actual: arg_type,
+                            expected: t2.clone(),
+                            message: "Event type mismatch in the second argument.".to_string(),
+                        });
+                    }
+                }
+                _ => {}
             }
         }
+        Ok(())
     }
 }
 
