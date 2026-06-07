@@ -543,11 +543,25 @@ pub struct CaseLabel {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CaseLabelKind {
-    Ca, // 与格
-    Ce, // 属格
-    Ci, // 所格
-    Co, // 具格
-    Cu, // 奪格
+    Sa, // 主格
+    Si, // 対格
+    // 人間系
+    Hebu, // 随伴格 だれと
+    Hebe, // 奪格(人間起点格) だれから、だれの
+    Hebo, // 与格(人間目標格) だれまで、だれに
+    // 空間系
+    Heni, // 場所格 どこで
+    Hene, // 場所起点格 どこから
+    Heno, // 場所目標格 どこまで
+    // 時間系
+    Hegi, // 時間格 いつ
+    Hege, // 時間起点格 いつから
+    Hego, // 時間目標格 いつまで
+    // 道具系
+    Hedu, // 具格 何々を使って
+    // 抽象系
+    Hete, // 原因格(理由起点格) 何々のせいで
+    Heto, // 目的格(理由目標格) 何々のために
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1320,11 +1334,20 @@ impl CaseLabel {
         end_character: usize,
     ) -> Self {
         let kind = match string {
-            "ca" => CaseLabelKind::Ca,
-            "ce" => CaseLabelKind::Ce,
-            "ci" => CaseLabelKind::Ci,
-            "co" => CaseLabelKind::Co,
-            "cu" => CaseLabelKind::Cu,
+            "sa" => CaseLabelKind::Sa,
+            "si" => CaseLabelKind::Si,
+            "hebu" => CaseLabelKind::Hebu,
+            "hebe" => CaseLabelKind::Hebe,
+            "hebo" => CaseLabelKind::Hebo,
+            "heni" => CaseLabelKind::Heni,
+            "hene" => CaseLabelKind::Hene,
+            "heno" => CaseLabelKind::Heno,
+            "hegi" => CaseLabelKind::Hegi,
+            "hege" => CaseLabelKind::Hege,
+            "hego" => CaseLabelKind::Hego,
+            "hedu" => CaseLabelKind::Hedu,
+            "hete" => CaseLabelKind::Hete,
+            "heto" => CaseLabelKind::Heto,
             _ => panic!("Invalid case label surface: {}", string),
         };
         CaseLabel {
@@ -1343,11 +1366,20 @@ impl CaseLabel {
     }
     pub fn get_string(&self) -> String {
         match self.kind {
-            CaseLabelKind::Ca => "ca".to_string(),
-            CaseLabelKind::Ce => "ce".to_string(),
-            CaseLabelKind::Ci => "ci".to_string(),
-            CaseLabelKind::Co => "co".to_string(),
-            CaseLabelKind::Cu => "cu".to_string(),
+            CaseLabelKind::Sa => "sa".to_string(),
+            CaseLabelKind::Si => "si".to_string(),
+            CaseLabelKind::Hebu => "hebu".to_string(),
+            CaseLabelKind::Hebe => "hebe".to_string(),
+            CaseLabelKind::Hebo => "hebo".to_string(),
+            CaseLabelKind::Heni => "heni".to_string(),
+            CaseLabelKind::Hene => "hene".to_string(),
+            CaseLabelKind::Heno => "heno".to_string(),
+            CaseLabelKind::Hegi => "hegi".to_string(),
+            CaseLabelKind::Hege => "hege".to_string(),
+            CaseLabelKind::Hego => "hego".to_string(),
+            CaseLabelKind::Hedu => "hedu".to_string(),
+            CaseLabelKind::Hete => "hete".to_string(),
+            CaseLabelKind::Heto => "heto".to_string(),
         }
     }
     pub fn get_kind(&self) -> &CaseLabelKind {
