@@ -782,19 +782,19 @@ impl TreeViewer for AEvent {
 impl TreeViewer for Event {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(240, 255, 240);
-        let category = "Event".to_string();
-        let mut content = row![self.get_pred().view(is_full)];
-        for (label, phrase) in self.case_args() {
-            let label: &language::tokenizer::CaseLabel = label;
-            let phrase: &language::parser::ArgumentPhrase = phrase;
-            content = content
-                .push(Space::new().width(iced::Length::Fixed(10.0)))
-                .push(text(label.get_string()))
-                .push(Space::new().width(iced::Length::Fixed(10.0)))
-                .push(phrase.view(is_full));
+        match self {
+            Event::One(post_modified_binary_predicate_phrase, optional_case_args) => {
+                let category = "Event".to_string();
+                let mut content = row![post_modified_binary_predicate_phrase.view(is_full)];
+                if is_full || !optional_case_args.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(optional_case_args.view(is_full));
+                }
+                content = content.align_y(Alignment::Center);
+                category_box(category, content.into(), background)
+            }
         }
-        content = content.align_y(Alignment::Center);
-        category_box(category, content.into(), background)
     }
     fn is_empty(&self) -> bool {
         false
@@ -968,7 +968,7 @@ impl TreeViewer for OptionalCaseArgs {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(250, 240, 205);
         match self {
-            OptionalCaseArgs::One(label, arg, rest) => {
+            OptionalCaseArgs::One(CaseArg::One(label, arg), rest) => {
                 let category = "OptionalCaseArgs".to_string();
                 let mut content = row![
                     text(label.get_string()),

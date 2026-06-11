@@ -469,14 +469,18 @@ pub enum AEvent {
 
 #[derive(Clone, Debug)]
 pub enum Event {
-    Base(PostModifiedBinaryPredicatePhrase),
-    WithArg(Box<Event>, CaseLabel, ArgumentPhrase),
+    One(PostModifiedBinaryPredicatePhrase, OptionalCaseArgs),
 }
 
 #[derive(Clone, Debug)]
 pub enum OptionalCaseArgs {
-    One(CaseLabel, ArgumentPhrase, Box<OptionalCaseArgs>),
+    One(CaseArg, Box<OptionalCaseArgs>),
     Epsilon,
+}
+
+#[derive(Clone, Debug)]
+pub enum CaseArg {
+    One(CaseLabel, ArgumentPhrase),
 }
 
 #[derive(Clone, Debug)]
@@ -1221,22 +1225,10 @@ impl Event {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedBinaryPredicatePhrase(
-                        pred,
+                        child1,
                     )),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalCaseArgs(args)),
-                ] => {
-                    let mut pairs: Vec<(CaseLabel, ArgumentPhrase)> = vec![];
-                    let mut current = args;
-                    while let OptionalCaseArgs::One(label, phrase, rest) = current {
-                        pairs.push((label.clone(), phrase.clone()));
-                        current = rest;
-                    }
-                    let mut event = Event::Base(pred.clone());
-                    for (label, phrase) in pairs {
-                        event = Event::WithArg(Box::new(event), label, phrase);
-                    }
-                    event
-                }
+                    SymbolType::NonTerminal(NonTerminalType::OptionalCaseArgs(child2)),
+                ] => Event::One(child1.clone(), child2.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1269,7 +1261,10 @@ impl OptionalCaseArgs {
                     SymbolType::Terminal(TerminalType::CaseLabel(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
                     SymbolType::NonTerminal(NonTerminalType::OptionalCaseArgs(child3)),
-                ] => Self::One(child1.clone(), child2.clone(), Box::new(child3.clone())),
+                ] => Self::One(
+                    CaseArg::One(child1.clone(), child2.clone()),
+                    Box::new(child3.clone()),
+                ),
                 _ => panic!("Unexpected symbols: {:?}", symbols),
             },
             Rhs::Epsilon => Self::Epsilon,
@@ -2108,29 +2103,45 @@ impl AspectExpression {
 impl Event {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            Event::Base(pred) => pred.get_range(),
-            Event::WithArg(inner, _label, phrase) => {
-                Range::new(inner.get_range().start(), phrase.get_range().end())
-            }
+            Event::One(pred, args) => match args.last_range() {
+                Some(last) => Range::new(pred.get_range().start(), last.end()),
+                None => pred.get_range(),
+            },
         }
     }
 
     pub fn get_pred(&self) -> &PostModifiedBinaryPredicatePhrase {
         match self {
-            Event::Base(pred) => pred,
-            Event::WithArg(inner, _, _) => inner.get_pred(),
+            Event::One(pred, _) => pred,
         }
     }
 
     pub fn case_args(&self) -> Vec<(&CaseLabel, &ArgumentPhrase)> {
-        let mut result = vec![];
-        let mut current = self;
-        while let Event::WithArg(inner, label, phrase) = current {
-            result.push((label, phrase));
-            current = inner;
+        match self {
+            Event::One(_, args) => args.case_args(),
         }
-        result.reverse();
-        result
+    }
+}
+
+impl OptionalCaseArgs {
+    fn last_range(&self) -> Option<Range> {
+        match self {
+            OptionalCaseArgs::One(CaseArg::One(_label, phrase), rest) => {
+                Some(rest.last_range().unwrap_or_else(|| phrase.get_range()))
+            }
+            OptionalCaseArgs::Epsilon => None,
+        }
+    }
+
+    fn case_args(&self) -> Vec<(&CaseLabel, &ArgumentPhrase)> {
+        match self {
+            OptionalCaseArgs::One(CaseArg::One(label, phrase), rest) => {
+                let mut result = vec![(label, phrase)];
+                result.extend(rest.case_args());
+                result
+            }
+            OptionalCaseArgs::Epsilon => vec![],
+        }
     }
 }
 
