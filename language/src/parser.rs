@@ -1938,9 +1938,9 @@ impl DeterminerModifier {
 impl QuantifiedArgument {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            QuantifiedArgument::One(quantified_modifier, determined_argument) => {
+            QuantifiedArgument::One(quantifier_modifier, determined_argument) => {
                 let end = determined_argument.get_range().end();
-                if let Some(start) = quantified_modifier.get_range() {
+                if let Some(start) = quantifier_modifier.get_range() {
                     return Range::new(start.start(), end);
                 }
                 let start = determined_argument.get_range().start();
@@ -2043,9 +2043,9 @@ impl ModifiedModality {
     pub(crate) fn get_range(&self) -> Range {
         match self {
             ModifiedModality::One(modality) => modality.get_range(),
-            ModifiedModality::Two(modality_negation, inner) => Range::new(
+            ModifiedModality::Two(modality_negation, modality) => Range::new(
                 modality_negation.get_range().start(),
-                inner.get_range().end(),
+                modality.get_range().end(),
             ),
         }
     }
@@ -2064,8 +2064,8 @@ impl ModifiedTense {
     pub(crate) fn get_range(&self) -> Range {
         match self {
             ModifiedTense::One(tense) => tense.get_range(),
-            ModifiedTense::Two(tense_negation, inner) => {
-                Range::new(tense_negation.get_range().start(), inner.get_range().end())
+            ModifiedTense::Two(tense_negation, tense) => {
+                Range::new(tense_negation.get_range().start(), tense.get_range().end())
             }
         }
     }
@@ -2084,9 +2084,10 @@ impl ModifiedAspect {
     pub(crate) fn get_range(&self) -> Range {
         match self {
             ModifiedAspect::One(aspect) => aspect.get_range(),
-            ModifiedAspect::Two(aspect_negation, inner) => {
-                Range::new(aspect_negation.get_range().start(), inner.get_range().end())
-            }
+            ModifiedAspect::Two(aspect_negation, aspect) => Range::new(
+                aspect_negation.get_range().start(),
+                aspect.get_range().end(),
+            ),
         }
     }
 }
@@ -2148,9 +2149,9 @@ impl OptionalCaseArgs {
 impl AEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            AEvent::One(aspect_expr, event) => {
+            AEvent::One(aspect_expression, event) => {
                 let end = event.get_range().end();
-                let start = aspect_expr
+                let start = aspect_expression
                     .get_range()
                     .map(|r| r.start())
                     .unwrap_or_else(|| event.get_range().start());
@@ -2163,9 +2164,9 @@ impl AEvent {
 impl TaEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            TaEvent::One(tense_expr, a_event) => {
+            TaEvent::One(tense_expression, a_event) => {
                 let end = a_event.get_range().end();
-                let start = tense_expr
+                let start = tense_expression
                     .get_range()
                     .map(|r| r.start())
                     .unwrap_or_else(|| a_event.get_range().start());
@@ -2178,9 +2179,9 @@ impl TaEvent {
 impl MtaEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            MtaEvent::One(modality_expr, ta_event) => {
+            MtaEvent::One(modality_expression, ta_event) => {
                 let end = ta_event.get_range().end();
-                let start = modality_expr
+                let start = modality_expression
                     .get_range()
                     .map(|r| r.start())
                     .unwrap_or_else(|| ta_event.get_range().start());
@@ -2193,11 +2194,11 @@ impl MtaEvent {
 impl PostModifiedMtaEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            PostModifiedMtaEvent::One(mta, post_expr) => {
-                let start = mta.get_range().start();
-                let end = match post_expr {
-                    PostMtaEventExpression::One(_, mta2) => mta2.get_range().end(),
-                    PostMtaEventExpression::Epsilon => mta.get_range().end(),
+            PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
+                let start = mta_event.get_range().start();
+                let end = match post_mta_event_expression {
+                    PostMtaEventExpression::One(_, mta_event2) => mta_event2.get_range().end(),
+                    PostMtaEventExpression::Epsilon => mta_event.get_range().end(),
                 };
                 Range::new(start, end)
             }
@@ -2208,7 +2209,9 @@ impl PostModifiedMtaEvent {
 impl DeclarativeSentence {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            DeclarativeSentence::One(pm) => pm.get_range(),
+            DeclarativeSentence::One(post_modified_mta_event) => {
+                post_modified_mta_event.get_range()
+            }
         }
     }
 }
@@ -2216,8 +2219,11 @@ impl DeclarativeSentence {
 impl InterrogativeSentence {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            InterrogativeSentence::One(marker, pm) => {
-                Range::new(marker.get_range().start(), pm.get_range().end())
+            InterrogativeSentence::One(interrogative_marker, post_modified_mta_event) => {
+                Range::new(
+                    interrogative_marker.get_range().start(),
+                    post_modified_mta_event.get_range().end(),
+                )
             }
         }
     }
@@ -2226,8 +2232,8 @@ impl InterrogativeSentence {
 impl S {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            S::One(d) => d.get_range(),
-            S::Two(i) => i.get_range(),
+            S::One(declarative_sentence) => declarative_sentence.get_range(),
+            S::Two(interrogative_sentence) => interrogative_sentence.get_range(),
         }
     }
 }
