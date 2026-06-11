@@ -1209,9 +1209,19 @@ impl AEvent {
 impl Event {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation
-            | DummyTerminalType::BinaryPredicate
-            | DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
+            ])),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
+            ])),
+            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
@@ -1248,9 +1258,9 @@ impl OptionalCaseArgs {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
             ])),
-            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
-            | DummyTerminalType::PostMtaEventModifier
-            | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
