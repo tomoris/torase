@@ -249,7 +249,7 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::Argument(_) => Some(Color::from_rgba8(80, 130, 220, 0.25)),
         TerminalType::Tense(_) => Some(Color::from_rgba8(160, 80, 220, 0.25)),
         TerminalType::Aspect(_) => Some(Color::from_rgba8(220, 80, 160, 0.25)),
-        TerminalType::Modality(_) => Some(Color::from_rgba8(60, 200, 200, 0.25)),
+        TerminalType::ModalityBase(_) => Some(Color::from_rgba8(60, 200, 200, 0.25)),
         TerminalType::Negation(_) => Some(Color::from_rgba8(220, 60, 60, 0.25)),
         TerminalType::ModalityNegation(_)
         | TerminalType::TenseNegation(_)
@@ -268,6 +268,7 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::PostMtaEventModifier(_)
         | TerminalType::PostBinaryPredicatePhraseModifier(_)
         | TerminalType::PostArgumentPhraseModifier(_) => Some(Color::from_rgba8(60, 60, 180, 0.25)),
+        TerminalType::ModalityForce(_) => Some(Color::from_rgba8(60, 200, 200, 0.25)),
         TerminalType::Eos(_) => None,
     }
 }
@@ -589,17 +590,25 @@ impl TreeViewer for ModifiedModality {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(0, 255, 255);
         match self {
-            ModifiedModality::One(modality) => {
+            ModifiedModality::One(modality, modality_force) => {
                 let category = "ModifiedModality".to_string();
-                let content = text(modality.get_string()).into();
+                let content = row![
+                    text(modality.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    text(modality_force.get_string()),
+                ]
+                .align_y(Alignment::Center)
+                .into();
                 category_box(category, content, background)
             }
-            ModifiedModality::Two(modality_negation, modality) => {
+            ModifiedModality::Two(modality_negation, modality, modality_force) => {
                 let category = "ModifiedModality".to_string();
                 let content = row![
                     text(modality_negation.get_string()),
                     Space::new().width(iced::Length::Fixed(10.0)),
                     text(modality.get_string()),
+                    Space::new().width(iced::Length::Fixed(10.0)),
+                    text(modality_force.get_string()),
                 ]
                 .align_y(Alignment::Center)
                 .into();

@@ -80,8 +80,8 @@ impl ModalityExpression {
 impl ModifiedModality {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            ModifiedModality::One(_modality) => Ok(()),
-            ModifiedModality::Two(_modality_negation, _modality) => Ok(()),
+            ModifiedModality::One(_modality, _) => Ok(()),
+            ModifiedModality::Two(_modality_negation, _modality, _) => Ok(()),
         }
     }
 }

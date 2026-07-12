@@ -362,7 +362,7 @@ impl PostModifiedMtaEvent {
 impl MtaEvent {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            // Modality is ignored.
+            // ModalityBase is ignored.
             MtaEvent::One(_mod_expr, ta) => ta.to_fol(vg),
         }
     }
@@ -733,7 +733,7 @@ mod tests {
     #[test]
     fn test_転置_りんごは食べられない() {
         check(
-            "hapo pahete si ri behapare",
+            "hapu □ pahete si ri behapare",
             "∃y.∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
         );
     }

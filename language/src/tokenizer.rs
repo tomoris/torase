@@ -27,8 +27,12 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if Modality::is_match(token.0) {
-            doc.push(TerminalType::Modality(Modality::new(
+        } else if ModalityBase::is_match(token.0) {
+            doc.push(TerminalType::ModalityBase(ModalityBase::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if ModalityForce::is_match(token.0) {
+            doc.push(TerminalType::ModalityForce(ModalityForce::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if Tense::is_match(token.0) {
@@ -208,7 +212,8 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TerminalType {
     InterrogativeMarker(InterrogativeMarker),
-    Modality(Modality),
+    ModalityBase(ModalityBase),
+    ModalityForce(ModalityForce),
     Tense(Tense),
     Aspect(Aspect),
     ModalityNegation(ModalityNegation),
@@ -234,7 +239,8 @@ pub enum TerminalType {
 #[derive(Clone, Debug)]
 pub enum DummyTerminalType {
     InterrogativeMarker,
-    Modality,
+    ModalityBase,
+    ModalityForce,
     Tense,
     Aspect,
     ModalityNegation,
@@ -260,7 +266,8 @@ pub enum DummyTerminalType {
 pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
     match terminal {
         TerminalType::InterrogativeMarker(_) => DummyTerminalType::InterrogativeMarker,
-        TerminalType::Modality(_) => DummyTerminalType::Modality,
+        TerminalType::ModalityBase(_) => DummyTerminalType::ModalityBase,
+        TerminalType::ModalityForce(_) => DummyTerminalType::ModalityForce,
         TerminalType::Tense(_) => DummyTerminalType::Tense,
         TerminalType::Aspect(_) => DummyTerminalType::Aspect,
         TerminalType::ModalityNegation(_) => DummyTerminalType::ModalityNegation,
@@ -296,7 +303,8 @@ impl TerminalType {
     pub fn start(&self) -> Position {
         match self {
             TerminalType::InterrogativeMarker(marker) => marker.range.start.clone(),
-            TerminalType::Modality(modality) => modality.range.start.clone(),
+            TerminalType::ModalityBase(modality) => modality.range.start.clone(),
+            TerminalType::ModalityForce(force) => force.range.start.clone(),
             TerminalType::Tense(tense) => tense.range.start.clone(),
             TerminalType::Aspect(aspect) => aspect.range.start.clone(),
             TerminalType::ModalityNegation(negation) => negation.range.start.clone(),
@@ -328,7 +336,8 @@ impl TerminalType {
     pub fn end(&self) -> Position {
         match self {
             TerminalType::InterrogativeMarker(marker) => marker.range.end.clone(),
-            TerminalType::Modality(modality) => modality.range.end.clone(),
+            TerminalType::ModalityBase(modality) => modality.range.end.clone(),
+            TerminalType::ModalityForce(force) => force.range.end.clone(),
             TerminalType::Tense(tense) => tense.range.end.clone(),
             TerminalType::Aspect(aspect) => aspect.range.end.clone(),
             TerminalType::ModalityNegation(negation) => negation.range.end.clone(),
@@ -369,26 +378,16 @@ pub struct InterrogativeMarker {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Modality {
+pub struct ModalityBase {
     range: Range,
-    kind: ModalityKind,
+    kind: ModalityBaseKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum ModalityKind {
-    Haka, // 命令、しなさい
-    Haki, // 勧誘、しませんか
-    Haku, // 許可、してよい
-    Hame, // 事実性高い
-    Hamo, // 事実性低い
-    Hase, // 義務、すべき
-    Haso, // 許可、してよい
-    Hake, // 能力、できる
-    Hako, // 可能、ありうる
-    Hate, // 願望、したい
-    Hato, // 意志、しよう
-    Hape, // 必然
-    Hapo, // 不可能
+enum ModalityBaseKind {
+    Hapa, // 認識
+    Hapi, // 義務
+    Hapu, // 能力・状況
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -419,6 +418,18 @@ enum AspectKind {
     Hudidu, // 反復
     Hudo,   // 終了
     Hudu,   // 事後
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ModalityForce {
+    range: Range,
+    kind: ModalityForceKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ModalityForceKind {
+    Necessary, // □ 必然
+    Possible,  // ◇ 可能
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -636,10 +647,9 @@ impl InterrogativeMarker {
     }
 }
 
-impl Modality {
+impl ModalityBase {
     fn is_match(string: &str) -> bool {
-        let re_modality = Regex::new(r"^(?:ha)(?:k[aiu]|m[eo]|t[eo]|s[eo]|k[eo]|p[eo])$").unwrap();
-        re_modality.is_match(string)
+        matches!(string, "hapa" | "hapi" | "hapu")
     }
     fn new(
         string: &str,
@@ -649,22 +659,12 @@ impl Modality {
         end_character: usize,
     ) -> Self {
         let kind = match string {
-            "haka" => ModalityKind::Haka,
-            "haki" => ModalityKind::Haki,
-            "haku" => ModalityKind::Haku,
-            "hame" => ModalityKind::Hame,
-            "hamo" => ModalityKind::Hamo,
-            "hase" => ModalityKind::Hase,
-            "haso" => ModalityKind::Haso,
-            "hake" => ModalityKind::Hake,
-            "hako" => ModalityKind::Hako,
-            "hate" => ModalityKind::Hate,
-            "hato" => ModalityKind::Hato,
-            "hape" => ModalityKind::Hape,
-            "hapo" => ModalityKind::Hapo,
+            "hapa" => ModalityBaseKind::Hapa,
+            "hapi" => ModalityBaseKind::Hapi,
+            "hapu" => ModalityBaseKind::Hapu,
             _ => panic!("Invalid modality surface: {}", string),
         };
-        Modality {
+        ModalityBase {
             range: Range {
                 start: Position {
                     line: start_line,
@@ -680,19 +680,50 @@ impl Modality {
     }
     pub fn get_string(&self) -> String {
         match self.kind {
-            ModalityKind::Haka => "haka".to_string(),
-            ModalityKind::Haki => "haki".to_string(),
-            ModalityKind::Haku => "haku".to_string(),
-            ModalityKind::Hame => "hame".to_string(),
-            ModalityKind::Hamo => "hamo".to_string(),
-            ModalityKind::Hase => "hase".to_string(),
-            ModalityKind::Haso => "haso".to_string(),
-            ModalityKind::Hake => "hake".to_string(),
-            ModalityKind::Hako => "hako".to_string(),
-            ModalityKind::Hate => "hate".to_string(),
-            ModalityKind::Hato => "hato".to_string(),
-            ModalityKind::Hape => "hape".to_string(),
-            ModalityKind::Hapo => "hapo".to_string(),
+            ModalityBaseKind::Hapa => "hapa".to_string(),
+            ModalityBaseKind::Hapi => "hapi".to_string(),
+            ModalityBaseKind::Hapu => "hapu".to_string(),
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+}
+
+impl ModalityForce {
+    fn is_match(string: &str) -> bool {
+        matches!(string, "□" | "◇")
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "□" => ModalityForceKind::Necessary,
+            "◇" => ModalityForceKind::Possible,
+            _ => panic!("Invalid modality force surface: {}", string),
+        };
+        ModalityForce {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            ModalityForceKind::Necessary => "□".to_string(),
+            ModalityForceKind::Possible => "◇".to_string(),
         }
     }
     pub(crate) fn get_range(&self) -> Range {
@@ -1782,38 +1813,42 @@ mod tests {
 
     #[test]
     fn test_eosなし1文のトークン分割が成功する() {
-        let input = "hate hitu hudidi parobe me si gi";
+        let input = "hapa □ hitu hudidi parobe me si gi";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 1);
-        assert_eq!(sentences[0].len(), 8);
+        assert_eq!(sentences[0].len(), 9);
         assert_eq!(
             sentences[0][0],
-            TerminalType::Modality(Modality::new("hate", 0, 0, 0, 4))
+            TerminalType::ModalityBase(ModalityBase::new("hapa", 0, 0, 0, 4))
         );
         assert_eq!(
             sentences[0][1],
-            TerminalType::Tense(Tense::new("hitu", 0, 5, 0, 9))
+            TerminalType::ModalityForce(ModalityForce::new("□", 0, 5, 0, 6))
         );
         assert_eq!(
             sentences[0][2],
-            TerminalType::Aspect(Aspect::new("hudidi", 0, 10, 0, 16))
+            TerminalType::Tense(Tense::new("hitu", 0, 7, 0, 11))
         );
         assert_eq!(
             sentences[0][3],
-            TerminalType::BinaryPredicate(BinaryPredicate::new("parobe", 0, 17, 0, 23))
+            TerminalType::Aspect(Aspect::new("hudidi", 0, 12, 0, 18))
         );
         assert_eq!(
             sentences[0][4],
-            TerminalType::Argument(Argument::new("me", 0, 24, 0, 26))
+            TerminalType::BinaryPredicate(BinaryPredicate::new("parobe", 0, 19, 0, 25))
         );
         assert_eq!(
             sentences[0][5],
-            TerminalType::CaseLabel(CaseLabel::new("si", 0, 27, 0, 29))
+            TerminalType::Argument(Argument::new("me", 0, 26, 0, 28))
         );
         assert_eq!(
             sentences[0][6],
-            TerminalType::Argument(Argument::new("gi", 0, 30, 0, 32))
+            TerminalType::CaseLabel(CaseLabel::new("si", 0, 29, 0, 31))
+        );
+        assert_eq!(
+            sentences[0][7],
+            TerminalType::Argument(Argument::new("gi", 0, 32, 0, 34))
         );
     }
 

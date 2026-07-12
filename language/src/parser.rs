@@ -424,8 +424,8 @@ pub enum ModalityExpression {
 
 #[derive(Clone, Debug)]
 pub enum ModifiedModality {
-    One(Modality),
-    Two(ModalityNegation, Modality),
+    One(ModalityBase, ModalityForce),
+    Two(ModalityNegation, ModalityBase, ModalityForce),
 }
 
 #[derive(Clone, Debug)]
@@ -589,7 +589,7 @@ impl S {
                     DummyNonTerminalType::InterrogativeSentence,
                 )]))
             }
-            DummyTerminalType::Modality => {
+            DummyTerminalType::ModalityBase => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
@@ -660,7 +660,7 @@ impl S {
 impl DeclarativeSentence {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Modality => {
+            DummyTerminalType::ModalityBase => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
@@ -756,7 +756,7 @@ impl InterrogativeSentence {
 impl PostModifiedMtaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::ModalityBase => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
@@ -843,7 +843,7 @@ impl PostMtaEventExpression {
 impl ModalityExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Modality => {
+            DummyTerminalType::ModalityBase => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ModifiedModality,
                 )]))
@@ -881,14 +881,14 @@ impl ModalityExpression {
 impl ModifiedModality {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Modality => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
-                    DummyTerminalType::Modality,
-                )]))
-            }
+            DummyTerminalType::ModalityBase => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityBase),
+                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityForce),
+            ])),
             DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ModalityNegation),
-                DummySymbolType::DummyTerminal(DummyTerminalType::Modality),
+                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityBase),
+                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityForce),
             ])),
             _ => Err(()),
         }
@@ -896,11 +896,15 @@ impl ModifiedModality {
     fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
-                [SymbolType::Terminal(TerminalType::Modality(child1))] => Self::One(child1.clone()),
+                [
+                    SymbolType::Terminal(TerminalType::ModalityBase(child1)),
+                    SymbolType::Terminal(TerminalType::ModalityForce(child2)),
+                ] => Self::One(child1.clone(), child2.clone()),
                 [
                     SymbolType::Terminal(TerminalType::ModalityNegation(child1)),
-                    SymbolType::Terminal(TerminalType::Modality(child2)),
-                ] => Self::Two(child1.clone(), child2.clone()),
+                    SymbolType::Terminal(TerminalType::ModalityBase(child2)),
+                    SymbolType::Terminal(TerminalType::ModalityForce(child3)),
+                ] => Self::Two(child1.clone(), child2.clone(), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1053,7 +1057,7 @@ impl ModifiedAspect {
 impl MtaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Modality => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::ModalityBase => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
@@ -2052,10 +2056,13 @@ impl ArgumentPhrase {
 impl ModifiedModality {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            ModifiedModality::One(modality) => modality.get_range(),
-            ModifiedModality::Two(modality_negation, modality) => Range::new(
+            ModifiedModality::One(modality, modality_force) => Range::new(
+                modality.get_range().start(),
+                modality_force.get_range().end(),
+            ),
+            ModifiedModality::Two(modality_negation, _, modality_force) => Range::new(
                 modality_negation.get_range().start(),
-                modality.get_range().end(),
+                modality_force.get_range().end(),
             ),
         }
     }
@@ -2467,7 +2474,14 @@ mod tests {
                 .to_string(),
         );
         let modality = grammar::Terminal(
-            type_name::<Modality>()
+            type_name::<ModalityBase>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let modality_force = grammar::Terminal(
+            type_name::<ModalityForce>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2656,10 +2670,14 @@ mod tests {
         rules.insert(
             modified_modality.clone(),
             vec![
-                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(modality.clone())]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(modality.clone()),
+                    grammar::Symbol::Terminal(modality_force.clone()),
+                ]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(modality_negation_.clone()),
                     grammar::Symbol::Terminal(modality.clone()),
+                    grammar::Symbol::Terminal(modality_force.clone()),
                 ]),
             ],
         );
@@ -2893,7 +2911,8 @@ mod tests {
                 let lt = grammar::Lookahead::Terminal(t.clone());
                 let tt = match t.0.as_str() {
                     "InterrogativeMarker" => DummyTerminalType::InterrogativeMarker,
-                    "Modality" => DummyTerminalType::Modality,
+                    "ModalityBase" => DummyTerminalType::ModalityBase,
+                    "ModalityForce" => DummyTerminalType::ModalityForce,
                     "Tense" => DummyTerminalType::Tense,
                     "Aspect" => DummyTerminalType::Aspect,
                     "ModalityNegation" => DummyTerminalType::ModalityNegation,
@@ -3044,7 +3063,8 @@ mod tests {
                                         DummyTerminalType::InterrogativeMarker => {
                                             "InterrogativeMarker"
                                         }
-                                        DummyTerminalType::Modality => "Modality",
+                                        DummyTerminalType::ModalityBase => "ModalityBase",
+                                        DummyTerminalType::ModalityForce => "ModalityForce",
                                         DummyTerminalType::Tense => "Tense",
                                         DummyTerminalType::Aspect => "Aspect",
                                         DummyTerminalType::ModalityNegation => "ModalityNegation",
