@@ -474,7 +474,6 @@ pub struct Negation {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum NegationKind {
     Ne, // 否定
-    No, // 正反対
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -949,7 +948,7 @@ impl AspectNegation {
 
 impl Negation {
     fn is_match(string: &str) -> bool {
-        let re_negation = Regex::new(r"^(?:n[eo])$").unwrap();
+        let re_negation = Regex::new(r"^(?:ne)$").unwrap();
         re_negation.is_match(string)
     }
     fn new(
@@ -961,7 +960,6 @@ impl Negation {
     ) -> Self {
         let kind = match string {
             "ne" => NegationKind::Ne,
-            "no" => NegationKind::No,
             _ => panic!("Invalid tense negation surface: {}", string),
         };
         Negation {
@@ -984,7 +982,6 @@ impl Negation {
     pub fn get_string(&self) -> String {
         match self.kind {
             NegationKind::Ne => "ne".to_string(),
-            NegationKind::No => "no".to_string(),
         }
     }
 }
