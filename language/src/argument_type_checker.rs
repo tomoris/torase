@@ -479,7 +479,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_項転置したあと項抽出の型検査が成功する() {
         let source = "parobe sa ra patirada si ri patirada eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();

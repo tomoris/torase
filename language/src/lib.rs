@@ -621,7 +621,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_みかんは私に食べられていない_転置が否定の先にきた場合にエラーなる() {
         let text = "re ne pahete ri behoranage si mi".to_string();
         let result = diagnose(text);
