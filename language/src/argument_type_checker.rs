@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::parser::*;
-use crate::tokenizer::{ArgumentRetrieverKind, ArgumentType, CaseLabelKind, Range};
+use crate::tokenizer::{ArgumentRetrieverKind, ArgumentType, CaseLabelKind, PhysicalEntity, Range};
 
 pub struct TypeMismatch {
     pub range: Range,
@@ -182,6 +182,19 @@ impl Event {
                             actual: arg_type,
                             expected: t2.clone(),
                             message: "Event type mismatch in the second argument.".to_string(),
+                        });
+                    }
+                }
+                CaseLabelKind::Hebu | CaseLabelKind::Hebe | CaseLabelKind::Hebo => {
+                    let expected = vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)];
+                    let arg_type = arg.get_type();
+                    if !has_intersection(&expected, &arg_type) {
+                        return Err(TypeMismatch {
+                            range: arg.get_range().clone(),
+                            actual: arg_type,
+                            expected,
+                            message: "Event type mismatch in a biological (生物系) case argument."
+                                .to_string(),
                         });
                     }
                 }
@@ -491,6 +504,42 @@ mod tests {
     #[ignore]
     fn test_unary_predicateを項転置しないとerr型を返す() {
         let source = "parobe sa mi si ro re pisarepa eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_生物系の格の型検査が成功する() {
+        let source = "pagibe sa mi si ri behapare hebu gi hebe mi hebo ba eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_随伴格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba hebu ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_奪格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba hebe ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_与格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba hebo ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);

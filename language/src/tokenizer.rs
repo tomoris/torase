@@ -513,7 +513,7 @@ pub struct CaseLabel {
 pub enum CaseLabelKind {
     Sa, // 主格
     Si, // 対格
-    // 人間系
+    // 生物系
     Hebu, // 随伴格 だれと
     Hebe, // 奪格(人間起点格) だれから、だれの
     Hebo, // 与格(人間目標格) だれまで、だれに
