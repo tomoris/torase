@@ -403,10 +403,10 @@ impl Event {
         let comitative = case_args
             .iter()
             .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebu));
-        let source = case_args
+        let animate_source = case_args
             .iter()
             .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebe));
-        let goal = case_args
+        let animate_goal = case_args
             .iter()
             .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebo));
         let cause = case_args
@@ -418,6 +418,24 @@ impl Event {
         let instrument = case_args
             .iter()
             .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hedu));
+        let location = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Heni));
+        let location_source = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hene));
+        let location_goal = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Heno));
+        let time = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hegi));
+        let time_source = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hege));
+        let time_goal = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hego));
         let arg2 = if let Some((_, phrase)) = acc {
             phrase.to_fol(vg)
         } else {
@@ -430,14 +448,21 @@ impl Event {
             let y = vg.next();
             ArgCtx::ExistOnly(y)
         };
-        // 随伴格・奪格・与格・原因格・目的格・具格は付加詞のため、省略時は存在閉包を作らず式に出さない。
+        // 随伴格・奪格・与格・原因格・目的格・具格・場所系・時間系は付加詞のため、
+        // 省略時は存在閉包を作らず式に出さない。
         let extra_roles: Vec<(&'static str, ArgCtx)> = [
             comitative.map(|(_, phrase)| ("Comitative", phrase.to_fol(vg))),
-            source.map(|(_, phrase)| ("Source", phrase.to_fol(vg))),
-            goal.map(|(_, phrase)| ("Goal", phrase.to_fol(vg))),
+            animate_source.map(|(_, phrase)| ("AnimateSource", phrase.to_fol(vg))),
+            animate_goal.map(|(_, phrase)| ("AnimateGoal", phrase.to_fol(vg))),
             cause.map(|(_, phrase)| ("Cause", phrase.to_fol(vg))),
             purpose.map(|(_, phrase)| ("Purpose", phrase.to_fol(vg))),
             instrument.map(|(_, phrase)| ("Instrument", phrase.to_fol(vg))),
+            location.map(|(_, phrase)| ("Location", phrase.to_fol(vg))),
+            location_source.map(|(_, phrase)| ("LocationSource", phrase.to_fol(vg))),
+            location_goal.map(|(_, phrase)| ("LocationGoal", phrase.to_fol(vg))),
+            time.map(|(_, phrase)| ("Time", phrase.to_fol(vg))),
+            time_source.map(|(_, phrase)| ("TimeSource", phrase.to_fol(vg))),
+            time_goal.map(|(_, phrase)| ("TimeGoal", phrase.to_fol(vg))),
         ]
         .into_iter()
         .flatten()
@@ -767,7 +792,7 @@ mod tests {
     fn test_奪格与格_私はあなたにりんごをあげる() {
         check(
             "pamobe sa mi si ri behapare hebe mi hebo ba",
-            "∃x.(behapare(x) ∧ ∃e.(((pamobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Source(e, mi)) ∧ Goal(e, ba)))",
+            "∃x.(behapare(x) ∧ ∃e.(((pamobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ AnimateSource(e, mi)) ∧ AnimateGoal(e, ba)))",
         );
     }
 
@@ -784,6 +809,22 @@ mod tests {
         check(
             "pahete sa mi si ri behapare hedu ri didora",
             "∃y.(didora(y) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Instrument(e, y))))",
+        );
+    }
+
+    #[test]
+    fn test_場所系_私はある場所からある場所へある場所でりんごを食べる() {
+        check(
+            "pahete sa mi si ri behapare heni ga hene gi heno gu",
+            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, ga)) ∧ LocationSource(e, gi)) ∧ LocationGoal(e, gu)))",
+        );
+    }
+
+    #[test]
+    fn test_時間系_私はある時からある時までりんごを食べる() {
+        check(
+            "pahete sa mi si ri behapare hegi ma hege mu hego bu",
+            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Time(e, ma)) ∧ TimeSource(e, mu)) ∧ TimeGoal(e, bu)))",
         );
     }
 
