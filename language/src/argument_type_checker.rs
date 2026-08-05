@@ -211,6 +211,20 @@ impl Event {
                         });
                     }
                 }
+                CaseLabelKind::Hedu => {
+                    let expected = vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)];
+                    let arg_type = arg.get_type();
+                    if !has_intersection(&expected, &arg_type) {
+                        return Err(TypeMismatch {
+                            range: arg.get_range().clone(),
+                            actual: arg_type,
+                            expected,
+                            message:
+                                "Event type mismatch in an instrumental (道具系) case argument."
+                                    .to_string(),
+                        });
+                    }
+                }
                 _ => {}
             }
         }
@@ -580,6 +594,24 @@ mod tests {
     #[test]
     fn test_目的格の型が間違っている場合にerr型を返す() {
         let source = "parobe sa mi si ba heto ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_道具系の格の型検査が成功する() {
+        let source = "parobe sa mi si ba hedu ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_具格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba hedu mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
