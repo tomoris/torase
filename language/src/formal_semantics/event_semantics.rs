@@ -400,6 +400,15 @@ impl Event {
         let acc = case_args
             .iter()
             .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Si));
+        let comitative = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebu));
+        let source = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebe));
+        let goal = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebo));
         let arg2 = if let Some((_, phrase)) = acc {
             phrase.to_fol(vg)
         } else {
@@ -412,19 +421,40 @@ impl Event {
             let y = vg.next();
             ArgCtx::ExistOnly(y)
         };
-        build_event_inner(&pred, arg1, arg2, vg)
+        // 随伴格・奪格・与格は付加詞のため、省略時は存在閉包を作らず式に出さない。
+        let extra_roles: Vec<(&'static str, ArgCtx)> = [
+            comitative.map(|(_, phrase)| ("Comitative", phrase.to_fol(vg))),
+            source.map(|(_, phrase)| ("Source", phrase.to_fol(vg))),
+            goal.map(|(_, phrase)| ("Goal", phrase.to_fol(vg))),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        build_event_inner(&pred, arg1, arg2, extra_roles, vg)
     }
 }
 
 /// Build a scoped formula for `pred(arg1, arg2)` in neo-Davidsonian event semantics:
-/// `∃e.(pred(e) ∧ Agent(e, arg1) ∧ Patient(e, arg2))`
+/// `∃e.(pred(e) ∧ Agent(e, arg1) ∧ Patient(e, arg2) ∧ <extra_roles>)`
 ///
-/// Scope order: arg2 is inner (narrow scope), arg1 is outer (wide scope).
-fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx, vg: &mut VarGen) -> Formula {
+/// Scope order (outer → inner): arg1, extra_roles (declared order), arg2.
+fn build_event_inner(
+    pred: &PredCtx,
+    arg1: ArgCtx,
+    arg2: ArgCtx,
+    extra_roles: Vec<(&'static str, ArgCtx)>,
+    vg: &mut VarGen,
+) -> Formula {
     match pred {
         PredCtx::Neg(inner) => {
             // ¬ scopes over everything (Montague-style wide-scope negation).
-            Formula::Not(Box::new(build_event_inner(inner, arg1, arg2, vg)))
+            Formula::Not(Box::new(build_event_inner(
+                inner,
+                arg1,
+                arg2,
+                extra_roles,
+                vg,
+            )))
         }
 
         PredCtx::Coord {
@@ -433,8 +463,8 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx, vg: &mut VarGen
             right,
         } => {
             // P di Q / binary_operator P Q: both predicates apply to the same args.
-            let f1 = build_event_inner(left, arg1.clone(), arg2.clone(), vg);
-            let f2 = build_event_inner(right, arg1, arg2, vg);
+            let f1 = build_event_inner(left, arg1.clone(), arg2.clone(), extra_roles.clone(), vg);
+            let f2 = build_event_inner(right, arg1, arg2, extra_roles, vg);
             if *and_op {
                 Formula::And(Box::new(f1), Box::new(f2))
             } else {
@@ -451,8 +481,8 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx, vg: &mut VarGen
             } = arg1
             {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, *left, arg2.clone(), vg);
-                let f2 = build_event_inner(&p, *right, arg2, vg);
+                let f1 = build_event_inner(&p, *left, arg2.clone(), extra_roles.clone(), vg);
+                let f2 = build_event_inner(&p, *right, arg2, extra_roles, vg);
                 return if and_op {
                     Formula::And(Box::new(f1), Box::new(f2))
                 } else {
@@ -467,8 +497,8 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx, vg: &mut VarGen
             } = arg2
             {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, arg1.clone(), *left, vg);
-                let f2 = build_event_inner(&p, arg1, *right, vg);
+                let f1 = build_event_inner(&p, arg1.clone(), *left, extra_roles.clone(), vg);
+                let f2 = build_event_inner(&p, arg1, *right, extra_roles, vg);
                 return if and_op {
                     Formula::And(Box::new(f1), Box::new(f2))
                 } else {
@@ -476,22 +506,29 @@ fn build_event_inner(pred: &PredCtx, arg1: ArgCtx, arg2: ArgCtx, vg: &mut VarGen
                 };
             }
 
-            // Base case: ∃e.(pred(e) ∧ Agent(e, t1) ∧ Patient(e, t2))
+            // Base case: ∃e.(pred(e) ∧ Agent(e, t1) ∧ Patient(e, t2) ∧ <extra_roles>)
             let t1 = arg1.term();
             let t2 = arg2.term();
             let e = vg.next_event();
             let ev = Term::Var(e.clone());
             let pred_atom = Formula::Atom(name.clone(), vec![ev.clone()]);
             let agent_atom = Formula::Atom("Agent".to_string(), vec![ev.clone(), t1]);
-            let patient_atom = Formula::Atom("Patient".to_string(), vec![ev, t2]);
-            let event_body = Formula::And(
+            let patient_atom = Formula::Atom("Patient".to_string(), vec![ev.clone(), t2]);
+            let mut event_body = Formula::And(
                 Box::new(pred_atom),
                 Box::new(Formula::And(Box::new(agent_atom), Box::new(patient_atom))),
             );
+            for (role_name, ctx) in &extra_roles {
+                let role_atom = Formula::Atom(role_name.to_string(), vec![ev.clone(), ctx.term()]);
+                event_body = Formula::And(Box::new(event_body), Box::new(role_atom));
+            }
             let event_formula = Formula::Exists(e, Box::new(event_body));
-            // arg2 scopes inside (narrow), arg1 scopes outside (wide).
-            let with_q2 = arg2.scope(event_formula);
-            arg1.scope(with_q2)
+            // arg2 scopes innermost, extra_roles in between, arg1 scopes outermost.
+            let mut f = arg2.scope(event_formula);
+            for (_, ctx) in extra_roles.into_iter().rev() {
+                f = ctx.scope(f);
+            }
+            arg1.scope(f)
         }
     }
 }
@@ -704,6 +741,22 @@ mod tests {
     fn check(text: &str, expected: &str) {
         let fol = to_fol_string(text).unwrap();
         assert_eq!(fol, expected, "input: {text}");
+    }
+
+    #[test]
+    fn test_随伴格_私はあなたとりんごを食べる() {
+        check(
+            "pahete sa mi si ri behapare hebu ba",
+            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Comitative(e, ba)))",
+        );
+    }
+
+    #[test]
+    fn test_奪格与格_私はあなたにりんごをあげる() {
+        check(
+            "pamobe sa mi si ri behapare hebe mi hebo ba",
+            "∃x.(behapare(x) ∧ ∃e.(((pamobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Source(e, mi)) ∧ Goal(e, ba)))",
+        );
     }
 
     #[test]
