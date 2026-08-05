@@ -198,6 +198,19 @@ impl Event {
                         });
                     }
                 }
+                CaseLabelKind::Hete | CaseLabelKind::Heto => {
+                    let expected = vec![ArgumentType::Abstraction];
+                    let arg_type = arg.get_type();
+                    if !has_intersection(&expected, &arg_type) {
+                        return Err(TypeMismatch {
+                            range: arg.get_range().clone(),
+                            actual: arg_type,
+                            expected,
+                            message: "Event type mismatch in an abstract (抽象系) case argument."
+                                .to_string(),
+                        });
+                    }
+                }
                 _ => {}
             }
         }
@@ -540,6 +553,33 @@ mod tests {
     #[test]
     fn test_与格の型が間違っている場合にerr型を返す() {
         let source = "parobe sa mi si ba hebo ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_抽象系の格の型検査が成功する() {
+        let source = "parobe sa mi si ba hete ri kahoraka heto ri kahoraka eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_原因格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba hete ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_目的格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba heto ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
