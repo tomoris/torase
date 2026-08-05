@@ -415,6 +415,9 @@ impl Event {
         let purpose = case_args
             .iter()
             .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Heto));
+        let instrument = case_args
+            .iter()
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hedu));
         let arg2 = if let Some((_, phrase)) = acc {
             phrase.to_fol(vg)
         } else {
@@ -427,13 +430,14 @@ impl Event {
             let y = vg.next();
             ArgCtx::ExistOnly(y)
         };
-        // 随伴格・奪格・与格・原因格・目的格は付加詞のため、省略時は存在閉包を作らず式に出さない。
+        // 随伴格・奪格・与格・原因格・目的格・具格は付加詞のため、省略時は存在閉包を作らず式に出さない。
         let extra_roles: Vec<(&'static str, ArgCtx)> = [
             comitative.map(|(_, phrase)| ("Comitative", phrase.to_fol(vg))),
             source.map(|(_, phrase)| ("Source", phrase.to_fol(vg))),
             goal.map(|(_, phrase)| ("Goal", phrase.to_fol(vg))),
             cause.map(|(_, phrase)| ("Cause", phrase.to_fol(vg))),
             purpose.map(|(_, phrase)| ("Purpose", phrase.to_fol(vg))),
+            instrument.map(|(_, phrase)| ("Instrument", phrase.to_fol(vg))),
         ]
         .into_iter()
         .flatten()
@@ -772,6 +776,14 @@ mod tests {
         check(
             "pahete sa mi si ri behapare hete ri kahoraka heto ri kahoraka",
             "∃y.(kahoraka(y) ∧ ∃z.(kahoraka(z) ∧ ∃x.(behapare(x) ∧ ∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Cause(e, y)) ∧ Purpose(e, z)))))",
+        );
+    }
+
+    #[test]
+    fn test_具格_私は道具を使ってりんごを食べる() {
+        check(
+            "pahete sa mi si ri behapare hedu ri didora",
+            "∃y.(didora(y) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Instrument(e, y))))",
         );
     }
 
