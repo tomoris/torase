@@ -136,14 +136,14 @@ mod tests {
     #[test]
     #[ignore]
     fn test_私の妻はりんごを毎日食べる() {
-        let text = "hudidi pahete ri paparatanera du mi si ri behapare da [all] rudahi".to_string();
+        let text = "hudidi pahete ri paparatanera du mi si ri behapare da [all] zudahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私と私の妻は昨日りんごを食べた() {
-        let text = "hita pahete sa binary_operator mi ri paparatanera du mi si ri behapare hegi ri ruhita du number ri rudahi"
+        let text = "hita pahete sa binary_operator mi ri paparatanera du mi si ri behapare hegi ri zuhita du number ri zudahi"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は6日前にりんごを食べた() {
-        let text = "hita pahete sa binary_operator mi ri paparatanera du mi si ri behapare hegi ri ruhita du number ri rudahi"
+        let text = "hita pahete sa binary_operator mi ri paparatanera du mi si ri behapare hegi ri zuhita du number ri zudahi"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn test_彼らは明日りんごを食べる() {
         let text =
-            "hitu pahete sa gu si ri behapare hegi ri ruhitu du number ri rudahi".to_string();
+            "hitu pahete sa gu si ri behapare hegi ri zuhitu du number ri zudahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -168,14 +168,14 @@ mod tests {
     #[test]
     fn test_彼らは6日後にりんごを食べる() {
         let text =
-            "hitu pahete sa gu si ri behapare hegi ri ruhitu du number ri rudahi".to_string();
+            "hitu pahete sa gu si ri behapare hegi ri zuhitu du number ri zudahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_彼女らは3日間りんごを食べている_食事としてりんごだけを食べている() {
-        let text = "hiti hudidi pahete sa gu si ri behapare hege ri ruhita du number ri rudahi"
+        let text = "hiti hudidi pahete sa gu si ri behapare hege ri zuhita du number ri zudahi"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_彼女らはりんごを5分間食べ続けている_りんごを食べる所要時間に5分かかっている() {
-        let text = "hiti hudida pahete sa gu si ri behapare hege ri ruhita du number ri ruminite"
+        let text = "hiti hudida pahete sa gu si ri behapare hege ri zuhita du number ri zuminite"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_彼は常にりんごを食べている_四六時中ずっとりんごを食べている() {
-        let text = "hudidu pahete sa gi si ri behapare hegi ri ruharahahi".to_string();
+        let text = "hudidu pahete sa gi si ri behapare hegi ri zuharahahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -313,14 +313,14 @@ mod tests {
 
     #[test]
     fn test_私はりんごを床に落とした() {
-        let text = "padaropa sa mi si ri behapare heno ri diharora".to_string();
+        let text = "padaropa sa mi si ri behapare heno ri zahatano du ri diharora".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_りんごが床に落ちた() {
-        let text = "padaropa si ri behapare heno ri diharora".to_string();
+        let text = "padaropa si ri behapare heno ri zahatano du ri diharora".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

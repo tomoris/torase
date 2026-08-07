@@ -225,7 +225,32 @@ impl Event {
                         });
                     }
                 }
-                _ => {}
+                CaseLabelKind::Heni | CaseLabelKind::Hene | CaseLabelKind::Heno => {
+                    let expected = vec![ArgumentType::Space];
+                    let arg_type = arg.get_type();
+                    if !has_intersection(&expected, &arg_type) {
+                        return Err(TypeMismatch {
+                            range: arg.get_range().clone(),
+                            actual: arg_type,
+                            expected,
+                            message: "Event type mismatch in a spatial (空間系) case argument."
+                                .to_string(),
+                        });
+                    }
+                }
+                CaseLabelKind::Hegi | CaseLabelKind::Hege | CaseLabelKind::Hego => {
+                    let expected = vec![ArgumentType::Time];
+                    let arg_type = arg.get_type();
+                    if !has_intersection(&expected, &arg_type) {
+                        return Err(TypeMismatch {
+                            range: arg.get_range().clone(),
+                            actual: arg_type,
+                            expected,
+                            message: "Event type mismatch in a temporal (時間系) case argument."
+                                .to_string(),
+                        });
+                    }
+                }
             }
         }
         Ok(())
@@ -612,6 +637,42 @@ mod tests {
     #[test]
     fn test_具格の型が間違っている場合にerr型を返す() {
         let source = "parobe sa mi si ba hedu mi eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_空間系の格の型検査が成功する() {
+        let source = "parobe sa mi si ba heni me hene be heno ge eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_空間格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba heni mi eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_時間系の格の型検査が成功する() {
+        let source = "parobe sa mi si ba hegi me hege be hego ge eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_時間格の型が間違っている場合にerr型を返す() {
+        let source = "parobe sa mi si ba hegi mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);

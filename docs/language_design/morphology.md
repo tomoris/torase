@@ -64,11 +64,26 @@ WordNetの階層構造に従い、第一音節が決まり、第一音節の子�
 - `re[CV]+`
   - entity.n.01 -> abstraction.n.06 -> attribute.n.02 -> * (state.n.02 以外)
 - `ri[CV]+`
-  - entity.n.01 -> abstraction.n.06 -> relation.n.01 -> * (part.n.01 -> substance.n.01 以外)
+  - entity.n.01 -> abstraction.n.06 -> relation.n.01 -> * (part.n.01 -> substance.n.01, spatial_relation.n.01, temporal_relation.n.01 以外)
 - `ro[CV]+`
   - entity.n.01 -> abstraction.n.06 -> communication.n.02
 - `ru[CV]+`
-  - entity.n.01 -> abstraction.n.06 -> * (psychological_feature.n.01, group.n.01, attribute.n.02, relation.n.01, communication.n.02 以外)
+  - entity.n.01 -> abstraction.n.06 -> * (psychological_feature.n.01, group.n.01, attribute.n.02, relation.n.01, communication.n.02, measure.n.02 -> time_period.n.01, measure.n.02 -> linear_measure.n.01 以外)
+
+##### 空間・時間を表す名詞述語(z系)
+
+空間・時間に関わる概念はWordNetでは`abstraction.n.06`(関係・尺度)に存在するが、`heni`/`hene`/`heno`(空間格)・`hegi`/`hege`/`hego`(時間格)の型検査で他の関係・尺度概念(親族関係、因果関係、重さ・体積の尺度など)と混同しないよう、専用の音節グループとして独立させている。
+
+- `za[CV]+` (空間関係。例:「中」「上」「近く」)
+  - abstraction.n.06 -> relation.n.01 -> spatial_relation.n.01
+- `zi[CV]+` (時間関係。例:「前」「後」「間」)
+  - abstraction.n.06 -> relation.n.01 -> temporal_relation.n.01
+- `zu[CV]+` (時間の尺度。例:「日」「分」「年」)
+  - abstraction.n.06 -> measure.n.02 -> time_period.n.01
+- `ze[CV]+` (空間の尺度。例:「メートル」)
+  - abstraction.n.06 -> measure.n.02 -> linear_measure.n.01
+
+`za`/`zi`/`zu`/`ze`はそれぞれ`SpatialRelation`/`TemporalRelation`/`Duration`/`Distance`型として扱われる。
 
 #### 動詞を表す述語
 
@@ -86,11 +101,11 @@ x1, x2に取れる項は、名詞を表す述語で用いた第一音節の分�
 - `pu[CV]+`, (生物以外の物理的実体x1がxxxする)
   - x1: `dV|nV`
 - `ka[CV]+` (生物x1が抽象概念x2をxxxする)
-  - x1: `bV`, x2: `gV|mV|rV`
+  - x1: `bV`, x2: `gV|mV|rV|zV`
 - `ki[CV]+` (生物以外の物理的実体x1が抽象概念x2をxxxする)
-  - x1: `dV|nV`, x2: `gV|mV|rV`
+  - x1: `dV|nV`, x2: `gV|mV|rV|zV`
 - `ku[CV]+` (抽象概念x1が抽象概念x2をxxxする)
-  - x1: `gV|mV|rV`, x2: `gV|mV|rV`
+  - x1: `gV|mV|rV|zV`, x2: `gV|mV|rV|zV`
 
 ### 項
 
@@ -110,6 +125,8 @@ x1, x2に取れる項は、名詞を表す述語で用いた第一音節の分�
 - `me` (これ)
 - `be` (それ)
 - `ge` (あれ)
+
+指示代名詞は指示物の種類を限定しないため、生物・人工物・その他物理的実体・抽象概念に加えて、空間(`heni`/`hene`/`heno`格の「ここ/そこ/あそこ」)や時間(`hegi`/`hege`/`hego`格の「いま/そのとき/あのとき」)も指すことができる。
 
 ## 機能語
 
@@ -186,11 +203,55 @@ x1, x2に取れる項は、名詞を表す述語で用いた第一音節の分�
 - `di` (述語修飾句の前置詞)
 - `du` (項修飾句の前置詞)
 
+### 格
+
+述語の項の直前に置き、意味役割を示す。`sa`(主格)・`si`(対格)は二項述語の項構造(x1, x2)に対応する必須格で、それ以外は付加詞(省略可・複数回の付与も可)。
+
+- `sa` (主格) — 述語のx1(第一項)
+- `si` (対格) — 述語のx2(第二項)
+
+付加詞の格は意味領域ごとにグループ化される。
+
+生物系(だれ)
+
+- `hebu` (随伴格) — だれと
+- `hebe` (奪格・人間起点格) — だれから、だれの
+- `hebo` (与格・人間目標格) — だれまで、だれに
+
+空間系(どこ)
+
+- `heni` (空間格) — どこで
+- `hene` (空間起点格) — どこから
+- `heno` (空間目標格) — どこまで
+
+時間系(いつ)
+
+- `hegi` (時間格) — いつ
+- `hege` (時間起点格) — いつから
+- `hego` (時間目標格) — いつまで
+
+道具系
+
+- `hedu` (具格) — 何々を使って
+
+抽象系
+
+- `hete` (原因格・理由起点格) — 何々のせいで
+- `heto` (目的格・理由目標格) — 何々のために
+
+#### 格ごとの項の型
+
+- `sa`/`si`: 述語の`get_argument_types`が返す(x1, x2)の型
+- `hebu`/`hebe`/`hebo`: `bV`(生物)
+- `hedu`: `dV`(人工物。`da`/`di`/`du`は現状区別していない)
+- `hete`/`heto`: `gV|mV|rV|zV`(抽象概念全般。`ka`/`ki`/`ku`の抽象項と同じ範囲)
+- `heni`/`hene`/`heno`: 空間を指す指示代名詞(`me`/`be`/`ge`)、または`zaV`(空間関係。例:「Xの中」「Xの近く」)
+- `hegi`/`hege`/`hego`: 時を指す指示代名詞(`me`/`be`/`ge`)、`ziV`(時間関係)、または`zuV`(時間の尺度。例:「6日」「5分間」)
+
 ### その他
 
-- `si` (第一項と第二項の区切り)
 - `re` (述語の第一項と第二項の入れ替え)
-- `ro` (項抽出)
+- `ra`/`ri` (項抽出。それぞれ述語の第一項・第二項を抽出する)
 - `se` (命題を項に変換、命題の始まりに置く)
 - `so` (命題を項に変換、命題の終わりに置く)
 

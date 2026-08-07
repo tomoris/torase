@@ -518,9 +518,9 @@ pub enum CaseLabelKind {
     Hebe, // 奪格(人間起点格) だれから、だれの
     Hebo, // 与格(人間目標格) だれまで、だれに
     // 空間系
-    Heni, // 場所格 どこで
-    Hene, // 場所起点格 どこから
-    Heno, // 場所目標格 どこまで
+    Heni, // 空間格 どこで
+    Hene, // 空間起点格 どこから
+    Heno, // 空間目標格 どこまで
     // 時間系
     Hegi, // 時間格 いつ
     Hege, // 時間起点格 いつから
@@ -989,7 +989,7 @@ impl Negation {
 impl BinaryPredicate {
     fn is_match(string: &str) -> bool {
         let re_binary_predicate =
-            Regex::new(r"^(?:[bdgmnrpk][aeiuo])(?:[ptkshbdgmnr][aeiuo])+$").unwrap();
+            Regex::new(r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$").unwrap();
         re_binary_predicate.is_match(string)
     }
     fn new(
@@ -1024,6 +1024,11 @@ impl BinaryPredicate {
         let g = Regex::new(r"^(?:g)").unwrap();
         let m = Regex::new(r"^(?:m)").unwrap();
         let r = Regex::new(r"^(?:r)").unwrap();
+        // 空間・時間に関する名詞的な命題
+        let za = Regex::new(r"^(?:za)").unwrap();
+        let zi = Regex::new(r"^(?:zi)").unwrap();
+        let zu = Regex::new(r"^(?:zu)").unwrap();
+        let ze = Regex::new(r"^(?:ze)").unwrap();
         // 動詞的な命題
         let pa = Regex::new(r"^(?:pa)").unwrap();
         let pe = Regex::new(r"^(?:pe)").unwrap();
@@ -1048,6 +1053,31 @@ impl BinaryPredicate {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::NOther)],
+            )
+        } else if r.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Abstraction],
+            )
+        } else if za.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Space],
+            )
+        } else if zi.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Time],
+            )
+        } else if ze.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Space],
+            )
+        } else if zu.is_match(&self.string) {
+            (
+                vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                vec![ArgumentType::Time],
             )
         } else if g.is_match(&self.string) || m.is_match(&self.string) || r.is_match(&self.string) {
             (
@@ -1094,7 +1124,7 @@ impl BinaryPredicate {
         } else if ka.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
-                vec![ArgumentType::Abstraction],
+                abstraction_family_types(),
             )
         } else if ki.is_match(&self.string) {
             (
@@ -1102,13 +1132,10 @@ impl BinaryPredicate {
                     ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                     ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ],
-                vec![ArgumentType::Abstraction],
+                abstraction_family_types(),
             )
         } else if ku.is_match(&self.string) {
-            (
-                vec![ArgumentType::Abstraction],
-                vec![ArgumentType::Abstraction],
-            )
+            (abstraction_family_types(), abstraction_family_types())
         } else {
             panic!("Invalid binary predicate surface: {}", self.string);
         }
@@ -1116,6 +1143,15 @@ impl BinaryPredicate {
     pub fn get_string(&self) -> String {
         self.string.clone()
     }
+}
+
+/// `ka`/`ki`/`ku`(生物・非生物が抽象概念を対象に取る動詞)が受け付ける抽象概念系や空間・時間系の型全体。
+pub(crate) fn abstraction_family_types() -> Vec<ArgumentType> {
+    vec![
+        ArgumentType::Abstraction,
+        ArgumentType::Space,
+        ArgumentType::Time,
+    ]
 }
 
 impl Argument {
@@ -1171,6 +1207,8 @@ impl Argument {
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ArgumentType::Abstraction,
+                ArgumentType::Space,
+                ArgumentType::Time,
             ],
             ArgumentKind::Ba => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Bu => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
@@ -1179,6 +1217,8 @@ impl Argument {
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ArgumentType::Abstraction,
+                ArgumentType::Space,
+                ArgumentType::Time,
             ],
             ArgumentKind::Ga => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             ArgumentKind::Gi => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
@@ -1188,6 +1228,8 @@ impl Argument {
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ArgumentType::Abstraction,
+                ArgumentType::Space,
+                ArgumentType::Time,
             ],
         }
     }
@@ -1748,6 +1790,8 @@ impl Position {
 pub enum ArgumentType {
     PhysicalEntity(PhysicalEntity),
     Abstraction,
+    Space, // SpatialRelation, Distanceから構成
+    Time,  // TemporalRelation, Durationから構成
     Epsilon,
 }
 

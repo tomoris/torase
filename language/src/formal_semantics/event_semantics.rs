@@ -448,7 +448,7 @@ impl Event {
             let y = vg.next();
             ArgCtx::ExistOnly(y)
         };
-        // 随伴格・奪格・与格・原因格・目的格・具格・場所系・時間系は付加詞のため、
+        // 随伴格・奪格・与格・原因格・目的格・具格・空間系・時間系は付加詞のため、
         // 省略時は存在閉包を作らず式に出さない。
         let extra_roles: Vec<(&'static str, ArgCtx)> = [
             comitative.map(|(_, phrase)| ("Comitative", phrase.to_fol(vg))),
@@ -813,18 +813,18 @@ mod tests {
     }
 
     #[test]
-    fn test_場所系_私はある場所からある場所へある場所でりんごを食べる() {
+    fn test_空間系_私はある空間からある空間へある空間でりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare heni ga hene gi heno gu",
-            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, ga)) ∧ LocationSource(e, gi)) ∧ LocationGoal(e, gu)))",
+            "pahete sa mi si ri behapare heni me hene be heno ge",
+            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, me)) ∧ LocationSource(e, be)) ∧ LocationGoal(e, ge)))",
         );
     }
 
     #[test]
     fn test_時間系_私はある時からある時までりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare hegi ma hege mu hego bu",
-            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Time(e, ma)) ∧ TimeSource(e, mu)) ∧ TimeGoal(e, bu)))",
+            "pahete sa mi si ri behapare hegi me hege be hego ge",
+            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Time(e, me)) ∧ TimeSource(e, be)) ∧ TimeGoal(e, ge)))",
         );
     }
 
