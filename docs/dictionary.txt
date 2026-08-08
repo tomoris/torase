@@ -566,3 +566,15 @@ give
 kareta
 x1はx2という命題をさせる
 let
+
+pihezisata
+x1は存在する
+exist
+
+padirati
+x1はx2を汚す
+dirty
+
+pakarena
+x1はx2を綺麗にする
+clean

@@ -197,17 +197,15 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_りんごが3つある() {
-        let text = "存在する number ri behapare".to_string();
+        let text = "pihezisata sa number ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_りんご達がテーブルの上にある() {
-        let text = "存在する da 机の上 ri behapare".to_string();
+        let text = "pihezisata sa number ri behapare heni ri zahatano du ri ditabare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -234,9 +232,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_りんごがひとつもない() {
-        let text = "ne [存在する] ri behapare".to_string();
+        let text = "ne pihezisata sa ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -347,17 +344,15 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_このりんごは汚い() {
-        let text = "[x1は汚いもの] mo ri behapare".to_string();
+        let text = "hudu padirati si mo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_このりんごは綺麗ではない() {
-        let text = "ne [x1は綺麗なもの] mo ri behapare".to_string();
+        let text = "hudu ne pakarena sa mo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -463,10 +458,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_りんごは食べることができない_なぜなら_りんごは綺麗ではないから() {
-        let text =
-            "hane hapu ◇ pahete si ri behapare hete se ne [綺麗] sa ri behoranage so".to_string();
+        let text = "hane hapu ◇ pahete si ri behapare hete se hudu ne pakarena sa ri behoranage so"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -623,7 +617,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_ここには何もない() {
-        let text = "".to_string();
+        let text = "ne pihezisata sa 何か heni me".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
