@@ -117,7 +117,7 @@ impl LexicalType for crate::tokenizer::ArgumentRetriever {
 
 impl LexicalType for crate::tokenizer::MtaEventToArgumentPhraseConverter {
     /// Event nominalization opener: converts a proposition into a GQ.
-    /// se…so  ↦  λt. ιQ. Q = ↑t  :  t → GQ
+    /// he…ho  ↦  λt. ιQ. Q = ↑t  :  t → GQ
     fn lexical_type(&self) -> Type {
         Type::arrow(Type::T, Type::gq())
     }
@@ -334,7 +334,7 @@ impl ArgumentPhrase {
     /// - negated argument   ¬arg   : complement GQ               (e → t) → t
     /// - coordinated args          : both must be (e → t) → t        (e → t) → t
     /// - quantified argument       : quantifier gives GQ         (e → t) → t
-    /// - event nominalization se…so: t →(nominalize)→            (e → t) → t
+    /// - event nominalization he…ho: t →(nominalize)→            (e → t) → t
     fn infer_type(&self) -> TCResult {
         match self {
             // Bare argument: type comes from the token's lexical entry
@@ -356,7 +356,7 @@ impl ArgumentPhrase {
             // Quantified argument: the iota / choice operator gives an entity
             ArgumentPhrase::Four(quant_arg) => quant_arg.infer_type(),
 
-            // Event nominalization se…so:  se : t → GQ
+            // Event nominalization he…ho:  he : t → GQ
             ArgumentPhrase::Five(conv, mta_event, _end) => {
                 let conv_type = conv.lexical_type();
                 let event_type = mta_event.infer_type()?;

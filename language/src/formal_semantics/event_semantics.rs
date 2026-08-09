@@ -205,7 +205,7 @@ enum ArgCtx {
         left: Box<ArgCtx>,
         right: Box<ArgCtx>,
     },
-    /// Event nominalization (se … so): ∃var.(inner ∧ body).
+    /// Event nominalization (he … ho): ∃var.(inner ∧ body).
     Nominal { var: String, inner: Box<Formula> },
 }
 
@@ -358,13 +358,13 @@ impl PostModifiedMtaEvent {
                 PostMtaEventExpression::One(modifier, mta2) => match modifier.get_kind() {
                     // da (命題修飾句の前置詞) is still unimplemented; ignored in the FOL translation.
                     PostMtaEventModifierKind::Da => mta.to_fol(vg),
-                    // hetete/hetene/hetoto/hetone assert that both propositions hold; the
+                    // hesute/henesute/hesuto/henesuto assert that both propositions hold; the
                     // causal/concessive discourse relation itself is not truth-conditional and
                     // is not represented in FOL (same treatment as modality/tense/aspect).
-                    PostMtaEventModifierKind::Hetete
-                    | PostMtaEventModifierKind::Hetene
-                    | PostMtaEventModifierKind::Hetoto
-                    | PostMtaEventModifierKind::Hetone => {
+                    PostMtaEventModifierKind::Hesute
+                    | PostMtaEventModifierKind::Henesute
+                    | PostMtaEventModifierKind::Hesuto
+                    | PostMtaEventModifierKind::Henesuto => {
                         Formula::And(Box::new(mta.to_fol(vg)), Box::new(mta2.to_fol(vg)))
                     }
                 },
@@ -416,40 +416,40 @@ impl Event {
             .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Si));
         let comitative = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebu));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Subu));
         let animate_source = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebe));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sube));
         let animate_goal = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hebo));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Subo));
         let cause = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hete));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sute));
         let purpose = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Heto));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suto));
         let instrument = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hedu));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sudu));
         let location = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Heni));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suni));
         let location_source = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hene));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sune));
         let location_goal = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Heno));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suno));
         let time = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hegi));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sugi));
         let time_source = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hege));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suge));
         let time_goal = case_args
             .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Hego));
+            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sugo));
         let arg2 = if let Some((_, phrase)) = acc {
             phrase.to_fol(vg)
         } else {
@@ -607,8 +607,8 @@ impl ArgumentPhrase {
             // Quantified argument phrase.
             ArgumentPhrase::Four(quant_arg) => quant_arg.to_fol(vg),
 
-            // Event nominalization: se MtaEvent so.
-            ArgumentPhrase::Five(_se, mta_event, _so) => {
+            // Event nominalization: he MtaEvent ho.
+            ArgumentPhrase::Five(_he, mta_event, _ho) => {
                 let var = vg.next();
                 let inner = mta_event.to_fol(vg);
                 ArgCtx::Nominal {
@@ -797,7 +797,7 @@ mod tests {
     #[test]
     fn test_随伴格_私はあなたとりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare hebu ba",
+            "pahete sa mi si ri behapare subu ba",
             "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Comitative(e, ba)))",
         );
     }
@@ -805,7 +805,7 @@ mod tests {
     #[test]
     fn test_奪格与格_私はあなたにりんごをあげる() {
         check(
-            "pamobe sa mi si ri behapare hebe mi hebo ba",
+            "pamobe sa mi si ri behapare sube mi subo ba",
             "∃x.(behapare(x) ∧ ∃e.(((pamobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ AnimateSource(e, mi)) ∧ AnimateGoal(e, ba)))",
         );
     }
@@ -813,7 +813,7 @@ mod tests {
     #[test]
     fn test_原因格目的格_私はりんごを理由があって目的のために食べる() {
         check(
-            "pahete sa mi si ri behapare hete ri kahoraka heto ri kahoraka",
+            "pahete sa mi si ri behapare sute ri kahoraka suto ri kahoraka",
             "∃y.(kahoraka(y) ∧ ∃z.(kahoraka(z) ∧ ∃x.(behapare(x) ∧ ∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Cause(e, y)) ∧ Purpose(e, z)))))",
         );
     }
@@ -821,7 +821,7 @@ mod tests {
     #[test]
     fn test_具格_私は道具を使ってりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare hedu ri didora",
+            "pahete sa mi si ri behapare sudu ri didora",
             "∃y.(didora(y) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Instrument(e, y))))",
         );
     }
@@ -829,7 +829,7 @@ mod tests {
     #[test]
     fn test_空間系_私はある空間からある空間へある空間でりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare heni me hene be heno ge",
+            "pahete sa mi si ri behapare suni me sune be suno ge",
             "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, me)) ∧ LocationSource(e, be)) ∧ LocationGoal(e, ge)))",
         );
     }
@@ -837,7 +837,7 @@ mod tests {
     #[test]
     fn test_時間系_私はある時からある時までりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare hegi me hege be hego ge",
+            "pahete sa mi si ri behapare sugi me suge be sugo ge",
             "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Time(e, me)) ∧ TimeSource(e, be)) ∧ TimeGoal(e, ge)))",
         );
     }
@@ -851,33 +851,33 @@ mod tests {
     }
 
     #[test]
-    fn test_接続詞_hetete_結果から原因() {
+    fn test_接続詞_hesute_結果から原因() {
         check(
-            "pahete sa mi si ri behapare hetete pahete sa ba si ri behoranage",
+            "pahete sa mi si ri behapare hesute pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
-    fn test_接続詞_hetene_結果から反対の原因() {
+    fn test_接続詞_henesute_結果から反対の原因() {
         check(
-            "pahete sa mi si ri behapare hetene pahete sa ba si ri behoranage",
+            "pahete sa mi si ri behapare henesute pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
-    fn test_接続詞_hetoto_原因から結果() {
+    fn test_接続詞_hesuto_原因から結果() {
         check(
-            "pahete sa mi si ri behapare hetoto pahete sa ba si ri behoranage",
+            "pahete sa mi si ri behapare hesuto pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
-    fn test_接続詞_hetone_反対の原因から結果() {
+    fn test_接続詞_henesuto_反対の原因から結果() {
         check(
-            "pahete sa mi si ri behapare hetone pahete sa ba si ri behoranage",
+            "pahete sa mi si ri behapare henesuto pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
@@ -959,7 +959,7 @@ mod tests {
     #[ignore]
     fn test_事象名詞化_あなたは_私はりんごを食べる_と言った() {
         check(
-            "kasahi ba si se pahete mi si ri behapare so",
+            "kasahi ba si he pahete mi si ri behapare ho",
             "∃x.(∃y.(behapare(y) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, y)))) ∧ ∃e1.(kasahi(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))))",
         );
     }

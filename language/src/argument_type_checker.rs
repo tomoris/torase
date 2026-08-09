@@ -160,9 +160,25 @@ impl Event {
         let pred = self.get_pred();
         pred.type_check()?;
         let (t1, t2) = pred.get_argument_types();
+        let mut seen_adjunct_kinds: Vec<&CaseLabelKind> = Vec::new();
         for (label, arg) in self.case_args() {
             arg.type_check()?;
-            match label.get_kind() {
+            let kind = label.get_kind();
+            if !matches!(kind, CaseLabelKind::Sa | CaseLabelKind::Si) {
+                if seen_adjunct_kinds.contains(&kind) {
+                    return Err(TypeMismatch {
+                        range: arg.get_range().clone(),
+                        actual: vec![],
+                        expected: vec![],
+                        message: format!(
+                            "Adjunct case label '{}' is applied more than once.",
+                            label.get_string()
+                        ),
+                    });
+                }
+                seen_adjunct_kinds.push(kind);
+            }
+            match kind {
                 CaseLabelKind::Sa => {
                     let arg_type = arg.get_type();
                     if !has_intersection(&t1, &arg_type) {
@@ -185,7 +201,7 @@ impl Event {
                         });
                     }
                 }
-                CaseLabelKind::Hebu | CaseLabelKind::Hebe | CaseLabelKind::Hebo => {
+                CaseLabelKind::Subu | CaseLabelKind::Sube | CaseLabelKind::Subo => {
                     let expected = vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)];
                     let arg_type = arg.get_type();
                     if !has_intersection(&expected, &arg_type) {
@@ -198,7 +214,7 @@ impl Event {
                         });
                     }
                 }
-                CaseLabelKind::Hete | CaseLabelKind::Heto => {
+                CaseLabelKind::Sute | CaseLabelKind::Suto => {
                     let expected = vec![ArgumentType::Abstraction];
                     let arg_type = arg.get_type();
                     if !has_intersection(&expected, &arg_type) {
@@ -211,7 +227,7 @@ impl Event {
                         });
                     }
                 }
-                CaseLabelKind::Hedu => {
+                CaseLabelKind::Sudu => {
                     let expected = vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)];
                     let arg_type = arg.get_type();
                     if !has_intersection(&expected, &arg_type) {
@@ -225,7 +241,7 @@ impl Event {
                         });
                     }
                 }
-                CaseLabelKind::Heni | CaseLabelKind::Hene | CaseLabelKind::Heno => {
+                CaseLabelKind::Suni | CaseLabelKind::Sune | CaseLabelKind::Suno => {
                     let expected = vec![ArgumentType::Space];
                     let arg_type = arg.get_type();
                     if !has_intersection(&expected, &arg_type) {
@@ -238,7 +254,7 @@ impl Event {
                         });
                     }
                 }
-                CaseLabelKind::Hegi | CaseLabelKind::Hege | CaseLabelKind::Hego => {
+                CaseLabelKind::Sugi | CaseLabelKind::Suge | CaseLabelKind::Sugo => {
                     let expected = vec![ArgumentType::Time];
                     let arg_type = arg.get_type();
                     if !has_intersection(&expected, &arg_type) {
@@ -564,7 +580,7 @@ mod tests {
 
     #[test]
     fn test_生物系の格の型検査が成功する() {
-        let source = "pagibe sa mi si ri behapare hebu gi hebe mi hebo ba eos";
+        let source = "pagibe sa mi si ri behapare subu gi sube mi subo ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -573,7 +589,7 @@ mod tests {
 
     #[test]
     fn test_随伴格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba hebu ri didora eos";
+        let source = "parobe sa mi si ba subu ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -582,7 +598,7 @@ mod tests {
 
     #[test]
     fn test_奪格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba hebe ri didora eos";
+        let source = "parobe sa mi si ba sube ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -591,7 +607,7 @@ mod tests {
 
     #[test]
     fn test_与格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba hebo ri didora eos";
+        let source = "parobe sa mi si ba subo ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -600,7 +616,7 @@ mod tests {
 
     #[test]
     fn test_抽象系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba hete ri kahoraka heto ri kahoraka eos";
+        let source = "parobe sa mi si ba sute ri kahoraka suto ri kahoraka eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -609,7 +625,7 @@ mod tests {
 
     #[test]
     fn test_原因格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba hete ri didora eos";
+        let source = "parobe sa mi si ba sute ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -618,7 +634,7 @@ mod tests {
 
     #[test]
     fn test_目的格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba heto ri didora eos";
+        let source = "parobe sa mi si ba suto ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -627,7 +643,7 @@ mod tests {
 
     #[test]
     fn test_道具系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba hedu ri didora eos";
+        let source = "parobe sa mi si ba sudu ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -636,7 +652,7 @@ mod tests {
 
     #[test]
     fn test_具格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba hedu mi eos";
+        let source = "parobe sa mi si ba sudu mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -645,7 +661,7 @@ mod tests {
 
     #[test]
     fn test_空間系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba heni me hene be heno ge eos";
+        let source = "parobe sa mi si ba suni me sune be suno ge eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -654,7 +670,16 @@ mod tests {
 
     #[test]
     fn test_空間格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba heni mi eos";
+        let source = "parobe sa mi si ba suni mi eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_同じ付加詞の格が複数回付与された場合にerr型を返す() {
+        let source = "parobe sa mi si ba suni me suni ge eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -663,7 +688,7 @@ mod tests {
 
     #[test]
     fn test_時間系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba hegi me hege be hego ge eos";
+        let source = "parobe sa mi si ba sugi me suge be sugo ge eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);
@@ -672,7 +697,7 @@ mod tests {
 
     #[test]
     fn test_時間格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba hegi mi eos";
+        let source = "parobe sa mi si ba sugi mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);

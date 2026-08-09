@@ -514,22 +514,22 @@ pub enum CaseLabelKind {
     Sa, // 主格
     Si, // 対格
     // 生物系
-    Hebu, // 随伴格 だれと
-    Hebe, // 奪格(人間起点格) だれから、だれの
-    Hebo, // 与格(人間目標格) だれまで、だれに
+    Subu, // 随伴格 だれと
+    Sube, // 奪格(人間起点格) だれから、だれの
+    Subo, // 与格(人間目標格) だれまで、だれに
     // 空間系
-    Heni, // 空間格 どこで
-    Hene, // 空間起点格 どこから
-    Heno, // 空間目標格 どこまで
+    Suni, // 空間格 どこで
+    Sune, // 空間起点格 どこから
+    Suno, // 空間目標格 どこまで
     // 時間系
-    Hegi, // 時間格 いつ
-    Hege, // 時間起点格 いつから
-    Hego, // 時間目標格 いつまで
+    Sugi, // 時間格 いつ
+    Suge, // 時間起点格 いつから
+    Sugo, // 時間目標格 いつまで
     // 道具系
-    Hedu, // 具格 何々を使って
+    Sudu, // 具格 何々を使って
     // 抽象系
-    Hete, // 原因格(理由起点格) 何々のせいで
-    Heto, // 目的格(理由目標格) 何々のために
+    Sute, // 原因格(理由起点格) 何々のせいで
+    Suto, // 目的格(理由目標格) 何々のために
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -599,11 +599,11 @@ pub struct PostMtaEventModifier {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PostMtaEventModifierKind {
-    Da,     // 命題修飾句の前置詞
-    Hetete, // 接続詞(結果 -> 原因)
-    Hetene, // 接続詞(結果 -> 反対の原因)
-    Hetoto, // 接続詞(原因 -> 結果)
-    Hetone, // 接続詞(反対の原因 -> 結果)
+    Da,       // 命題修飾句の前置詞
+    Hesute,   // 接続詞(結果 -> 原因)
+    Henesute, // 接続詞(結果 -> 反対の原因)
+    Hesuto,   // 接続詞(原因 -> 結果)
+    Henesuto, // 接続詞(反対の原因 -> 結果)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1262,7 +1262,7 @@ impl Argument {
 
 impl CaseLabel {
     fn is_match(string: &str) -> bool {
-        let re = Regex::new(r"^(?:sa|si|he(?:bu|be|bo|ni|ne|no|gi|ge|go|du|te|to))$").unwrap();
+        let re = Regex::new(r"^(?:sa|si|su(?:bu|be|bo|ni|ne|no|gi|ge|go|du|te|to))$").unwrap();
         re.is_match(string)
     }
     fn new(
@@ -1275,18 +1275,18 @@ impl CaseLabel {
         let kind = match string {
             "sa" => CaseLabelKind::Sa,
             "si" => CaseLabelKind::Si,
-            "hebu" => CaseLabelKind::Hebu,
-            "hebe" => CaseLabelKind::Hebe,
-            "hebo" => CaseLabelKind::Hebo,
-            "heni" => CaseLabelKind::Heni,
-            "hene" => CaseLabelKind::Hene,
-            "heno" => CaseLabelKind::Heno,
-            "hegi" => CaseLabelKind::Hegi,
-            "hege" => CaseLabelKind::Hege,
-            "hego" => CaseLabelKind::Hego,
-            "hedu" => CaseLabelKind::Hedu,
-            "hete" => CaseLabelKind::Hete,
-            "heto" => CaseLabelKind::Heto,
+            "subu" => CaseLabelKind::Subu,
+            "sube" => CaseLabelKind::Sube,
+            "subo" => CaseLabelKind::Subo,
+            "suni" => CaseLabelKind::Suni,
+            "sune" => CaseLabelKind::Sune,
+            "suno" => CaseLabelKind::Suno,
+            "sugi" => CaseLabelKind::Sugi,
+            "suge" => CaseLabelKind::Suge,
+            "sugo" => CaseLabelKind::Sugo,
+            "sudu" => CaseLabelKind::Sudu,
+            "sute" => CaseLabelKind::Sute,
+            "suto" => CaseLabelKind::Suto,
             _ => panic!("Invalid case label surface: {}", string),
         };
         CaseLabel {
@@ -1307,18 +1307,18 @@ impl CaseLabel {
         match self.kind {
             CaseLabelKind::Sa => "sa".to_string(),
             CaseLabelKind::Si => "si".to_string(),
-            CaseLabelKind::Hebu => "hebu".to_string(),
-            CaseLabelKind::Hebe => "hebe".to_string(),
-            CaseLabelKind::Hebo => "hebo".to_string(),
-            CaseLabelKind::Heni => "heni".to_string(),
-            CaseLabelKind::Hene => "hene".to_string(),
-            CaseLabelKind::Heno => "heno".to_string(),
-            CaseLabelKind::Hegi => "hegi".to_string(),
-            CaseLabelKind::Hege => "hege".to_string(),
-            CaseLabelKind::Hego => "hego".to_string(),
-            CaseLabelKind::Hedu => "hedu".to_string(),
-            CaseLabelKind::Hete => "hete".to_string(),
-            CaseLabelKind::Heto => "heto".to_string(),
+            CaseLabelKind::Subu => "subu".to_string(),
+            CaseLabelKind::Sube => "sube".to_string(),
+            CaseLabelKind::Subo => "subo".to_string(),
+            CaseLabelKind::Suni => "suni".to_string(),
+            CaseLabelKind::Sune => "sune".to_string(),
+            CaseLabelKind::Suno => "suno".to_string(),
+            CaseLabelKind::Sugi => "sugi".to_string(),
+            CaseLabelKind::Suge => "suge".to_string(),
+            CaseLabelKind::Sugo => "sugo".to_string(),
+            CaseLabelKind::Sudu => "sudu".to_string(),
+            CaseLabelKind::Sute => "sute".to_string(),
+            CaseLabelKind::Suto => "suto".to_string(),
         }
     }
     pub fn get_kind(&self) -> &CaseLabelKind {
@@ -1532,7 +1532,7 @@ impl Determiner {
 
 impl MtaEventToArgumentPhraseConverter {
     fn is_match(string: &str) -> bool {
-        string == "se"
+        string == "he"
     }
     fn new(
         string: &str,
@@ -1564,13 +1564,13 @@ impl MtaEventToArgumentPhraseConverter {
         self.range.clone()
     }
     pub fn get_string(&self) -> String {
-        "se".to_string()
+        "he".to_string()
     }
 }
 
 impl MtaEventToArgumentPhraseConverterEnd {
     fn is_match(string: &str) -> bool {
-        string == "so"
+        string == "ho"
     }
     fn new(
         string: &str,
@@ -1602,13 +1602,13 @@ impl MtaEventToArgumentPhraseConverterEnd {
         self.range.clone()
     }
     pub fn get_string(&self) -> String {
-        "so".to_string()
+        "ho".to_string()
     }
 }
 
 impl PostMtaEventModifier {
     fn is_match(string: &str) -> bool {
-        matches!(string, "da" | "hetete" | "hetene" | "hetoto" | "hetone")
+        matches!(string, "da" | "hesute" | "henesute" | "hesuto" | "henesuto")
     }
     fn new(
         string: &str,
@@ -1619,10 +1619,10 @@ impl PostMtaEventModifier {
     ) -> Self {
         let kind = match string {
             "da" => PostMtaEventModifierKind::Da,
-            "hetete" => PostMtaEventModifierKind::Hetete,
-            "hetene" => PostMtaEventModifierKind::Hetene,
-            "hetoto" => PostMtaEventModifierKind::Hetoto,
-            "hetone" => PostMtaEventModifierKind::Hetone,
+            "hesute" => PostMtaEventModifierKind::Hesute,
+            "henesute" => PostMtaEventModifierKind::Henesute,
+            "hesuto" => PostMtaEventModifierKind::Hesuto,
+            "henesuto" => PostMtaEventModifierKind::Henesuto,
             _ => panic!("Invalid post mta event modifier surface: {}", string),
         };
         PostMtaEventModifier {
@@ -1642,10 +1642,10 @@ impl PostMtaEventModifier {
     pub fn get_string(&self) -> String {
         match self.kind {
             PostMtaEventModifierKind::Da => "da".to_string(),
-            PostMtaEventModifierKind::Hetete => "hetete".to_string(),
-            PostMtaEventModifierKind::Hetene => "hetene".to_string(),
-            PostMtaEventModifierKind::Hetoto => "hetoto".to_string(),
-            PostMtaEventModifierKind::Hetone => "hetone".to_string(),
+            PostMtaEventModifierKind::Hesute => "hesute".to_string(),
+            PostMtaEventModifierKind::Henesute => "henesute".to_string(),
+            PostMtaEventModifierKind::Hesuto => "hesuto".to_string(),
+            PostMtaEventModifierKind::Henesuto => "henesuto".to_string(),
         }
     }
     pub fn get_kind(&self) -> &PostMtaEventModifierKind {
