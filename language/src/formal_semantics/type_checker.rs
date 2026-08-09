@@ -197,6 +197,14 @@ impl MtaEvent {
     fn infer_type(&self) -> TCResult {
         match self {
             MtaEvent::One(_modality, ta_event) => ta_event.infer_type(),
+            MtaEvent::Two(_op, m1, m2) => {
+                let t1 = m1.infer_type()?;
+                let t2 = m2.infer_type()?;
+                if t1 != t2 {
+                    return Err(TypeMismatch::new(m2.get_range(), t2, t1));
+                }
+                Ok(t1)
+            }
         }
     }
 }

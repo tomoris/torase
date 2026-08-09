@@ -455,6 +455,7 @@ pub enum ModifiedAspect {
 #[derive(Clone, Debug)]
 pub enum MtaEvent {
     One(ModalityExpression, TaEvent),
+    Two(PropositionOperator, Box<MtaEvent>, Box<MtaEvent>),
 }
 
 #[derive(Clone, Debug)]
@@ -499,7 +500,7 @@ pub enum BinaryPredicatePhrase {
     One(BinaryPredicate),
     Two(Negation, Box<BinaryPredicatePhrase>),
     Three(
-        BinaryOperator,
+        PredicateOperator,
         Box<BinaryPredicatePhrase>,
         Box<BinaryPredicatePhrase>,
     ),
@@ -509,7 +510,7 @@ pub enum BinaryPredicatePhrase {
 pub enum ArgumentPhrase {
     One(Argument),
     Two(Negation, Box<ArgumentPhrase>),
-    Three(BinaryOperator, Box<ArgumentPhrase>, Box<ArgumentPhrase>),
+    Three(ArgumentOperator, Box<ArgumentPhrase>, Box<ArgumentPhrase>),
     Four(QuantifiedArgument),
     Five(
         MtaEventToArgumentPhraseConverter,
@@ -629,7 +630,12 @@ impl S {
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            DummyTerminalType::BinaryOperator => {
+            DummyTerminalType::PredicateOperator => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::DeclarativeSentence,
+                )]))
+            }
+            DummyTerminalType::PropositionOperator => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
@@ -700,7 +706,12 @@ impl DeclarativeSentence {
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            DummyTerminalType::BinaryOperator => {
+            DummyTerminalType::PredicateOperator => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::PostModifiedMtaEvent,
+                )]))
+            }
+            DummyTerminalType::PropositionOperator => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
@@ -788,7 +799,11 @@ impl PostModifiedMtaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
+            ])),
+            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
@@ -859,7 +874,7 @@ impl ModalityExpression {
             DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -933,7 +948,7 @@ impl TenseExpression {
             DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1001,7 +1016,7 @@ impl AspectExpression {
             }
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1089,9 +1104,14 @@ impl MtaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
+            ])),
+            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::PropositionOperator),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
             ])),
             _ => Err(()),
         }
@@ -1103,6 +1123,15 @@ impl MtaEvent {
                     SymbolType::NonTerminal(NonTerminalType::ModalityExpression(child1)),
                     SymbolType::NonTerminal(NonTerminalType::TaEvent(child2)),
                 ] => Self::One(child1.clone(), child2.clone()),
+                [
+                    SymbolType::Terminal(TerminalType::PropositionOperator(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child3)),
+                ] => Self::Two(
+                    child1.clone(),
+                    Box::new(child2.clone()),
+                    Box::new(child3.clone()),
+                ),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1141,7 +1170,7 @@ impl TaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
@@ -1185,7 +1214,7 @@ impl AEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
@@ -1225,7 +1254,7 @@ impl Event {
                 ),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
             ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
@@ -1262,6 +1291,19 @@ impl OptionalCaseArgs {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
             ])),
+            // MtaEvent::Two (homa/homi/homu) lets an MtaEvent be immediately followed by
+            // another MtaEvent, so OptionalCaseArgs must epsilon out on any token that can
+            // start an MtaEvent too (same terminal set as MtaEvent::parse_table's FIRST set).
+            DummyTerminalType::ModalityBase => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
@@ -1301,7 +1343,7 @@ impl PostModifiedBinaryPredicatePhrase {
                     DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
                 ),
             ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
@@ -1336,12 +1378,23 @@ impl PostBinaryPredicatePhraseExpression {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
             DummyTerminalType::CaseLabel => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
+            // MtaEvent::Two (homa/homi/homu) lets an MtaEvent be immediately followed by
+            // another MtaEvent (see OptionalCaseArgs for the same rationale).
+            DummyTerminalType::ModalityBase => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostBinaryPredicatePhraseModifier => Ok(DummyRhs::Sequence(vec![
@@ -1385,8 +1438,8 @@ impl BinaryPredicatePhrase {
                     DummyTerminalType::BinaryPredicate,
                 )]))
             }
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::PredicateOperator),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
             ])),
@@ -1406,7 +1459,7 @@ impl BinaryPredicatePhrase {
                     Self::One(child1.clone())
                 }
                 [
-                    SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
+                    SymbolType::Terminal(TerminalType::PredicateOperator(child1)),
                     SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child2)),
                     SymbolType::NonTerminal(NonTerminalType::BinaryPredicatePhrase(child3)),
                 ] => Self::Three(
@@ -1437,8 +1490,8 @@ impl ArgumentPhrase {
                     DummyTerminalType::Argument,
                 )]))
             }
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentOperator),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
@@ -1483,7 +1536,7 @@ impl ArgumentPhrase {
                 ] => Self::Two(child1.clone(), Box::new(child2.0.clone())),
                 [SymbolType::Terminal(TerminalType::Argument(child1))] => Self::One(child1.clone()),
                 [
-                    SymbolType::Terminal(TerminalType::BinaryOperator(child1)),
+                    SymbolType::Terminal(TerminalType::ArgumentOperator(child1)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
                     SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
                 ] => Self::Three(
@@ -1520,8 +1573,8 @@ impl NonNegatedBinaryPredicatePhrase {
                     DummyTerminalType::BinaryPredicate,
                 )]))
             }
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::PredicateOperator),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
             ])),
@@ -1541,8 +1594,8 @@ impl NonNegatedArgumentPhrase {
                     DummyTerminalType::Argument,
                 )]))
             }
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::BinaryOperator),
+            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ArgumentOperator),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
@@ -1706,7 +1759,7 @@ impl ArgumentRetrievalBinaryPredicate {
                     DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
                 ),
             ])),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
@@ -1745,12 +1798,23 @@ impl ArgumentRetrievalWithArgumentPhrase {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
             DummyTerminalType::CaseLabel => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
             DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
+            // MtaEvent::Two (homa/homi/homu) lets an MtaEvent be immediately followed by
+            // another MtaEvent (see OptionalCaseArgs for the same rationale).
+            DummyTerminalType::ModalityBase => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Sequence(vec![
@@ -1879,8 +1943,8 @@ impl BinaryPredicatePhrase {
                 let end = binary_predicate_phrase.get_range().end();
                 Range::new(start, end)
             }
-            BinaryPredicatePhrase::Three(binary_operator, _, binary_predicate2) => {
-                let start = binary_operator.get_range().start();
+            BinaryPredicatePhrase::Three(predicate_operator, _, binary_predicate2) => {
+                let start = predicate_operator.get_range().start();
                 let end = binary_predicate2.get_range().end();
                 Range::new(start, end)
             }
@@ -2034,8 +2098,8 @@ impl ArgumentPhrase {
                 let end = argument.get_range().end();
                 Range::new(start, end)
             }
-            ArgumentPhrase::Three(binary_operator, _, argument2) => {
-                let start = binary_operator.get_range().start();
+            ArgumentPhrase::Three(argument_operator, _, argument2) => {
+                let start = argument_operator.get_range().start();
                 let end = argument2.get_range().end();
                 Range::new(start, end)
             }
@@ -2202,6 +2266,11 @@ impl MtaEvent {
                     .get_range()
                     .map(|r| r.start())
                     .unwrap_or_else(|| ta_event.get_range().start());
+                Range::new(start, end)
+            }
+            MtaEvent::Two(proposition_operator, _, mta_event2) => {
+                let start = proposition_operator.get_range().start();
+                let end = mta_event2.get_range().end();
                 Range::new(start, end)
             }
         }
@@ -2544,8 +2613,22 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let binary_operator = grammar::Terminal(
-            type_name::<BinaryOperator>()
+        let predicate_operator = grammar::Terminal(
+            type_name::<PredicateOperator>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let argument_operator = grammar::Terminal(
+            type_name::<ArgumentOperator>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let proposition_operator = grammar::Terminal(
+            type_name::<PropositionOperator>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2717,10 +2800,17 @@ mod tests {
         );
         rules.insert(
             mta_event.clone(),
-            vec![grammar::Rhs::Sequence(vec![
-                grammar::Symbol::NonTerminal(modality_expression.clone()),
-                grammar::Symbol::NonTerminal(ta_event.clone()),
-            ])],
+            vec![
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::NonTerminal(modality_expression.clone()),
+                    grammar::Symbol::NonTerminal(ta_event.clone()),
+                ]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(proposition_operator.clone()),
+                    grammar::Symbol::NonTerminal(mta_event.clone()),
+                    grammar::Symbol::NonTerminal(mta_event.clone()),
+                ]),
+            ],
         );
         rules.insert(
             ta_event.clone(),
@@ -2776,7 +2866,7 @@ mod tests {
             vec![
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(binary_predicate.clone())]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(binary_operator.clone()),
+                    grammar::Symbol::Terminal(predicate_operator.clone()),
                     grammar::Symbol::NonTerminal(binary_predicate_phrase.clone()),
                     grammar::Symbol::NonTerminal(binary_predicate_phrase.clone()),
                 ]),
@@ -2791,7 +2881,7 @@ mod tests {
             vec![
                 grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(binary_predicate.clone())]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(binary_operator.clone()),
+                    grammar::Symbol::Terminal(predicate_operator.clone()),
                     grammar::Symbol::NonTerminal(binary_predicate_phrase.clone()),
                     grammar::Symbol::NonTerminal(binary_predicate_phrase.clone()),
                 ]),
@@ -2805,7 +2895,7 @@ mod tests {
                     quantified_argument.clone(),
                 )]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(binary_operator.clone()),
+                    grammar::Symbol::Terminal(argument_operator.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                 ]),
@@ -2828,7 +2918,7 @@ mod tests {
                     quantified_argument.clone(),
                 )]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(binary_operator.clone()),
+                    grammar::Symbol::Terminal(argument_operator.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                 ]),
@@ -2922,7 +3012,9 @@ mod tests {
                     "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
                     "Argument" => DummyTerminalType::Argument,
                     "CaseLabel" => DummyTerminalType::CaseLabel,
-                    "BinaryOperator" => DummyTerminalType::BinaryOperator,
+                    "PredicateOperator" => DummyTerminalType::PredicateOperator,
+                    "ArgumentOperator" => DummyTerminalType::ArgumentOperator,
+                    "PropositionOperator" => DummyTerminalType::PropositionOperator,
                     "ArgumentRetriever" => DummyTerminalType::ArgumentRetriever,
                     "Quantifier" => DummyTerminalType::Quantifier,
                     "Determiner" => DummyTerminalType::Determiner,
@@ -3074,7 +3166,11 @@ mod tests {
                                         DummyTerminalType::BinaryPredicate => "BinaryPredicate",
                                         DummyTerminalType::Argument => "Argument",
                                         DummyTerminalType::CaseLabel => "CaseLabel",
-                                        DummyTerminalType::BinaryOperator => "BinaryOperator",
+                                        DummyTerminalType::PredicateOperator => "PredicateOperator",
+                                        DummyTerminalType::ArgumentOperator => "ArgumentOperator",
+                                        DummyTerminalType::PropositionOperator => {
+                                            "PropositionOperator"
+                                        }
                                         DummyTerminalType::ArgumentRetriever => "ArgumentRetriever",
                                         DummyTerminalType::Quantifier => "Quantifier",
                                         DummyTerminalType::Number => "Number",

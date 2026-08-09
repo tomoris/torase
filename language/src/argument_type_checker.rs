@@ -129,6 +129,10 @@ impl MtaEvent {
                 modality_expression.type_check()?;
                 ta_event.type_check()
             }
+            MtaEvent::Two(_proposition_operator, mta_event1, mta_event2) => {
+                mta_event1.type_check()?;
+                mta_event2.type_check()
+            }
         }
     }
 }

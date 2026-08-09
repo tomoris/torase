@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は昨日りんごを食べた() {
-        let text = "hita pahete sa binary_operator mi ri paparatanera du mi si ri behapare sugi ri zuhita du number ri zudahi"
+        let text = "hita pahete sa hoka mi ri paparatanera du mi si ri behapare sugi ri zuhita du number ri zudahi"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は6日前にりんごを食べた() {
-        let text = "hita pahete sa binary_operator mi ri paparatanera du mi si ri behapare sugi ri zuhita du number ri zudahi"
+        let text = "hita pahete sa hoka mi ri paparatanera du mi si ri behapare sugi ri zuhita du number ri zudahi"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_誰かがこのりんごそのりんごあのりんごを食べたそうだ() {
-        let text = "kahehara sa mi si he pahete sa ga si binary_operator mo ri behapare binary_operator bo ri behapare go ri behapare ho".to_string();
+        let text = "kahehara sa mi si he pahete sa ga si hoka mo ri behapare hoka bo ri behapare go ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -456,6 +456,76 @@ mod tests {
     }
 
     #[test]
+    fn test_演算子_述語_hoba() {
+        let text = "hoba pahete pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_述語_hobi() {
+        let text = "hobi pahete pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_述語_hobu() {
+        let text = "hobu pahete pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_項_hoka() {
+        let text = "pahete sa hoka mi ri paparatanera du mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_項_hoki() {
+        let text = "pahete sa hoki mi ri paparatanera du mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_項_hoku() {
+        let text = "pahete sa hoku mi ri paparatanera du mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_命題_homa() {
+        let text = "homa pahete sa mi si ri behapare pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_命題_homi() {
+        let text = "homi pahete sa mi si ri behapare pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_命題_homu() {
+        let text = "homu pahete sa mi si ri behapare pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_演算子_命題_homaがhe_ho内で使える() {
+        let text = "kaheperihenese sa mi si he homa pahete sa mi si ri behapare pahete sa ba si ri behoranage ho".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_あなたはみかんを食べるか_疑問() {
         let text = "ku pahete sa ba si ri behoranage".to_string();
         let result = diagnose(text);
@@ -511,7 +581,7 @@ mod tests {
 
     #[test]
     fn test_あなたはりんごもみかんも食べないのですか() {
-        let text = "ku pahete sa ba si binary_operator ri behapare ri behoranage".to_string();
+        let text = "ku pahete sa ba si hoka ri behapare ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

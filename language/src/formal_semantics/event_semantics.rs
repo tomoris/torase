@@ -5,7 +5,10 @@ use crate::parser::{
     PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent, PostMtaEventExpression,
     QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent,
 };
-use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind, PostMtaEventModifierKind};
+use crate::tokenizer::{
+    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, PostMtaEventModifierKind,
+    PredicateOperatorKind, PropositionOperatorKind,
+};
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -142,9 +145,9 @@ enum PredCtx {
     Simple(String),
     /// ¬P — negate the whole proposition produced by P.
     Neg(Box<PredCtx>),
-    /// P₁ di/binary_operator P₂ — both predicates apply to the same args.
+    /// P₁ di/hoba/hobi/hobu P₂ — both predicates apply to the same args.
     Coord {
-        and_op: bool,
+        op: PredicateOperatorKind,
         left: Box<PredCtx>,
         right: Box<PredCtx>,
     },
@@ -156,7 +159,7 @@ fn extract_pred(phrase: &PostModifiedBinaryPredicatePhrase) -> PredCtx {
             let base = extract_bp(bp);
             match post {
                 PostBinaryPredicatePhraseExpression::One(_, secondary) => PredCtx::Coord {
-                    and_op: true,
+                    op: PredicateOperatorKind::And,
                     left: Box::new(base),
                     right: Box::new(extract_bp(secondary)),
                 },
@@ -170,8 +173,8 @@ fn extract_bp(phrase: &BinaryPredicatePhrase) -> PredCtx {
     match phrase {
         BinaryPredicatePhrase::One(pred) => PredCtx::Simple(pred.get_string()),
         BinaryPredicatePhrase::Two(_neg, inner) => PredCtx::Neg(Box::new(extract_bp(inner))),
-        BinaryPredicatePhrase::Three(_op, p1, p2) => PredCtx::Coord {
-            and_op: true,
+        BinaryPredicatePhrase::Three(op, p1, p2) => PredCtx::Coord {
+            op: op.get_kind().clone(),
             left: Box::new(extract_bp(p1)),
             right: Box::new(extract_bp(p2)),
         },
@@ -201,7 +204,7 @@ enum ArgCtx {
     Neg(Box<ArgCtx>),
     /// Coordinated argument phrases (distributed in `build_event_inner`).
     Coord {
-        and_op: bool,
+        op: ArgumentOperatorKind,
         left: Box<ArgCtx>,
         right: Box<ArgCtx>,
     },
@@ -270,7 +273,7 @@ impl ArgCtx {
                 ctx.scope(body)
             }
             ArgCtx::Coord {
-                and_op: _,
+                op: _,
                 left,
                 right: _,
             } => {
@@ -298,14 +301,34 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
             restriction: Formula::Not(Box::new(restriction)),
         },
         ArgCtx::Neg(inner) => *inner, // ¬¬ = identity
+        // De Morgan: ¬(A∧B)=¬A∨¬B, ¬(A∨B)=¬A∧¬B (flip the connective, negate both sides).
         ArgCtx::Coord {
-            and_op,
+            op: ArgumentOperatorKind::And,
             left,
             right,
         } => ArgCtx::Coord {
-            and_op: !and_op, // De Morgan: ¬(A∧B)=¬A∨¬B, ¬(A∨B)=¬A∧¬B
+            op: ArgumentOperatorKind::Or,
             left: Box::new(negate_restriction(*left)),
             right: Box::new(negate_restriction(*right)),
+        },
+        ArgCtx::Coord {
+            op: ArgumentOperatorKind::Or,
+            left,
+            right,
+        } => ArgCtx::Coord {
+            op: ArgumentOperatorKind::And,
+            left: Box::new(negate_restriction(*left)),
+            right: Box::new(negate_restriction(*right)),
+        },
+        // ¬(A⊕B) ≡ (¬A)⊕B: the connective stays Xor, only one side is negated.
+        ArgCtx::Coord {
+            op: ArgumentOperatorKind::Xor,
+            left,
+            right,
+        } => ArgCtx::Coord {
+            op: ArgumentOperatorKind::Xor,
+            left: Box::new(negate_restriction(*left)),
+            right,
         },
         other => other, // Const / ExistOnly / Nominal: cannot negate meaningfully
     }
@@ -381,15 +404,7 @@ impl PostModifiedMtaEvent {
                     }
                     // hehomu (xor): (P1 ∨ P2) ∧ ¬(P1 ∧ P2)
                     PostMtaEventModifierKind::Hehomu => {
-                        let f1 = mta.to_fol(vg);
-                        let f2 = mta2.to_fol(vg);
-                        Formula::And(
-                            Box::new(Formula::Or(Box::new(f1.clone()), Box::new(f2.clone()))),
-                            Box::new(Formula::Not(Box::new(Formula::And(
-                                Box::new(f1),
-                                Box::new(f2),
-                            )))),
-                        )
+                        xor_formula(mta.to_fol(vg), mta2.to_fol(vg))
                     }
                     // hezu (条件): P1ならP2する
                     PostMtaEventModifierKind::Hezu => {
@@ -406,6 +421,16 @@ impl MtaEvent {
         match self {
             // ModalityBase is ignored.
             MtaEvent::One(_mod_expr, ta) => ta.to_fol(vg),
+            // homa/homi/homu: proposition-level and/or/xor.
+            MtaEvent::Two(op, m1, m2) => {
+                let f1 = m1.to_fol(vg);
+                let f2 = m2.to_fol(vg);
+                match op.get_kind() {
+                    PropositionOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                    PropositionOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                    PropositionOperatorKind::Xor => xor_formula(f1, f2),
+                }
+            }
         }
     }
 }
@@ -513,6 +538,18 @@ impl Event {
     }
 }
 
+/// Desugar `A ⊕ B` into `(A ∨ B) ∧ ¬(A ∧ B)` using only existing `Formula` combinators
+/// (no native `Formula::Xor` variant, so `Display`/`contradiction_checker` need no changes).
+fn xor_formula(f1: Formula, f2: Formula) -> Formula {
+    Formula::And(
+        Box::new(Formula::Or(Box::new(f1.clone()), Box::new(f2.clone()))),
+        Box::new(Formula::Not(Box::new(Formula::And(
+            Box::new(f1),
+            Box::new(f2),
+        )))),
+    )
+}
+
 /// Build a scoped formula for `pred(arg1, arg2)` in neo-Davidsonian event semantics:
 /// `∃e.(pred(e) ∧ Agent(e, arg1) ∧ Patient(e, arg2) ∧ <extra_roles>)`
 ///
@@ -536,52 +573,38 @@ fn build_event_inner(
             )))
         }
 
-        PredCtx::Coord {
-            and_op,
-            left,
-            right,
-        } => {
-            // P di Q / binary_operator P Q: both predicates apply to the same args.
+        PredCtx::Coord { op, left, right } => {
+            // P di Q / P hoba|hobi|hobu Q: both predicates apply to the same args.
             let f1 = build_event_inner(left, arg1.clone(), arg2.clone(), extra_roles.clone(), vg);
             let f2 = build_event_inner(right, arg1, arg2, extra_roles, vg);
-            if *and_op {
-                Formula::And(Box::new(f1), Box::new(f2))
-            } else {
-                Formula::Or(Box::new(f1), Box::new(f2))
+            match op {
+                PredicateOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                PredicateOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                PredicateOperatorKind::Xor => xor_formula(f1, f2),
             }
         }
 
         PredCtx::Simple(name) => {
             // Distribute over arg1 coordination.
-            if let ArgCtx::Coord {
-                and_op,
-                left,
-                right,
-            } = arg1
-            {
+            if let ArgCtx::Coord { op, left, right } = arg1 {
                 let p = PredCtx::Simple(name.clone());
                 let f1 = build_event_inner(&p, *left, arg2.clone(), extra_roles.clone(), vg);
                 let f2 = build_event_inner(&p, *right, arg2, extra_roles, vg);
-                return if and_op {
-                    Formula::And(Box::new(f1), Box::new(f2))
-                } else {
-                    Formula::Or(Box::new(f1), Box::new(f2))
+                return match op {
+                    ArgumentOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                    ArgumentOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                    ArgumentOperatorKind::Xor => xor_formula(f1, f2),
                 };
             }
             // Distribute over arg2 coordination.
-            if let ArgCtx::Coord {
-                and_op,
-                left,
-                right,
-            } = arg2
-            {
+            if let ArgCtx::Coord { op, left, right } = arg2 {
                 let p = PredCtx::Simple(name.clone());
                 let f1 = build_event_inner(&p, arg1.clone(), *left, extra_roles.clone(), vg);
                 let f2 = build_event_inner(&p, arg1, *right, extra_roles, vg);
-                return if and_op {
-                    Formula::And(Box::new(f1), Box::new(f2))
-                } else {
-                    Formula::Or(Box::new(f1), Box::new(f2))
+                return match op {
+                    ArgumentOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                    ArgumentOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                    ArgumentOperatorKind::Xor => xor_formula(f1, f2),
                 };
             }
 
@@ -625,9 +648,9 @@ impl ArgumentPhrase {
             // Negated argument phrase.
             ArgumentPhrase::Two(_neg, inner) => ArgCtx::Neg(Box::new(inner.to_fol(vg))),
 
-            // Coordinated argument phrases (binary_operator arg1 arg2).
-            ArgumentPhrase::Three(_op, left, right) => ArgCtx::Coord {
-                and_op: true, // binary_operator は論理積として扱う
+            // Coordinated argument phrases (hoka/hoki/hoku arg1 arg2).
+            ArgumentPhrase::Three(op, left, right) => ArgCtx::Coord {
+                op: op.get_kind().clone(),
                 left: Box::new(left.to_fol(vg)),
                 right: Box::new(right.to_fol(vg)),
             },
@@ -762,10 +785,15 @@ fn build_bp_restriction(phrase: &BinaryPredicatePhrase, var: &str) -> Formula {
         BinaryPredicatePhrase::Two(_neg, inner) => {
             Formula::Not(Box::new(build_bp_restriction(inner, var)))
         }
-        BinaryPredicatePhrase::Three(_op, p1, p2) => Formula::And(
-            Box::new(build_bp_restriction(p1, var)),
-            Box::new(build_bp_restriction(p2, var)),
-        ),
+        BinaryPredicatePhrase::Three(op, p1, p2) => {
+            let f1 = build_bp_restriction(p1, var);
+            let f2 = build_bp_restriction(p2, var);
+            match op.get_kind() {
+                PredicateOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                PredicateOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                PredicateOperatorKind::Xor => xor_formula(f1, f2),
+            }
+        }
     }
 }
 
@@ -786,17 +814,13 @@ fn build_binary_restriction(pred: &PredCtx, t1: Term, t2: Term, vg: &mut VarGen)
             )
         }
         PredCtx::Neg(inner) => Formula::Not(Box::new(build_binary_restriction(inner, t1, t2, vg))),
-        PredCtx::Coord {
-            and_op,
-            left,
-            right,
-        } => {
+        PredCtx::Coord { op, left, right } => {
             let f1 = build_binary_restriction(left, t1.clone(), t2.clone(), vg);
             let f2 = build_binary_restriction(right, t1, t2, vg);
-            if *and_op {
-                Formula::And(Box::new(f1), Box::new(f2))
-            } else {
-                Formula::Or(Box::new(f1), Box::new(f2))
+            match op {
+                PredicateOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                PredicateOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                PredicateOperatorKind::Xor => xor_formula(f1, f2),
             }
         }
     }
@@ -987,6 +1011,38 @@ mod tests {
         check(
             "pahete sa mi si ri behapare hehenu pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_演算子_命題_homa_and() {
+        check(
+            "homa pahete sa mi si ri behapare pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_演算子_命題_homi_or() {
+        check(
+            "homi pahete sa mi si ri behapare pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_演算子_命題_homu_xor() {
+        check(
+            "homu pahete sa mi si ri behapare pahete sa ba si ri behoranage",
+            "((∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))) ∧ ¬(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))))",
+        );
+    }
+
+    #[test]
+    fn test_演算子_述語_hobu_xor() {
+        check(
+            "hobu pahete pahete sa mi si ri behapare",
+            "((∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃x.(behapare(x) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))) ∧ ¬(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃x.(behapare(x) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))))",
         );
     }
 

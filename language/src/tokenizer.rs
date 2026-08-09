@@ -71,8 +71,16 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if BinaryOperator::is_match(token.0) {
-            doc.push(TerminalType::BinaryOperator(BinaryOperator::new(
+        } else if PredicateOperator::is_match(token.0) {
+            doc.push(TerminalType::PredicateOperator(PredicateOperator::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if ArgumentOperator::is_match(token.0) {
+            doc.push(TerminalType::ArgumentOperator(ArgumentOperator::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if PropositionOperator::is_match(token.0) {
+            doc.push(TerminalType::PropositionOperator(PropositionOperator::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if ArgumentRetriever::is_match(token.0) {
@@ -223,7 +231,9 @@ pub enum TerminalType {
     BinaryPredicate(BinaryPredicate),
     Argument(Argument),
     CaseLabel(CaseLabel),
-    BinaryOperator(BinaryOperator),
+    PredicateOperator(PredicateOperator),
+    ArgumentOperator(ArgumentOperator),
+    PropositionOperator(PropositionOperator),
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
     Number(Number),
@@ -250,7 +260,9 @@ pub enum DummyTerminalType {
     BinaryPredicate,
     Argument,
     CaseLabel,
-    BinaryOperator,
+    PredicateOperator,
+    ArgumentOperator,
+    PropositionOperator,
     ArgumentRetriever,
     Quantifier,
     Number,
@@ -277,7 +289,9 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::BinaryPredicate(_) => DummyTerminalType::BinaryPredicate,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
         TerminalType::CaseLabel(_) => DummyTerminalType::CaseLabel,
-        TerminalType::BinaryOperator(_) => DummyTerminalType::BinaryOperator,
+        TerminalType::PredicateOperator(_) => DummyTerminalType::PredicateOperator,
+        TerminalType::ArgumentOperator(_) => DummyTerminalType::ArgumentOperator,
+        TerminalType::PropositionOperator(_) => DummyTerminalType::PropositionOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
         TerminalType::Number(_) => DummyTerminalType::Number,
@@ -314,7 +328,9 @@ impl TerminalType {
             TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
             TerminalType::CaseLabel(label) => label.range.start.clone(),
-            TerminalType::BinaryOperator(operator) => operator.range.start.clone(),
+            TerminalType::PredicateOperator(operator) => operator.range.start.clone(),
+            TerminalType::ArgumentOperator(operator) => operator.range.start.clone(),
+            TerminalType::PropositionOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
             TerminalType::Number(number) => number.range.start.clone(),
@@ -347,7 +363,9 @@ impl TerminalType {
             TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
             TerminalType::CaseLabel(label) => label.range.end.clone(),
-            TerminalType::BinaryOperator(operator) => operator.range.end.clone(),
+            TerminalType::PredicateOperator(operator) => operator.range.end.clone(),
+            TerminalType::ArgumentOperator(operator) => operator.range.end.clone(),
+            TerminalType::PropositionOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
             TerminalType::Number(number) => number.range.end.clone(),
@@ -533,8 +551,42 @@ pub enum CaseLabelKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BinaryOperator {
+pub struct PredicateOperator {
     range: Range,
+    kind: PredicateOperatorKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PredicateOperatorKind {
+    And, // hoba
+    Or,  // hobi
+    Xor, // hobu
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ArgumentOperator {
+    range: Range,
+    kind: ArgumentOperatorKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ArgumentOperatorKind {
+    And, // hoka
+    Or,  // hoki
+    Xor, // hoku
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PropositionOperator {
+    range: Range,
+    kind: PropositionOperatorKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PropositionOperatorKind {
+    And, // homa
+    Or,  // homi
+    Xor, // homu
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1336,9 +1388,9 @@ impl CaseLabel {
     }
 }
 
-impl BinaryOperator {
+impl PredicateOperator {
     fn is_match(string: &str) -> bool {
-        string == "binary_operator"
+        matches!(string, "hoba" | "hobi" | "hobu")
     }
     fn new(
         string: &str,
@@ -1347,10 +1399,13 @@ impl BinaryOperator {
         end_line: usize,
         end_character: usize,
     ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid binary operator surface: {}", string);
-        }
-        BinaryOperator {
+        let kind = match string {
+            "hoba" => PredicateOperatorKind::And,
+            "hobi" => PredicateOperatorKind::Or,
+            "hobu" => PredicateOperatorKind::Xor,
+            _ => panic!("Invalid predicate operator surface: {}", string),
+        };
+        PredicateOperator {
             range: Range {
                 start: Position {
                     line: start_line,
@@ -1361,13 +1416,113 @@ impl BinaryOperator {
                     character: end_character,
                 },
             },
+            kind,
         }
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
     pub fn get_string(&self) -> String {
-        "binary_operator".to_string()
+        match self.kind {
+            PredicateOperatorKind::And => "hoba".to_string(),
+            PredicateOperatorKind::Or => "hobi".to_string(),
+            PredicateOperatorKind::Xor => "hobu".to_string(),
+        }
+    }
+    pub fn get_kind(&self) -> &PredicateOperatorKind {
+        &self.kind
+    }
+}
+
+impl ArgumentOperator {
+    fn is_match(string: &str) -> bool {
+        matches!(string, "hoka" | "hoki" | "hoku")
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "hoka" => ArgumentOperatorKind::And,
+            "hoki" => ArgumentOperatorKind::Or,
+            "hoku" => ArgumentOperatorKind::Xor,
+            _ => panic!("Invalid argument operator surface: {}", string),
+        };
+        ArgumentOperator {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            ArgumentOperatorKind::And => "hoka".to_string(),
+            ArgumentOperatorKind::Or => "hoki".to_string(),
+            ArgumentOperatorKind::Xor => "hoku".to_string(),
+        }
+    }
+    pub fn get_kind(&self) -> &ArgumentOperatorKind {
+        &self.kind
+    }
+}
+
+impl PropositionOperator {
+    fn is_match(string: &str) -> bool {
+        matches!(string, "homa" | "homi" | "homu")
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        let kind = match string {
+            "homa" => PropositionOperatorKind::And,
+            "homi" => PropositionOperatorKind::Or,
+            "homu" => PropositionOperatorKind::Xor,
+            _ => panic!("Invalid proposition operator surface: {}", string),
+        };
+        PropositionOperator {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+            kind,
+        }
+    }
+    pub(crate) fn get_range(&self) -> Range {
+        self.range.clone()
+    }
+    pub fn get_string(&self) -> String {
+        match self.kind {
+            PropositionOperatorKind::And => "homa".to_string(),
+            PropositionOperatorKind::Or => "homi".to_string(),
+            PropositionOperatorKind::Xor => "homu".to_string(),
+        }
+    }
+    pub fn get_kind(&self) -> &PropositionOperatorKind {
+        &self.kind
     }
 }
 
