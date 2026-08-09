@@ -358,14 +358,42 @@ impl PostModifiedMtaEvent {
                 PostMtaEventExpression::One(modifier, mta2) => match modifier.get_kind() {
                     // da (命題修飾句の前置詞) is still unimplemented; ignored in the FOL translation.
                     PostMtaEventModifierKind::Da => mta.to_fol(vg),
-                    // hesute/henesute/hesuto/henesuto assert that both propositions hold; the
-                    // causal/concessive discourse relation itself is not truth-conditional and
-                    // is not represented in FOL (same treatment as modality/tense/aspect).
+                    // hesute/henesute/hesuto/henesuto (因果) and hehita/hehiti/hehitu (時間前後・
+                    // 同時)、hehema (例示)、hehegi (言い換え)、hehenu (対比) assert that both
+                    // propositions hold; the discourse relation itself is not truth-conditional
+                    // and is not represented in FOL (same treatment as modality/tense/aspect).
                     PostMtaEventModifierKind::Hesute
                     | PostMtaEventModifierKind::Henesute
                     | PostMtaEventModifierKind::Hesuto
-                    | PostMtaEventModifierKind::Henesuto => {
+                    | PostMtaEventModifierKind::Henesuto
+                    | PostMtaEventModifierKind::Hehoma
+                    | PostMtaEventModifierKind::Hehita
+                    | PostMtaEventModifierKind::Hehiti
+                    | PostMtaEventModifierKind::Hehitu
+                    | PostMtaEventModifierKind::Hehema
+                    | PostMtaEventModifierKind::Hehegi
+                    | PostMtaEventModifierKind::Hehenu => {
                         Formula::And(Box::new(mta.to_fol(vg)), Box::new(mta2.to_fol(vg)))
+                    }
+                    // hehomi (or)
+                    PostMtaEventModifierKind::Hehomi => {
+                        Formula::Or(Box::new(mta.to_fol(vg)), Box::new(mta2.to_fol(vg)))
+                    }
+                    // hehomu (xor): (P1 ∨ P2) ∧ ¬(P1 ∧ P2)
+                    PostMtaEventModifierKind::Hehomu => {
+                        let f1 = mta.to_fol(vg);
+                        let f2 = mta2.to_fol(vg);
+                        Formula::And(
+                            Box::new(Formula::Or(Box::new(f1.clone()), Box::new(f2.clone()))),
+                            Box::new(Formula::Not(Box::new(Formula::And(
+                                Box::new(f1),
+                                Box::new(f2),
+                            )))),
+                        )
+                    }
+                    // hezu (条件): P1ならP2する
+                    PostMtaEventModifierKind::Hezu => {
+                        Formula::Implies(Box::new(mta.to_fol(vg)), Box::new(mta2.to_fol(vg)))
                     }
                 },
             },
@@ -878,6 +906,86 @@ mod tests {
     fn test_接続詞_henesuto_反対の原因から結果() {
         check(
             "pahete sa mi si ri behapare henesuto pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehoma_and() {
+        check(
+            "pahete sa mi si ri behapare hehoma pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehomi_or() {
+        check(
+            "pahete sa mi si ri behapare hehomi pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehomu_xor() {
+        check(
+            "pahete sa mi si ri behapare hehomu pahete sa ba si ri behoranage",
+            "((∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))) ∧ ¬(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehita_時間前() {
+        check(
+            "pahete sa mi si ri behapare hehita pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehiti_同時() {
+        check(
+            "pahete sa mi si ri behapare hehiti pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehitu_時間後() {
+        check(
+            "pahete sa mi si ri behapare hehitu pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hezu_条件() {
+        check(
+            "pahete sa mi si ri behapare hezu pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehema_例示() {
+        check(
+            "pahete sa mi si ri behapare hehema pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehegi_言い換え() {
+        check(
+            "pahete sa mi si ri behapare hehegi pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hehenu_対比() {
+        check(
+            "pahete sa mi si ri behapare hehenu pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }

@@ -225,6 +225,20 @@ mod tests {
     }
 
     #[test]
+    fn test_誰かがこのりんごを食べそうだ_za表記() {
+        let text = "hapa za hitu pahete sa ga si mo ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_私はりんごを食べたい_zi表記() {
+        let text = "hapu zi pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_誰かがこのりんごそのりんごあのりんごを食べたそうだ() {
         let text = "kahehara sa mi si he pahete sa ga si binary_operator mo ri behapare binary_operator bo ri behapare go ri behapare ho".to_string();
         let result = diagnose(text);
@@ -372,9 +386,71 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_これはりんごではなくみかんだ() {
-        let text = "behoranage me da [文分割] ne behapare me".to_string();
+        let text = "behoranage si me hehenu ne behapare si me".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehoma() {
+        let text = "pahete sa mi si ri behapare hehoma pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehomi() {
+        let text = "pahete sa mi si ri behapare hehomi pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehomu() {
+        let text = "pahete sa mi si ri behapare hehomu pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehita() {
+        let text = "pahete sa mi si ri behapare hehita pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehiti() {
+        let text = "pahete sa mi si ri behapare hehiti pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehitu() {
+        let text = "pahete sa mi si ri behapare hehitu pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hezu() {
+        let text = "pahete sa mi si ri behapare hezu pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehema() {
+        let text = "pahete sa mi si ri behapare hehema pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hehegi() {
+        let text = "pahete sa mi si ri behapare hehegi pahete sa ba si ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

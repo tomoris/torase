@@ -604,6 +604,16 @@ pub enum PostMtaEventModifierKind {
     Henesute, // 接続詞(結果 -> 反対の原因)
     Hesuto,   // 接続詞(原因 -> 結果)
     Henesuto, // 接続詞(反対の原因 -> 結果)
+    Hehoma,   // 接続詞(and)
+    Hehomi,   // 接続詞(or)
+    Hehomu,   // 接続詞(xor)
+    Hehita,   // 接続詞(時間前)
+    Hehiti,   // 接続詞(同時)
+    Hehitu,   // 接続詞(時間後)
+    Hezu,     // 接続詞(条件)
+    Hehema,   // 接続詞(例示)
+    Hehegi,   // 接続詞(言い換え)
+    Hehenu,   // 接続詞(対比)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -701,7 +711,7 @@ impl ModalityBase {
 
 impl ModalityForce {
     fn is_match(string: &str) -> bool {
-        matches!(string, "□" | "◇")
+        matches!(string, "□" | "◇" | "za" | "zi")
     }
     fn new(
         string: &str,
@@ -711,8 +721,8 @@ impl ModalityForce {
         end_character: usize,
     ) -> Self {
         let kind = match string {
-            "□" => ModalityForceKind::Necessary,
-            "◇" => ModalityForceKind::Possible,
+            "□" | "za" => ModalityForceKind::Necessary,
+            "◇" | "zi" => ModalityForceKind::Possible,
             _ => panic!("Invalid modality force surface: {}", string),
         };
         ModalityForce {
@@ -1608,7 +1618,23 @@ impl MtaEventToArgumentPhraseConverterEnd {
 
 impl PostMtaEventModifier {
     fn is_match(string: &str) -> bool {
-        matches!(string, "da" | "hesute" | "henesute" | "hesuto" | "henesuto")
+        matches!(
+            string,
+            "da" | "hesute"
+                | "henesute"
+                | "hesuto"
+                | "henesuto"
+                | "hehoma"
+                | "hehomi"
+                | "hehomu"
+                | "hehita"
+                | "hehiti"
+                | "hehitu"
+                | "hezu"
+                | "hehema"
+                | "hehegi"
+                | "hehenu"
+        )
     }
     fn new(
         string: &str,
@@ -1623,6 +1649,16 @@ impl PostMtaEventModifier {
             "henesute" => PostMtaEventModifierKind::Henesute,
             "hesuto" => PostMtaEventModifierKind::Hesuto,
             "henesuto" => PostMtaEventModifierKind::Henesuto,
+            "hehoma" => PostMtaEventModifierKind::Hehoma,
+            "hehomi" => PostMtaEventModifierKind::Hehomi,
+            "hehomu" => PostMtaEventModifierKind::Hehomu,
+            "hehita" => PostMtaEventModifierKind::Hehita,
+            "hehiti" => PostMtaEventModifierKind::Hehiti,
+            "hehitu" => PostMtaEventModifierKind::Hehitu,
+            "hezu" => PostMtaEventModifierKind::Hezu,
+            "hehema" => PostMtaEventModifierKind::Hehema,
+            "hehegi" => PostMtaEventModifierKind::Hehegi,
+            "hehenu" => PostMtaEventModifierKind::Hehenu,
             _ => panic!("Invalid post mta event modifier surface: {}", string),
         };
         PostMtaEventModifier {
@@ -1646,6 +1682,16 @@ impl PostMtaEventModifier {
             PostMtaEventModifierKind::Henesute => "henesute".to_string(),
             PostMtaEventModifierKind::Hesuto => "hesuto".to_string(),
             PostMtaEventModifierKind::Henesuto => "henesuto".to_string(),
+            PostMtaEventModifierKind::Hehoma => "hehoma".to_string(),
+            PostMtaEventModifierKind::Hehomi => "hehomi".to_string(),
+            PostMtaEventModifierKind::Hehomu => "hehomu".to_string(),
+            PostMtaEventModifierKind::Hehita => "hehita".to_string(),
+            PostMtaEventModifierKind::Hehiti => "hehiti".to_string(),
+            PostMtaEventModifierKind::Hehitu => "hehitu".to_string(),
+            PostMtaEventModifierKind::Hezu => "hezu".to_string(),
+            PostMtaEventModifierKind::Hehema => "hehema".to_string(),
+            PostMtaEventModifierKind::Hehegi => "hehegi".to_string(),
+            PostMtaEventModifierKind::Hehenu => "hehenu".to_string(),
         }
     }
     pub fn get_kind(&self) -> &PostMtaEventModifierKind {
