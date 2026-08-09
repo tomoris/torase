@@ -594,6 +594,16 @@ pub struct MtaEventToArgumentPhraseConverterEnd {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PostMtaEventModifier {
     range: Range,
+    kind: PostMtaEventModifierKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PostMtaEventModifierKind {
+    Da,     // 命題修飾句の前置詞
+    Hetete, // 接続詞(結果 -> 原因)
+    Hetene, // 接続詞(結果 -> 反対の原因)
+    Hetoto, // 接続詞(原因 -> 結果)
+    Hetone, // 接続詞(反対の原因 -> 結果)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1598,7 +1608,7 @@ impl MtaEventToArgumentPhraseConverterEnd {
 
 impl PostMtaEventModifier {
     fn is_match(string: &str) -> bool {
-        string == "da"
+        matches!(string, "da" | "hetete" | "hetene" | "hetoto" | "hetone")
     }
     fn new(
         string: &str,
@@ -1607,9 +1617,14 @@ impl PostMtaEventModifier {
         end_line: usize,
         end_character: usize,
     ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid post mta event modifier surface: {}", string);
-        }
+        let kind = match string {
+            "da" => PostMtaEventModifierKind::Da,
+            "hetete" => PostMtaEventModifierKind::Hetete,
+            "hetene" => PostMtaEventModifierKind::Hetene,
+            "hetoto" => PostMtaEventModifierKind::Hetoto,
+            "hetone" => PostMtaEventModifierKind::Hetone,
+            _ => panic!("Invalid post mta event modifier surface: {}", string),
+        };
         PostMtaEventModifier {
             range: Range {
                 start: Position {
@@ -1621,10 +1636,20 @@ impl PostMtaEventModifier {
                     character: end_character,
                 },
             },
+            kind,
         }
     }
     pub fn get_string(&self) -> String {
-        "da".to_string()
+        match self.kind {
+            PostMtaEventModifierKind::Da => "da".to_string(),
+            PostMtaEventModifierKind::Hetete => "hetete".to_string(),
+            PostMtaEventModifierKind::Hetene => "hetene".to_string(),
+            PostMtaEventModifierKind::Hetoto => "hetoto".to_string(),
+            PostMtaEventModifierKind::Hetone => "hetone".to_string(),
+        }
+    }
+    pub fn get_kind(&self) -> &PostMtaEventModifierKind {
+        &self.kind
     }
 }
 

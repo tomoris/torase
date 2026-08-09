@@ -448,11 +448,37 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_私はみかんを食べない_だからみかんは食べられない_受け身の否定() {
         let text =
-            "ne pahete mi si ri behoranage [接続詞 なので 順接] ne re pahete ri behoranage si mi"
-                .to_string();
+            "ne pahete sa mi si ri behoranage hetoto ne pahete si ri behoranage sa mi".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hetete() {
+        let text = "pahete sa mi si ri behapare hetete pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hetene() {
+        let text = "pahete sa mi si ri behapare hetene pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hetoto() {
+        let text = "pahete sa mi si ri behapare hetoto pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_hetone() {
+        let text = "pahete sa mi si ri behapare hetone pahete sa ba si ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

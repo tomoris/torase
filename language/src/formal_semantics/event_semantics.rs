@@ -2,10 +2,10 @@ use crate::parser::{
     AEvent, ArgumentPhrase, ArgumentRetrievalBinaryPredicate, ArgumentRetrievalWithArgumentPhrase,
     Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument, DeterminerModifier, Event,
     InterrogativeSentence, MtaEvent, PostBinaryPredicatePhraseExpression,
-    PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent, QuantifiedArgument,
-    QuantifierModifier, RetrievedArgument, S, TaEvent,
+    PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent, PostMtaEventExpression,
+    QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent,
 };
-use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind};
+use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind, PostMtaEventModifierKind};
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -353,8 +353,22 @@ impl InterrogativeSentence {
 impl PostModifiedMtaEvent {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            // PostMtaEventExpression (da …) is ignored in the FOL translation.
-            PostModifiedMtaEvent::One(mta, _post) => mta.to_fol(vg),
+            PostModifiedMtaEvent::One(mta, post) => match post {
+                PostMtaEventExpression::Epsilon => mta.to_fol(vg),
+                PostMtaEventExpression::One(modifier, mta2) => match modifier.get_kind() {
+                    // da (命題修飾句の前置詞) is still unimplemented; ignored in the FOL translation.
+                    PostMtaEventModifierKind::Da => mta.to_fol(vg),
+                    // hetete/hetene/hetoto/hetone assert that both propositions hold; the
+                    // causal/concessive discourse relation itself is not truth-conditional and
+                    // is not represented in FOL (same treatment as modality/tense/aspect).
+                    PostMtaEventModifierKind::Hetete
+                    | PostMtaEventModifierKind::Hetene
+                    | PostMtaEventModifierKind::Hetoto
+                    | PostMtaEventModifierKind::Hetone => {
+                        Formula::And(Box::new(mta.to_fol(vg)), Box::new(mta2.to_fol(vg)))
+                    }
+                },
+            },
         }
     }
 }
@@ -833,6 +847,38 @@ mod tests {
         check(
             "pahete sa mi si ri behapare",
             "∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hetete_結果から原因() {
+        check(
+            "pahete sa mi si ri behapare hetete pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hetene_結果から反対の原因() {
+        check(
+            "pahete sa mi si ri behapare hetene pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hetoto_原因から結果() {
+        check(
+            "pahete sa mi si ri behapare hetoto pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_hetone_反対の原因から結果() {
+        check(
+            "pahete sa mi si ri behapare hetone pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
