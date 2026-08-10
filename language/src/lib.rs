@@ -692,13 +692,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_りんごを頂いても宜しいですか_みかんは差し上げます() {
-        let text = "????".to_string();
+        let text = "ku pamobe si ri behapare subo mi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
 
-        let text = "????".to_string();
+        let text = "pamobe sa mi si ri behapare subo ba".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
