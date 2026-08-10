@@ -26,7 +26,10 @@ male
 x1はx2の時間を計測する。
 time
 
-??
+dasinaga
+disinaga
+dusinaga
+x1はものだ
 thing
 
 bahomo _ gumare

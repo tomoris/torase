@@ -786,9 +786,13 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_ここには何もない() {
-        let text = "ne pihezisata sa 何か suni me".to_string();
+        let text =
+            "ne puhezisata sa hoki ri dasinaga hoki ri disinaga ri dusinaga suni me".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+
+        let text = "ne puhezisata sa ri hobi dasinaga hobi disinaga dusinaga suni me".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
