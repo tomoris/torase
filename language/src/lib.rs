@@ -134,9 +134,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_私の妻はりんごを毎日食べる() {
-        let text = "hudidi pahete ri paparatanera du mi si ri behapare da [all] zudahi".to_string();
+        let text =
+            "hudidi pahete sa ri paparatanera du mi si ri behapare sugi ta ri zudahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
