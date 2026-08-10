@@ -6,8 +6,8 @@ use crate::parser::{
     QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent,
 };
 use crate::tokenizer::{
-    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, PostMtaEventModifierKind,
-    PredicateOperatorKind, PropositionOperatorKind,
+    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, MtaEventOperatorKind,
+    PostMtaEventModifierKind, PredicateOperatorKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -426,9 +426,9 @@ impl MtaEvent {
                 let f1 = m1.to_fol(vg);
                 let f2 = m2.to_fol(vg);
                 match op.get_kind() {
-                    PropositionOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
-                    PropositionOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
-                    PropositionOperatorKind::Xor => xor_formula(f1, f2),
+                    MtaEventOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                    MtaEventOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                    MtaEventOperatorKind::Xor => xor_formula(f1, f2),
                 }
             }
         }

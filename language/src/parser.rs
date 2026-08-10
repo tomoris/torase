@@ -455,7 +455,7 @@ pub enum ModifiedAspect {
 #[derive(Clone, Debug)]
 pub enum MtaEvent {
     One(ModalityExpression, TaEvent),
-    Two(PropositionOperator, Box<MtaEvent>, Box<MtaEvent>),
+    Two(MtaEventOperator, Box<MtaEvent>, Box<MtaEvent>),
 }
 
 #[derive(Clone, Debug)]
@@ -635,7 +635,7 @@ impl S {
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
             }
-            DummyTerminalType::PropositionOperator => {
+            DummyTerminalType::MtaEventOperator => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
@@ -711,7 +711,7 @@ impl DeclarativeSentence {
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
             }
-            DummyTerminalType::PropositionOperator => {
+            DummyTerminalType::MtaEventOperator => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
@@ -803,7 +803,7 @@ impl PostModifiedMtaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
-            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
@@ -1108,8 +1108,8 @@ impl MtaEvent {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
-            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::PropositionOperator),
+            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::MtaEventOperator),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
             ])),
@@ -1124,7 +1124,7 @@ impl MtaEvent {
                     SymbolType::NonTerminal(NonTerminalType::TaEvent(child2)),
                 ] => Self::One(child1.clone(), child2.clone()),
                 [
-                    SymbolType::Terminal(TerminalType::PropositionOperator(child1)),
+                    SymbolType::Terminal(TerminalType::MtaEventOperator(child1)),
                     SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
                     SymbolType::NonTerminal(NonTerminalType::MtaEvent(child3)),
                 ] => Self::Two(
@@ -1303,7 +1303,7 @@ impl OptionalCaseArgs {
             DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
@@ -1394,7 +1394,7 @@ impl PostBinaryPredicatePhraseExpression {
             DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostBinaryPredicatePhraseModifier => Ok(DummyRhs::Sequence(vec![
@@ -1814,7 +1814,7 @@ impl ArgumentRetrievalWithArgumentPhrase {
             DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
             DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PropositionOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Sequence(vec![
@@ -2628,7 +2628,7 @@ mod tests {
                 .to_string(),
         );
         let proposition_operator = grammar::Terminal(
-            type_name::<PropositionOperator>()
+            type_name::<MtaEventOperator>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -3014,7 +3014,7 @@ mod tests {
                     "CaseLabel" => DummyTerminalType::CaseLabel,
                     "PredicateOperator" => DummyTerminalType::PredicateOperator,
                     "ArgumentOperator" => DummyTerminalType::ArgumentOperator,
-                    "PropositionOperator" => DummyTerminalType::PropositionOperator,
+                    "MtaEventOperator" => DummyTerminalType::MtaEventOperator,
                     "ArgumentRetriever" => DummyTerminalType::ArgumentRetriever,
                     "Quantifier" => DummyTerminalType::Quantifier,
                     "Determiner" => DummyTerminalType::Determiner,
@@ -3168,9 +3168,7 @@ mod tests {
                                         DummyTerminalType::CaseLabel => "CaseLabel",
                                         DummyTerminalType::PredicateOperator => "PredicateOperator",
                                         DummyTerminalType::ArgumentOperator => "ArgumentOperator",
-                                        DummyTerminalType::PropositionOperator => {
-                                            "PropositionOperator"
-                                        }
+                                        DummyTerminalType::MtaEventOperator => "MtaEventOperator",
                                         DummyTerminalType::ArgumentRetriever => "ArgumentRetriever",
                                         DummyTerminalType::Quantifier => "Quantifier",
                                         DummyTerminalType::Number => "Number",

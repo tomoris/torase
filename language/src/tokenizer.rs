@@ -79,8 +79,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::ArgumentOperator(ArgumentOperator::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if PropositionOperator::is_match(token.0) {
-            doc.push(TerminalType::PropositionOperator(PropositionOperator::new(
+        } else if MtaEventOperator::is_match(token.0) {
+            doc.push(TerminalType::MtaEventOperator(MtaEventOperator::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if ArgumentRetriever::is_match(token.0) {
@@ -233,7 +233,7 @@ pub enum TerminalType {
     CaseLabel(CaseLabel),
     PredicateOperator(PredicateOperator),
     ArgumentOperator(ArgumentOperator),
-    PropositionOperator(PropositionOperator),
+    MtaEventOperator(MtaEventOperator),
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
     Number(Number),
@@ -262,7 +262,7 @@ pub enum DummyTerminalType {
     CaseLabel,
     PredicateOperator,
     ArgumentOperator,
-    PropositionOperator,
+    MtaEventOperator,
     ArgumentRetriever,
     Quantifier,
     Number,
@@ -291,7 +291,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::CaseLabel(_) => DummyTerminalType::CaseLabel,
         TerminalType::PredicateOperator(_) => DummyTerminalType::PredicateOperator,
         TerminalType::ArgumentOperator(_) => DummyTerminalType::ArgumentOperator,
-        TerminalType::PropositionOperator(_) => DummyTerminalType::PropositionOperator,
+        TerminalType::MtaEventOperator(_) => DummyTerminalType::MtaEventOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
         TerminalType::Number(_) => DummyTerminalType::Number,
@@ -330,7 +330,7 @@ impl TerminalType {
             TerminalType::CaseLabel(label) => label.range.start.clone(),
             TerminalType::PredicateOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentOperator(operator) => operator.range.start.clone(),
-            TerminalType::PropositionOperator(operator) => operator.range.start.clone(),
+            TerminalType::MtaEventOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
             TerminalType::Number(number) => number.range.start.clone(),
@@ -365,7 +365,7 @@ impl TerminalType {
             TerminalType::CaseLabel(label) => label.range.end.clone(),
             TerminalType::PredicateOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentOperator(operator) => operator.range.end.clone(),
-            TerminalType::PropositionOperator(operator) => operator.range.end.clone(),
+            TerminalType::MtaEventOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
             TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
             TerminalType::Number(number) => number.range.end.clone(),
@@ -577,13 +577,13 @@ pub enum ArgumentOperatorKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PropositionOperator {
+pub struct MtaEventOperator {
     range: Range,
-    kind: PropositionOperatorKind,
+    kind: MtaEventOperatorKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PropositionOperatorKind {
+pub enum MtaEventOperatorKind {
     And, // homa
     Or,  // homi
     Xor, // homu
@@ -1480,7 +1480,7 @@ impl ArgumentOperator {
     }
 }
 
-impl PropositionOperator {
+impl MtaEventOperator {
     fn is_match(string: &str) -> bool {
         matches!(string, "homa" | "homi" | "homu")
     }
@@ -1492,12 +1492,12 @@ impl PropositionOperator {
         end_character: usize,
     ) -> Self {
         let kind = match string {
-            "homa" => PropositionOperatorKind::And,
-            "homi" => PropositionOperatorKind::Or,
-            "homu" => PropositionOperatorKind::Xor,
+            "homa" => MtaEventOperatorKind::And,
+            "homi" => MtaEventOperatorKind::Or,
+            "homu" => MtaEventOperatorKind::Xor,
             _ => panic!("Invalid proposition operator surface: {}", string),
         };
-        PropositionOperator {
+        MtaEventOperator {
             range: Range {
                 start: Position {
                     line: start_line,
@@ -1516,12 +1516,12 @@ impl PropositionOperator {
     }
     pub fn get_string(&self) -> String {
         match self.kind {
-            PropositionOperatorKind::And => "homa".to_string(),
-            PropositionOperatorKind::Or => "homi".to_string(),
-            PropositionOperatorKind::Xor => "homu".to_string(),
+            MtaEventOperatorKind::And => "homa".to_string(),
+            MtaEventOperatorKind::Or => "homi".to_string(),
+            MtaEventOperatorKind::Xor => "homu".to_string(),
         }
     }
-    pub fn get_kind(&self) -> &PropositionOperatorKind {
+    pub fn get_kind(&self) -> &MtaEventOperatorKind {
         &self.kind
     }
 }

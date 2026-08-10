@@ -703,10 +703,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_私はりんごは食べるなみかんを食べろと言った() {
         let text =
-            "kasahi mi si he [eventBinaryOperator] ne pahete ba si ri behapare ne pahete ba si ri behoranage ho".to_string();
+            "kasahi sa mi si he homa ne pahete sa ba si ri behapare pahete sa ba si ri behoranage ho"
+                .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
