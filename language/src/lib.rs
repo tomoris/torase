@@ -916,4 +916,19 @@ mod tests {
         let result = diagnose(text);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_seで型が合わない項を比喩として使える() {
+        // parobe(x1,x2)はx1,x2ともに生物(bV)を要求するが、didora(人工物,dV)をseで主格に入れられる
+        let text = "parobe sa se ri didora si ba".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_seがないと型が合わない項はエラーになる() {
+        let text = "parobe sa ri didora si ba".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
 }

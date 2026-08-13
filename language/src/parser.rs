@@ -223,6 +223,9 @@ fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonT
         DummyNonTerminalType::DeterminerModifier => {
             NonTerminalType::DeterminerModifier(DeterminerModifier::new(rhs))
         }
+        DummyNonTerminalType::TypeOverrideModifier => {
+            NonTerminalType::TypeOverrideModifier(TypeOverrideModifier::new(rhs))
+        }
     }
 }
 
@@ -268,6 +271,7 @@ fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRh
         DummyNonTerminalType::QuantifierModifier => QuantifierModifier::parse_table(t),
         DummyNonTerminalType::NumericalExpression => NumericalExpression::parse_table(t),
         DummyNonTerminalType::DeterminerModifier => DeterminerModifier::parse_table(t),
+        DummyNonTerminalType::TypeOverrideModifier => TypeOverrideModifier::parse_table(t),
     }
 }
 
@@ -351,6 +355,7 @@ pub enum NonTerminalType {
     QuantifierModifier(QuantifierModifier),
     NumericalExpression(NumericalExpression),
     DeterminerModifier(DeterminerModifier),
+    TypeOverrideModifier(TypeOverrideModifier),
 }
 
 #[derive(Clone, Debug)]
@@ -385,6 +390,7 @@ pub enum DummyNonTerminalType {
     QuantifierModifier,
     NumericalExpression,
     DeterminerModifier,
+    TypeOverrideModifier,
 }
 
 // non-terminal types
@@ -481,7 +487,7 @@ pub enum OptionalCaseArgs {
 
 #[derive(Clone, Debug)]
 pub enum CaseArg {
-    One(CaseLabel, ArgumentPhrase),
+    One(CaseLabel, TypeOverrideModifier, ArgumentPhrase),
 }
 
 #[derive(Clone, Debug)]
@@ -579,6 +585,12 @@ pub enum NumericalExpression {
 #[derive(Clone, Debug)]
 pub enum DeterminerModifier {
     One(Determiner),
+    Epsilon,
+}
+
+#[derive(Clone, Debug)]
+pub enum TypeOverrideModifier {
+    One(TypeOverride),
     Epsilon,
 }
 
@@ -1288,6 +1300,7 @@ impl OptionalCaseArgs {
         match current_token {
             DummyTerminalType::CaseLabel => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::CaseLabel),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TypeOverrideModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
             ])),
@@ -1315,11 +1328,12 @@ impl OptionalCaseArgs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::Terminal(TerminalType::CaseLabel(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child2)),
-                    SymbolType::NonTerminal(NonTerminalType::OptionalCaseArgs(child3)),
+                    SymbolType::NonTerminal(NonTerminalType::TypeOverrideModifier(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentPhrase(child3)),
+                    SymbolType::NonTerminal(NonTerminalType::OptionalCaseArgs(child4)),
                 ] => Self::One(
-                    CaseArg::One(child1.clone(), child2.clone()),
-                    Box::new(child3.clone()),
+                    CaseArg::One(child1.clone(), child2.clone(), child3.clone()),
+                    Box::new(child4.clone()),
                 ),
                 _ => panic!("Unexpected symbols: {:?}", symbols),
             },
@@ -1930,6 +1944,42 @@ impl DeterminerModifier {
     }
 }
 
+impl TypeOverrideModifier {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
+        match current_token {
+            DummyTerminalType::TypeOverride => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::TypeOverride,
+                )]))
+            }
+            // Epsilon on every token in FIRST(ArgumentPhrase) (see ArgumentPhrase::parse_table)
+            // so this modifier can be skipped when `se` is absent.
+            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
+        }
+    }
+    fn new(rhs: Rhs) -> Self {
+        match rhs {
+            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
+                [SymbolType::Terminal(TerminalType::TypeOverride(child1))] => {
+                    Self::One(child1.clone())
+                }
+                _ => {
+                    panic!("Unexpected symbols: {:?}", symbols);
+                }
+            },
+            Rhs::Epsilon => Self::Epsilon,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Range helpers — canonical implementations shared by all type checkers
 // ---------------------------------------------------------------------------
@@ -2203,12 +2253,19 @@ impl Event {
             Event::One(_, args) => args.case_args(),
         }
     }
+
+    /// `case_args`に加え、各項が`se`(TypeOverride)で型検査を除外指定されているかを返す。
+    pub fn case_args_with_override(&self) -> Vec<(&CaseLabel, bool, &ArgumentPhrase)> {
+        match self {
+            Event::One(_, args) => args.case_args_with_override(),
+        }
+    }
 }
 
 impl OptionalCaseArgs {
     fn last_range(&self) -> Option<Range> {
         match self {
-            OptionalCaseArgs::One(CaseArg::One(_label, phrase), rest) => {
+            OptionalCaseArgs::One(CaseArg::One(_label, _type_override, phrase), rest) => {
                 Some(rest.last_range().unwrap_or_else(|| phrase.get_range()))
             }
             OptionalCaseArgs::Epsilon => None,
@@ -2217,9 +2274,21 @@ impl OptionalCaseArgs {
 
     fn case_args(&self) -> Vec<(&CaseLabel, &ArgumentPhrase)> {
         match self {
-            OptionalCaseArgs::One(CaseArg::One(label, phrase), rest) => {
+            OptionalCaseArgs::One(CaseArg::One(label, _type_override, phrase), rest) => {
                 let mut result = vec![(label, phrase)];
                 result.extend(rest.case_args());
+                result
+            }
+            OptionalCaseArgs::Epsilon => vec![],
+        }
+    }
+
+    fn case_args_with_override(&self) -> Vec<(&CaseLabel, bool, &ArgumentPhrase)> {
+        match self {
+            OptionalCaseArgs::One(CaseArg::One(label, type_override, phrase), rest) => {
+                let is_overridden = matches!(type_override, TypeOverrideModifier::One(_));
+                let mut result = vec![(label, is_overridden, phrase)];
+                result.extend(rest.case_args_with_override());
                 result
             }
             OptionalCaseArgs::Epsilon => vec![],
@@ -2533,6 +2602,13 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let type_override_modifier = grammar::NonTerminal(
+            type_name::<TypeOverrideModifier>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
 
         // terminals
         let interrogative_marker = grammar::Terminal(
@@ -2608,6 +2684,13 @@ mod tests {
         );
         let case_label = grammar::Terminal(
             type_name::<CaseLabel>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let type_override = grammar::Terminal(
+            type_name::<TypeOverride>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2838,6 +2921,7 @@ mod tests {
             vec![
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(case_label.clone()),
+                    grammar::Symbol::NonTerminal(type_override_modifier.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                     grammar::Symbol::NonTerminal(optional_case_args.clone()),
                 ]),
@@ -2990,6 +3074,13 @@ mod tests {
                 grammar::Rhs::Epsilon,
             ],
         );
+        rules.insert(
+            type_override_modifier.clone(),
+            vec![
+                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(type_override.clone())]),
+                grammar::Rhs::Epsilon,
+            ],
+        );
 
         let g = grammar::LL1Grammar::try_new(rules).unwrap();
         let non_terminals = g.get_non_terminals();
@@ -3012,6 +3103,7 @@ mod tests {
                     "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
                     "Argument" => DummyTerminalType::Argument,
                     "CaseLabel" => DummyTerminalType::CaseLabel,
+                    "TypeOverride" => DummyTerminalType::TypeOverride,
                     "PredicateOperator" => DummyTerminalType::PredicateOperator,
                     "ArgumentOperator" => DummyTerminalType::ArgumentOperator,
                     "MtaEventOperator" => DummyTerminalType::MtaEventOperator,
@@ -3087,6 +3179,7 @@ mod tests {
             "QuantifierModifier" => QuantifierModifier::parse_table(tt),
             "NumericalExpression" => NumericalExpression::parse_table(tt),
             "DeterminerModifier" => DeterminerModifier::parse_table(tt),
+            "TypeOverrideModifier" => TypeOverrideModifier::parse_table(tt),
             _ => self::panic!("Unknown non-terminal type: {}", nt.0),
         };
 
@@ -3141,6 +3234,7 @@ mod tests {
                                                 DummyNonTerminalType::QuantifierModifier => "QuantifierModifier",
                                                 DummyNonTerminalType::NumericalExpression => "NumericalExpression",
                                                 DummyNonTerminalType::DeterminerModifier => "DeterminerModifier",
+                                                DummyNonTerminalType::TypeOverrideModifier => "TypeOverrideModifier",
                                             };
                                     assert_eq!(
                                         auto_nt.0, manual_nt_variant_name,
@@ -3166,6 +3260,7 @@ mod tests {
                                         DummyTerminalType::BinaryPredicate => "BinaryPredicate",
                                         DummyTerminalType::Argument => "Argument",
                                         DummyTerminalType::CaseLabel => "CaseLabel",
+                                        DummyTerminalType::TypeOverride => "TypeOverride",
                                         DummyTerminalType::PredicateOperator => "PredicateOperator",
                                         DummyTerminalType::ArgumentOperator => "ArgumentOperator",
                                         DummyTerminalType::MtaEventOperator => "MtaEventOperator",

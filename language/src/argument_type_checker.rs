@@ -164,8 +164,11 @@ impl Event {
         let pred = self.get_pred();
         pred.type_check()?;
         let (t1, t2) = pred.get_argument_types();
+        // 単項述語のx2スロット(項自体が存在してはいけない)を示す。seが付いていても
+        // このアリティ検査だけは引き続き適用し、型不一致のみをバイパスする。
+        let x2_argument_slot_absent = t2 == vec![ArgumentType::Epsilon];
         let mut seen_adjunct_kinds: Vec<&CaseLabelKind> = Vec::new();
-        for (label, arg) in self.case_args() {
+        for (label, is_type_overridden, arg) in self.case_args_with_override() {
             arg.type_check()?;
             let kind = label.get_kind();
             if !matches!(kind, CaseLabelKind::Sa | CaseLabelKind::Si) {
@@ -181,6 +184,11 @@ impl Event {
                     });
                 }
                 seen_adjunct_kinds.push(kind);
+            }
+            let bypass_type_check = is_type_overridden
+                && !(matches!(kind, CaseLabelKind::Si) && x2_argument_slot_absent);
+            if bypass_type_check {
+                continue;
             }
             match kind {
                 CaseLabelKind::Sa => {
@@ -702,6 +710,60 @@ mod tests {
     #[test]
     fn test_時間格の型が間違っている場合にerr型を返す() {
         let source = "parobe sa mi si ba sugi mi eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_se付きで第一項の型不一致をバイパスできる() {
+        let source = "parobe sa se ri didora si ba eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_se付きで第二項の型不一致をバイパスできる() {
+        let source = "kahoraka sa mi si se ba eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_se付きで両方の項の型不一致をバイパスできる() {
+        let source = "parobe sa se ri didora si se ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_se付きで付加詞格の型不一致をバイパスできる() {
+        let source = "parobe sa mi si ba subu se ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_se付きでもseがない別の格の型不一致は検出される() {
+        let source = "parobe sa se ri didora si ba subu ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_se付きでも単項述語の第二項のアリティ検査はバイパスされない() {
+        let source = "pisarepa sa mi si se ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(ast);

@@ -521,17 +521,17 @@ ge
 accusative_preposition
 si
 
-argument_phrase_transposer
-re
+argument_retriever_nominative
+ra
 
-argument_retriever
-ro
+argument_retriever_accusative
+ri
 
 mta_event_to_argument_phrase_converter
-se
+he
 
 mta_event_to_argument_phrase_converter_end
-so
+ho
 
 post_mta_event_modifier
 da

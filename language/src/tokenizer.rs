@@ -67,6 +67,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::CaseLabel(CaseLabel::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
+        } else if TypeOverride::is_match(token.0) {
+            doc.push(TerminalType::TypeOverride(TypeOverride::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if Argument::is_match(token.0) {
             doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -231,6 +235,7 @@ pub enum TerminalType {
     BinaryPredicate(BinaryPredicate),
     Argument(Argument),
     CaseLabel(CaseLabel),
+    TypeOverride(TypeOverride),
     PredicateOperator(PredicateOperator),
     ArgumentOperator(ArgumentOperator),
     MtaEventOperator(MtaEventOperator),
@@ -260,6 +265,7 @@ pub enum DummyTerminalType {
     BinaryPredicate,
     Argument,
     CaseLabel,
+    TypeOverride,
     PredicateOperator,
     ArgumentOperator,
     MtaEventOperator,
@@ -289,6 +295,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::BinaryPredicate(_) => DummyTerminalType::BinaryPredicate,
         TerminalType::Argument(_) => DummyTerminalType::Argument,
         TerminalType::CaseLabel(_) => DummyTerminalType::CaseLabel,
+        TerminalType::TypeOverride(_) => DummyTerminalType::TypeOverride,
         TerminalType::PredicateOperator(_) => DummyTerminalType::PredicateOperator,
         TerminalType::ArgumentOperator(_) => DummyTerminalType::ArgumentOperator,
         TerminalType::MtaEventOperator(_) => DummyTerminalType::MtaEventOperator,
@@ -328,6 +335,7 @@ impl TerminalType {
             TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
             TerminalType::Argument(argument) => argument.range.start.clone(),
             TerminalType::CaseLabel(label) => label.range.start.clone(),
+            TerminalType::TypeOverride(type_override) => type_override.range.start.clone(),
             TerminalType::PredicateOperator(operator) => operator.range.start.clone(),
             TerminalType::ArgumentOperator(operator) => operator.range.start.clone(),
             TerminalType::MtaEventOperator(operator) => operator.range.start.clone(),
@@ -363,6 +371,7 @@ impl TerminalType {
             TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
             TerminalType::Argument(argument) => argument.range.end.clone(),
             TerminalType::CaseLabel(label) => label.range.end.clone(),
+            TerminalType::TypeOverride(type_override) => type_override.range.end.clone(),
             TerminalType::PredicateOperator(operator) => operator.range.end.clone(),
             TerminalType::ArgumentOperator(operator) => operator.range.end.clone(),
             TerminalType::MtaEventOperator(operator) => operator.range.end.clone(),
@@ -548,6 +557,11 @@ pub enum CaseLabelKind {
     // 抽象系
     Sute, // 原因格(理由起点格) 何々のせいで
     Suto, // 目的格(理由目標格) 何々のために
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TypeOverride {
+    range: Range,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1385,6 +1399,38 @@ impl CaseLabel {
     }
     pub fn get_kind(&self) -> &CaseLabelKind {
         &self.kind
+    }
+}
+
+impl TypeOverride {
+    fn is_match(string: &str) -> bool {
+        string == "se"
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        if !Self::is_match(string) {
+            panic!("Invalid type override surface: {}", string);
+        }
+        TypeOverride {
+            range: Range {
+                start: Position {
+                    line: start_line,
+                    character: start_character,
+                },
+                end: Position {
+                    line: end_line,
+                    character: end_character,
+                },
+            },
+        }
+    }
+    pub fn get_string(&self) -> String {
+        "se".to_string()
     }
 }
 

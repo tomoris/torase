@@ -256,6 +256,7 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         | TerminalType::AspectNegation(_) => Some(Color::from_rgba8(230, 120, 60, 0.25)),
         TerminalType::InterrogativeMarker(_) => Some(Color::from_rgba8(210, 210, 50, 0.25)),
         TerminalType::CaseLabel(_) => Some(Color::from_rgba8(60, 160, 180, 0.25)),
+        TerminalType::TypeOverride(_) => Some(Color::from_rgba8(60, 200, 120, 0.25)),
         TerminalType::PredicateOperator(_)
         | TerminalType::ArgumentOperator(_)
         | TerminalType::MtaEventOperator(_) => Some(Color::from_rgba8(130, 130, 130, 0.25)),
@@ -992,13 +993,17 @@ impl TreeViewer for OptionalCaseArgs {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(250, 240, 205);
         match self {
-            OptionalCaseArgs::One(CaseArg::One(label, arg), rest) => {
+            OptionalCaseArgs::One(CaseArg::One(label, type_override, arg), rest) => {
                 let category = "OptionalCaseArgs".to_string();
-                let mut content = row![
-                    text(label.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    arg.view(is_full),
-                ];
+                let mut content = row![text(label.get_string())];
+                if is_full || !type_override.is_empty() {
+                    content = content
+                        .push(Space::new().width(iced::Length::Fixed(10.0)))
+                        .push(type_override.view(is_full));
+                }
+                content = content
+                    .push(Space::new().width(iced::Length::Fixed(10.0)))
+                    .push(arg.view(is_full));
                 if is_full || !rest.is_empty() {
                     content = content
                         .push(Space::new().width(iced::Length::Fixed(10.0)))
@@ -1203,6 +1208,27 @@ impl TreeViewer for DeterminerModifier {
     }
     fn is_empty(&self) -> bool {
         matches!(self, DeterminerModifier::Epsilon)
+    }
+}
+
+impl TreeViewer for TypeOverrideModifier {
+    fn view(&self, _is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(0, 50, 30);
+        match self {
+            TypeOverrideModifier::One(type_override) => {
+                let category = "TypeOverrideModifier".to_string();
+                let content = text(type_override.get_string()).into();
+                category_box(category, content, background)
+            }
+            TypeOverrideModifier::Epsilon => {
+                let category = "TypeOverrideModifier".to_string();
+                let content = text("ε").into();
+                category_box(category, content, background)
+            }
+        }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, TypeOverrideModifier::Epsilon)
     }
 }
 
