@@ -632,6 +632,8 @@ enum QuantifierKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Number {
     range: Range,
+    value: u64,
+    is_hex: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1663,8 +1665,85 @@ impl Quantifier {
 }
 
 impl Number {
+    // 数字テーブル: 子音p/k/m/s x 母音a/e/i/o で1桁(0〜15)を表す。
+    const DIGIT_CONSONANTS: [char; 4] = ['p', 'k', 'm', 's'];
+    // 桁位置テーブル: 子音d/g/z/n x 母音a/e/i/o で指数(0〜15)を表す。
+    const PLACE_CONSONANTS: [char; 4] = ['d', 'g', 'z', 'n'];
+    const VOWELS: [char; 4] = ['a', 'e', 'i', 'o'];
+
     fn is_match(string: &str) -> bool {
-        string == "number"
+        if Self::is_arabic_numeral_match(string) {
+            return true;
+        }
+        let re_number = Regex::new(
+            r"^tu(?:ru)?(?:(?:[pkms][aeio][dgzn][aeio])+(?:[pkms][aeio])?|[pkms][aeio])$",
+        )
+        .unwrap();
+        if !re_number.is_match(string) {
+            return false;
+        }
+        let rest = &string[2..];
+        let explicit_hex = rest.starts_with("ru");
+        if explicit_hex {
+            return true;
+        }
+        // ruが無ければ10進数として扱うので、桁の値はすべて0〜9でなければならない
+        // (10〜15を含む桁を言いたい場合は必ずruを付ける)。
+        Self::parse_terms(rest).iter().all(|&(digit, _)| digit <= 9)
+    }
+    // アラビア数字表記(算用数字)。"□"がzaの代替表記であるのと同様、
+    // 数詞の代替入力表記として1桁目〜任意桁の数字列、または"1_000"のように
+    // 3桁ごとにアンダースコアで区切った数字列を受け付ける(常に10進数として解釈する)。
+    fn is_arabic_numeral_match(string: &str) -> bool {
+        let re_arabic = Regex::new(r"^(?:[0-9]+|[0-9]{1,3}(?:_[0-9]{3})*)$").unwrap();
+        if !re_arabic.is_match(string) {
+            return false;
+        }
+        let digits_only: String = string.chars().filter(|&c| c != '_').collect();
+        digits_only.parse::<u64>().is_ok()
+    }
+    fn parse_terms(rest: &str) -> Vec<(u64, u32)> {
+        let chars: Vec<char> = rest.chars().collect();
+        let mut terms: Vec<(u64, u32)> = Vec::new();
+        let mut i = 0;
+        while i < chars.len() {
+            let digit = Self::digit_from_syllable(chars[i], chars[i + 1]);
+            i += 2;
+            if i + 1 < chars.len() && Self::PLACE_CONSONANTS.contains(&chars[i]) {
+                let exponent = Self::place_from_syllable(chars[i], chars[i + 1]);
+                i += 2;
+                terms.push((digit, exponent));
+            } else {
+                terms.push((digit, 0));
+            }
+        }
+        terms
+    }
+    fn digit_from_syllable(consonant: char, vowel: char) -> u64 {
+        let row = Self::DIGIT_CONSONANTS
+            .iter()
+            .position(|&c| c == consonant)
+            .unwrap();
+        let col = Self::VOWELS.iter().position(|&v| v == vowel).unwrap();
+        (row * 4 + col) as u64
+    }
+    fn place_from_syllable(consonant: char, vowel: char) -> u32 {
+        let row = Self::PLACE_CONSONANTS
+            .iter()
+            .position(|&c| c == consonant)
+            .unwrap();
+        let col = Self::VOWELS.iter().position(|&v| v == vowel).unwrap();
+        (row * 4 + col) as u32
+    }
+    fn digit_to_syllable(digit: u64) -> String {
+        let row = (digit / 4) as usize;
+        let col = (digit % 4) as usize;
+        format!("{}{}", Self::DIGIT_CONSONANTS[row], Self::VOWELS[col])
+    }
+    fn place_to_syllable(exponent: u32) -> String {
+        let row = (exponent / 4) as usize;
+        let col = (exponent % 4) as usize;
+        format!("{}{}", Self::PLACE_CONSONANTS[row], Self::VOWELS[col])
     }
     fn new(
         string: &str,
@@ -1676,6 +1755,23 @@ impl Number {
         if !Self::is_match(string) {
             panic!("Invalid number surface: {}", string);
         }
+        let (value, is_hex) = if Self::is_arabic_numeral_match(string) {
+            let digits_only: String = string.chars().filter(|&c| c != '_').collect();
+            (digits_only.parse::<u64>().unwrap(), false)
+        } else {
+            let mut rest = &string[2..]; // "tu"を読み飛ばす
+            let is_hex = rest.starts_with("ru");
+            if is_hex {
+                rest = &rest[2..];
+            }
+            let terms = Self::parse_terms(rest);
+            let base: u64 = if is_hex { 16 } else { 10 };
+            let value = terms
+                .iter()
+                .map(|(digit, exponent)| digit * base.pow(*exponent))
+                .sum();
+            (value, is_hex)
+        };
         Number {
             range: Range {
                 start: Position {
@@ -1687,13 +1783,49 @@ impl Number {
                     character: end_character,
                 },
             },
+            value,
+            is_hex,
         }
     }
     pub(crate) fn get_range(&self) -> Range {
         self.range.clone()
     }
+    pub fn get_value(&self) -> u64 {
+        self.value
+    }
+    pub fn is_hex(&self) -> bool {
+        self.is_hex
+    }
     pub fn get_string(&self) -> String {
-        "number".to_string()
+        let base: u64 = if self.is_hex { 16 } else { 10 };
+        let mut digits: Vec<u64> = Vec::new();
+        if self.value == 0 {
+            digits.push(0);
+        } else {
+            let mut v = self.value;
+            while v > 0 {
+                digits.push(v % base);
+                v /= base;
+            }
+            digits.reverse();
+        }
+        let digit_count = digits.len();
+        let mut result = String::from("tu");
+        if self.is_hex {
+            result.push_str("ru");
+        }
+        for (index, &digit) in digits.iter().enumerate() {
+            let exponent = (digit_count - 1 - index) as u32;
+            if exponent == 0 {
+                if digit != 0 || digit_count == 1 {
+                    result.push_str(&Self::digit_to_syllable(digit));
+                }
+            } else if digit != 0 {
+                result.push_str(&Self::digit_to_syllable(digit));
+                result.push_str(&Self::place_to_syllable(exponent));
+            }
+        }
+        result
     }
 }
 
@@ -2173,5 +2305,96 @@ mod tests {
         assert_eq!(sentences.len(), 2);
         assert_eq!(sentences[0].len(), 5);
         assert_eq!(sentences[1].len(), 6);
+    }
+
+    fn assert_number_roundtrip(string: &str, expected_value: u64, expected_is_hex: bool) {
+        assert!(Number::is_match(string), "should match: {}", string);
+        let number = Number::new(string, 0, 0, 0, 0);
+        assert_eq!(number.get_value(), expected_value, "value of {}", string);
+        assert_eq!(number.is_hex(), expected_is_hex, "is_hex of {}", string);
+        assert_eq!(number.get_string(), string, "canonical form of {}", string);
+    }
+
+    #[test]
+    fn test_数詞_1桁の値が桁位置なしで往復変換できる() {
+        assert_number_roundtrip("tupa", 0, false);
+        assert_number_roundtrip("tuka", 4, false);
+        assert_number_roundtrip("tume", 9, false);
+    }
+
+    #[test]
+    fn test_数詞_複数桁_ゼロを含む値が桁位置省略ルール込みで往復変換できる() {
+        assert_number_roundtrip("tupede", 10, false);
+        assert_number_roundtrip("tupedi", 100, false);
+        assert_number_roundtrip("tupedo", 1000, false);
+        assert_number_roundtrip("tupedopidipodeka", 1234, false);
+    }
+
+    #[test]
+    fn test_数詞_16進数はruを付けて表す() {
+        // Aに相当するmi(値10)を含むので、ruを付けて明示的に16進として読む。
+        assert_number_roundtrip("turupedimidepi", 0x1A2, true);
+        assert_number_roundtrip("turuso", 15, true);
+        // 0xFF = F(15)×16 + F(15)。上位桁には桁位置(16^1 = de)が必要で、末尾の1の位だけ桁位置なし。
+        assert_number_roundtrip("turusodeso", 0xFF, true);
+    }
+
+    #[test]
+    fn test_数詞_桁が全て0から9でもruがあれば16進として解釈される() {
+        // ruなしなら10進の12だが、ru付きだと16進の12(=18)になる。
+        let with_ru = Number::new("turupedepi", 0, 0, 0, 0);
+        assert_eq!(with_ru.get_value(), 0x12);
+        assert!(with_ru.is_hex());
+        assert_eq!(with_ru.get_string(), "turupedepi");
+
+        let without_ru = Number::new("tupedepi", 0, 0, 0, 0);
+        assert_eq!(without_ru.get_value(), 12);
+        assert!(!without_ru.is_hex());
+    }
+
+    #[test]
+    fn test_数詞_不正な文字列はis_matchで弾かれる() {
+        assert!(!Number::is_match("tu")); // マーカーのみ
+        assert!(!Number::is_match("turu")); // マーカー+フラグのみで数字が無い
+        assert!(!Number::is_match("tude")); // 数字が無く桁位置だけ
+        assert!(!Number::is_match("tup")); // 末尾が半端(母音が無い)
+        assert!(!Number::is_match("tuba")); // 数字テーブルに無い子音(b)
+        assert!(!Number::is_match("tururu")); // ruが2回連続
+        assert!(!Number::is_match("pa")); // マーカーが無い
+        assert!(!Number::is_match("tuso")); // ruなしで10〜15の桁(so=15)を使っている
+        assert!(!Number::is_match("tupedimidepi")); // ruなしでmi(=10)を使っている
+    }
+
+    #[test]
+    fn test_数詞_アラビア数字でも代替表記できる() {
+        // "□"がzaの代替表記であるのと同様、アラビア数字は数詞の代替入力表記になる。
+        // ただし正準形(get_string)は常に数詞の語(tu...)。
+        let n = Number::new("12345", 0, 0, 0, 0);
+        assert_eq!(n.get_value(), 12345);
+        assert!(!n.is_hex());
+        assert_eq!(n.get_string(), "tupegapidopodikadeke");
+
+        let n = Number::new("0", 0, 0, 0, 0);
+        assert_eq!(n.get_value(), 0);
+        assert_eq!(n.get_string(), "tupa");
+    }
+
+    #[test]
+    fn test_数詞_アラビア数字は3桁ごとのアンダースコア区切りを受け付ける() {
+        assert_eq!(Number::new("1_000", 0, 0, 0, 0).get_value(), 1_000);
+        assert_eq!(Number::new("1_000_000", 0, 0, 0, 0).get_value(), 1_000_000);
+        assert_eq!(Number::new("12_345", 0, 0, 0, 0).get_value(), 12345);
+        // アンダースコアが無くても任意の桁数を受け付ける。
+        assert_eq!(Number::new("1000000", 0, 0, 0, 0).get_value(), 1_000_000);
+    }
+
+    #[test]
+    fn test_数詞_不正なアラビア数字表記はis_matchで弾かれる() {
+        assert!(!Number::is_match("1_00")); // 3桁区切りになっていない
+        assert!(!Number::is_match("1_0000")); // 3桁区切りになっていない
+        assert!(!Number::is_match("_1000")); // 先頭がアンダースコア
+        assert!(!Number::is_match("1000_")); // 末尾がアンダースコア
+        assert!(!Number::is_match("1__000")); // アンダースコアが連続
+        assert!(!Number::is_match("12a45")); // 数字以外の文字を含む
     }
 }

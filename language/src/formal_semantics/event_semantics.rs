@@ -1089,7 +1089,7 @@ mod tests {
     #[test]
     fn test_数量化_数のりんご() {
         check(
-            "pahete sa mi si number ri behapare",
+            "pahete sa mi si tupe ri behapare",
             "∃_# x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }

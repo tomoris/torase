@@ -571,14 +571,8 @@ pub enum QuantifierModifier {
 
 #[derive(Clone, Debug)]
 pub enum NumericalExpression {
-    // TODO
-    // 受理できる数値表現とできない数値表現を区別するために、数値表現を別の非終端記号として定義
-    // 十　一 はok
-    // 十　はok
-    // 二 十 はok
-    // 百　はok
-    // 十　十　はNG
-    // など
+    // 数値(桁の重複・順序といった妥当性は、文法規則ではなくNumber側の音節エンコーディング
+    // (数字+桁位置を1語に連結する方式)によって保証される。詳細はdocs/language_design/morphology.mdの「数詞」を参照。
     One(Number),
 }
 

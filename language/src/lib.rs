@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は昨日りんごを食べた() {
-        let text = "hita pahete sa hoka mi ri paparatanera du mi si ri behapare sugi ri zuhita du number ri zudahi"
+        let text = "hita pahete sa hoka mi ri paparatanera du mi si ri behapare sugi ri zuhita du tupe ri zudahi"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は6日前にりんごを食べた() {
-        let text = "hita pahete sa hoka mi ri paparatanera du mi si ri behapare sugi ri zuhita du number ri zudahi"
+        let text = "hita pahete sa hoka mi ri paparatanera du mi si ri behapare sugi ri zuhita du tuki ri zudahi"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -159,31 +159,28 @@ mod tests {
 
     #[test]
     fn test_彼らは明日りんごを食べる() {
-        let text =
-            "hitu pahete sa gu si ri behapare sugi ri zuhitu du number ri zudahi".to_string();
+        let text = "hitu pahete sa gu si ri behapare sugi ri zuhitu du tupe ri zudahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
-
     #[test]
     fn test_彼らは6日後にりんごを食べる() {
-        let text =
-            "hitu pahete sa gu si ri behapare sugi ri zuhitu du number ri zudahi".to_string();
+        let text = "hitu pahete sa gu si ri behapare sugi ri zuhitu du tuki ri zudahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_彼女らは3日間りんごを食べている_食事としてりんごだけを食べている() {
-        let text = "hiti hudidi pahete sa gu si ri behapare suge ri zuhita du number ri zudahi"
-            .to_string();
+        let text =
+            "hiti hudidi pahete sa gu si ri behapare suge ri zuhita du tupo ri zudahi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_彼女らはりんごを5分間食べ続けている_りんごを食べる所要時間に5分かかっている() {
-        let text = "hiti hudida pahete sa gu si ri behapare suge ri zuhita du number ri zuminite"
+        let text = "hiti hudida pahete sa gu si ri behapare suge ri zuhita du tuke ri zuminite"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -198,14 +195,14 @@ mod tests {
 
     #[test]
     fn test_りんごが3つある() {
-        let text = "pihezisata sa number ri behapare".to_string();
+        let text = "pihezisata sa tupo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_りんご達がテーブルの上にある() {
-        let text = "pihezisata sa number ri behapare suni ri zahatano du ri ditabare".to_string();
+        let text = "pihezisata sa tupe ri behapare suni ri zahatano du ri ditabare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -832,7 +829,7 @@ mod tests {
     #[test]
     fn test_私は3つのりんごを食べる() {
         // ∃=3 x (apple(x))
-        let text = "pahete sa mi si number ri behapare".to_string();
+        let text = "pahete sa mi si tupo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -840,7 +837,7 @@ mod tests {
     #[test]
     fn test_私はこの3つのりんごを食べる() {
         // ∃=3 x (apple(x))
-        let text = "pahete sa mi si number mo ri behapare".to_string();
+        let text = "pahete sa mi si tupo mo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -864,11 +861,11 @@ mod tests {
     #[test]
     fn test_私は少しの3つのりんごを食べる_がエラーになること() {
         // ∀x ∃=3 (apple(x))
-        let text = "pahete sa mi si number to ri behapare".to_string();
+        let text = "pahete sa mi si tupo to ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
 
-        let text = "pahete sa mi si to number ri behapare".to_string();
+        let text = "pahete sa mi si to tupo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
@@ -908,11 +905,11 @@ mod tests {
     #[test]
     fn test_私は全ての3つのりんごを食べる_がエラーになること() {
         // ∀x ∃=3 (apple(x))
-        let text = "pahete sa mi si number ta ri behapare".to_string();
+        let text = "pahete sa mi si tupo ta ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
 
-        let text = "pahete sa mi si ta number ri behapare".to_string();
+        let text = "pahete sa mi si ta tupo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
