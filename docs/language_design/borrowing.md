@@ -24,7 +24,7 @@
 6. **辞書との衝突チェック**
    生成した形が既存語と同一、または紛らわしい場合は、原因となった挿入母音を`a`→`e`→`i`→`o`→`u`の順に1つずつ試し、衝突しない最初の結果を採用する。
 7. **語源の記録**
-   `dictionary.txt`の当該エントリに、借用元の英単語・発音・変換過程を1行で残す(後述のフォーマットを参照)。
+   `dictionary.json`の当該エントリに、借用元の英単語の綴り・発音を残す(後述のフォーマットを参照)。
 
 # 音素対応表
 
@@ -80,10 +80,15 @@
 
 # 語源記録のフォーマット
 
-`dictionary.txt`の該当エントリに、借用元の英単語・発音・変換過程を1行で追記する。
+`dictionary.json`の当該エントリに、`original_spelling`(借用元の英単語の綴り)と`original_pronunciation`(発音のIPA表記)を記録する。フィールドの詳細・不変条件は[辞書ファイルの形式](../dictionary_format.md)を参照。
 
-```
-借用: en "work" /wɜːrk/ → horaka (w→h, ɜːr→ar, k→k, +語末a)
+```json
+"kahoraka": {
+  "original_spelling": "work",
+  "original_pronunciation": "wɜːrk",
+  "terminal_symbol": "BinaryPredicate",
+  "definition": "x1(人)がx2(概念)という仕事をする"
+}
 ```
 
 # 用例

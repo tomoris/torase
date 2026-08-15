@@ -1,0 +1,14 @@
+{
+    "ma": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": ""
+    },
+    "pirana": {
+        "original_spelling": "run",
+        "original_pronunciation": "rʌn",
+        "terminal_type": "BinaryPredicate",
+        "definition": ""
+    }
+}
