@@ -39,5 +39,5 @@
   - [形態論](./morphology.md)
 - [parser](../../language/src/parser.rs)
   - [統語論](./syntax.md)
-- [type checker](../../language/src/type_checker.rs)
+- [type checker](../../language/src/formal_semantics/type_checker.rs)
 - SMT solver

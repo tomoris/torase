@@ -1,3 +1,6 @@
+//! モンタギュー流の単純型付きラムダ計算に基づく型チェッカー。
+//! AST全体が命題型 `T` に還元されることを検証する。
+
 use crate::parser::*;
 use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind, Range};
 
@@ -140,7 +143,7 @@ fn apply(func_type: Type, arg_type: Type, error_range: Range) -> TCResult {
 // Type inference
 // ---------------------------------------------------------------------------
 
-pub fn type_check(ast: Ast) -> Result<(), TypeMismatch> {
+pub fn type_check(ast: &Ast) -> Result<(), TypeMismatch> {
     let s = ast.get_s();
     let ty = s.infer_type()?;
     if ty != Type::T {

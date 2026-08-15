@@ -20,6 +20,8 @@ const TEXT_EDITOR_PADDING: f32 = 5.0;
 // 波線の振幅・波長
 const WAVE_AMPLITUDE: f32 = 1.5;
 const WAVE_LENGTH: f32 = 5.0;
+// テキストの行間比率
+const LINE_HEIGHT_RATIO: f32 = 1.3;
 // フォントサイズの初期値・最小・最大
 const DEFAULT_FONT_SIZE: f32 = 14.0;
 const MIN_FONT_SIZE: f32 = 8.0;
@@ -60,7 +62,7 @@ struct Editor {
 impl Editor {
     fn new() -> Self {
         let text = "parobe sa mi si ba";
-        let asts = diagnose(text.to_string()).unwrap();
+        let asts = diagnose(text.to_string()).expect("default editor text must parse");
         let tokens = tokenize(text)
             .map(|sentences| sentences.into_iter().flatten().collect())
             .unwrap_or_default();
@@ -139,7 +141,7 @@ impl Editor {
 
     fn view(&self) -> Element<'_, Message> {
         let font_size = self.font_size;
-        let line_height = font_size * 1.3;
+        let line_height = font_size * LINE_HEIGHT_RATIO;
         let content = text_editor(&self.content)
             .on_action(Message::Edit)
             .font(Font::MONOSPACE)
@@ -303,7 +305,7 @@ impl canvas::Program<Message> for DiagnosticOverlay {
             content: "A",
             bounds: Size::INFINITE,
             size: Pixels(self.font_size),
-            line_height: adv_text::LineHeight::Relative(1.3),
+            line_height: adv_text::LineHeight::Relative(LINE_HEIGHT_RATIO),
             font: Font::MONOSPACE,
             align_x: adv_text::Alignment::Left,
             align_y: iced::alignment::Vertical::Top,
@@ -446,6 +448,22 @@ where
         .into()
 }
 
+fn spacer() -> Element<'static, Message> {
+    Space::new().width(iced::Length::Fixed(10.0)).into()
+}
+
+/// 要素間に `spacer()` を挟んで横に並べ、中央揃えする。
+fn row_with_separator(elements: Vec<Element<'static, Message>>) -> Element<'static, Message> {
+    let mut r = row![];
+    for (i, element) in elements.into_iter().enumerate() {
+        if i > 0 {
+            r = r.push(spacer());
+        }
+        r = r.push(element);
+    }
+    r.align_y(Alignment::Center).into()
+}
+
 trait TreeViewer {
     fn view(&self, is_full: bool) -> Element<'static, Message>;
     fn is_empty(&self) -> bool;
@@ -503,13 +521,10 @@ impl TreeViewer for InterrogativeSentence {
         match self {
             InterrogativeSentence::One(interrogative_marker, post_modified_mta_event) => {
                 let category = "InterrogativeSentence".to_string();
-                let content = row![
-                    text(interrogative_marker.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(interrogative_marker.get_string()).into(),
                     post_modified_mta_event.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -525,14 +540,11 @@ impl TreeViewer for PostModifiedMtaEvent {
         match self {
             PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
                 let category = "PostModifiedMtaEvent".to_string();
-                let mut content = row![mta_event.view(is_full),];
+                let mut parts = vec![mta_event.view(is_full)];
                 if is_full || !post_mta_event_expression.is_empty() {
-                    content = content
-                        .push(Space::new().width(iced::Length::Fixed(10.0)))
-                        .push(post_mta_event_expression.view(is_full))
+                    parts.push(post_mta_event_expression.view(is_full));
                 }
-                content = content.align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -547,13 +559,10 @@ impl TreeViewer for PostMtaEventExpression {
         match self {
             PostMtaEventExpression::One(post_mta_event_modifier, mta_event) => {
                 let category = "PostMtaEventExpression".to_string();
-                let content = row![
-                    text(post_mta_event_modifier.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(post_mta_event_modifier.get_string()).into(),
                     mta_event.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
             PostMtaEventExpression::Epsilon => {
@@ -595,26 +604,19 @@ impl TreeViewer for ModifiedModality {
         match self {
             ModifiedModality::One(modality, modality_force) => {
                 let category = "ModifiedModality".to_string();
-                let content = row![
-                    text(modality.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(modality_force.get_string()),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                let content = row_with_separator(vec![
+                    text(modality.get_string()).into(),
+                    text(modality_force.get_string()).into(),
+                ]);
                 category_box(category, content, background)
             }
             ModifiedModality::Two(modality_negation, modality, modality_force) => {
                 let category = "ModifiedModality".to_string();
-                let content = row![
-                    text(modality_negation.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(modality.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(modality_force.get_string()),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                let content = row_with_separator(vec![
+                    text(modality_negation.get_string()).into(),
+                    text(modality.get_string()).into(),
+                    text(modality_force.get_string()).into(),
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -656,13 +658,10 @@ impl TreeViewer for ModifiedTense {
             }
             ModifiedTense::Two(tense_negation, tense) => {
                 let category = "ModifiedTense".to_string();
-                let content = row![
-                    text(tense_negation.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(tense.get_string()),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                let content = row_with_separator(vec![
+                    text(tense_negation.get_string()).into(),
+                    text(tense.get_string()).into(),
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -704,13 +703,10 @@ impl TreeViewer for ModifiedAspect {
             }
             ModifiedAspect::Two(aspect_negation, aspect) => {
                 let category = "ModifiedAspect".to_string();
-                let content = row![
-                    text(aspect_negation.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(aspect.get_string()),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                let content = row_with_separator(vec![
+                    text(aspect_negation.get_string()).into(),
+                    text(aspect.get_string()).into(),
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -726,29 +722,20 @@ impl TreeViewer for MtaEvent {
         match self {
             MtaEvent::One(modality_expression, ta_event) => {
                 let category = "MtaEvent".to_string();
-                let mut content = row![];
+                let mut parts = vec![];
                 if is_full || !modality_expression.is_empty() {
-                    content = content
-                        .push(modality_expression.view(is_full))
-                        .push(Space::new().width(iced::Length::Fixed(10.0)));
+                    parts.push(modality_expression.view(is_full));
                 }
-                content = content
-                    .push(ta_event.view(is_full))
-                    .align_y(Alignment::Center)
-                    .align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                parts.push(ta_event.view(is_full));
+                category_box(category, row_with_separator(parts), background)
             }
             MtaEvent::Two(proposition_operator, mta_event1, mta_event2) => {
                 let category = "MtaEvent".to_string();
-                let content = row![
-                    text(proposition_operator.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(proposition_operator.get_string()).into(),
                     mta_event1.view(is_full),
-                    Space::new().width(iced::Length::Fixed(10.0)),
                     mta_event2.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -764,16 +751,12 @@ impl TreeViewer for TaEvent {
         match self {
             TaEvent::One(tense_expression, a_event) => {
                 let category = "TaEvent".to_string();
-                let mut content = row![];
+                let mut parts = vec![];
                 if is_full || !tense_expression.is_empty() {
-                    content = content
-                        .push(tense_expression.view(is_full))
-                        .push(Space::new().width(iced::Length::Fixed(10.0)));
+                    parts.push(tense_expression.view(is_full));
                 }
-                content = content
-                    .push(a_event.view(is_full))
-                    .align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                parts.push(a_event.view(is_full));
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -788,14 +771,12 @@ impl TreeViewer for AEvent {
         match self {
             AEvent::One(aspect_expression, event) => {
                 let category = "AEvent".to_string();
-                let mut content = row![];
+                let mut parts = vec![];
                 if is_full || !aspect_expression.is_empty() {
-                    content = content
-                        .push(aspect_expression.view(is_full))
-                        .push(Space::new().width(iced::Length::Fixed(10.0)));
+                    parts.push(aspect_expression.view(is_full));
                 }
-                content = content.push(event.view(is_full)).align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                parts.push(event.view(is_full));
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -810,14 +791,11 @@ impl TreeViewer for Event {
         match self {
             Event::One(post_modified_binary_predicate_phrase, optional_case_args) => {
                 let category = "Event".to_string();
-                let mut content = row![post_modified_binary_predicate_phrase.view(is_full)];
+                let mut parts = vec![post_modified_binary_predicate_phrase.view(is_full)];
                 if is_full || !optional_case_args.is_empty() {
-                    content = content
-                        .push(Space::new().width(iced::Length::Fixed(10.0)))
-                        .push(optional_case_args.view(is_full));
+                    parts.push(optional_case_args.view(is_full));
                 }
-                content = content.align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -835,14 +813,11 @@ impl TreeViewer for PostModifiedBinaryPredicatePhrase {
                 post_binary_predicate_phrase_expression,
             ) => {
                 let category = "PostModifiedBinaryPredicatePhrase".to_string();
-                let mut content = row![binary_predicate_phrase.view(is_full)];
+                let mut parts = vec![binary_predicate_phrase.view(is_full)];
                 if is_full || !post_binary_predicate_phrase_expression.is_empty() {
-                    content = content
-                        .push(Space::new().width(iced::Length::Fixed(10.0)))
-                        .push(post_binary_predicate_phrase_expression.view(is_full));
+                    parts.push(post_binary_predicate_phrase_expression.view(is_full));
                 }
-                content = content.align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -860,13 +835,10 @@ impl TreeViewer for PostBinaryPredicatePhraseExpression {
                 binary_predicate_phrase,
             ) => {
                 let category = "PostBinaryPredicatePhraseExpression".to_string();
-                let content = row![
-                    text(post_binary_predicate_phrase_modifier.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(post_binary_predicate_phrase_modifier.get_string()).into(),
                     binary_predicate_phrase.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
             PostBinaryPredicatePhraseExpression::Epsilon => {
@@ -892,13 +864,10 @@ impl TreeViewer for BinaryPredicatePhrase {
             }
             BinaryPredicatePhrase::Two(negation, binary_predicate_phrase) => {
                 let category = "BinaryPredicatePhrase".to_string();
-                let content = row![
-                    text(negation.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(negation.get_string()).into(),
                     binary_predicate_phrase.view(_is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
             BinaryPredicatePhrase::Three(
@@ -907,15 +876,11 @@ impl TreeViewer for BinaryPredicatePhrase {
                 binary_predicate_phrase2,
             ) => {
                 let category = "BinaryPredicatePhrase".to_string();
-                let content = row![
-                    text(binary_operator.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(binary_operator.get_string()).into(),
                     binary_predicate_phrase1.view(_is_full),
-                    Space::new().width(iced::Length::Fixed(10.0)),
                     binary_predicate_phrase2.view(_is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -936,33 +901,24 @@ impl TreeViewer for ArgumentPhrase {
             }
             ArgumentPhrase::Two(negation, argument_phrase) => {
                 let category = "ArgumentPhrase".to_string();
-                let content = row![
-                    text(negation.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(negation.get_string()).into(),
                     argument_phrase.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
             ArgumentPhrase::Three(binary_operator, argument_phrase1, argument_phrase2) => {
                 let category = "ArgumentPhrase".to_string();
-                let content = row![
-                    text(binary_operator.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(binary_operator.get_string()).into(),
                     argument_phrase1.view(is_full),
-                    Space::new().width(iced::Length::Fixed(10.0)),
                     argument_phrase2.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
             ArgumentPhrase::Four(quantified_argument) => {
                 let category = "ArgumentPhrase".to_string();
-                let content = row![quantified_argument.view(is_full),]
-                    .align_y(Alignment::Center)
-                    .into();
+                let content = row_with_separator(vec![quantified_argument.view(is_full)]);
                 category_box(category, content, background)
             }
             ArgumentPhrase::Five(
@@ -971,15 +927,11 @@ impl TreeViewer for ArgumentPhrase {
                 mta_event_to_argument_phrase_converter_end,
             ) => {
                 let category = "ArgumentPhrase".to_string();
-                let content = row![
-                    text(mta_event_to_argument_phrase_converter.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(mta_event_to_argument_phrase_converter.get_string()).into(),
                     mta_event.view(is_full),
-                    Space::new().width(iced::Length::Fixed(10.0)),
-                    text(mta_event_to_argument_phrase_converter_end.get_string()),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                    text(mta_event_to_argument_phrase_converter_end.get_string()).into(),
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -995,27 +947,21 @@ impl TreeViewer for OptionalCaseArgs {
         match self {
             OptionalCaseArgs::One(CaseArg::One(label, type_override, arg), rest) => {
                 let category = "OptionalCaseArgs".to_string();
-                let mut content = row![text(label.get_string())];
+                let mut parts = vec![text(label.get_string()).into()];
                 if is_full || !type_override.is_empty() {
-                    content = content
-                        .push(Space::new().width(iced::Length::Fixed(10.0)))
-                        .push(type_override.view(is_full));
+                    parts.push(type_override.view(is_full));
                 }
-                content = content
-                    .push(Space::new().width(iced::Length::Fixed(10.0)))
-                    .push(arg.view(is_full));
+                parts.push(arg.view(is_full));
                 if is_full || !rest.is_empty() {
-                    content = content
-                        .push(Space::new().width(iced::Length::Fixed(10.0)))
-                        .push(rest.view(is_full));
+                    parts.push(rest.view(is_full));
                 }
-                category_box(
-                    category,
-                    content.align_y(Alignment::Center).into(),
-                    background,
-                )
+                category_box(category, row_with_separator(parts), background)
             }
-            OptionalCaseArgs::Epsilon => text("ε").into(),
+            OptionalCaseArgs::Epsilon => {
+                let category = "OptionalCaseArgs".to_string();
+                let content = text("ε").into();
+                category_box(category, content, background)
+            }
         }
     }
     fn is_empty(&self) -> bool {
@@ -1029,16 +975,12 @@ impl TreeViewer for QuantifiedArgument {
         match self {
             QuantifiedArgument::One(quantifier_modifier, determined_argument) => {
                 let category = "QuantifiedArgument".to_string();
-                let mut content = row![];
+                let mut parts = vec![];
                 if is_full || !quantifier_modifier.is_empty() {
-                    content = content
-                        .push(quantifier_modifier.view(is_full))
-                        .push(Space::new().width(iced::Length::Fixed(10.0)));
+                    parts.push(quantifier_modifier.view(is_full));
                 }
-                content = content
-                    .push(determined_argument.view(is_full))
-                    .align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                parts.push(determined_argument.view(is_full));
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -1053,16 +995,12 @@ impl TreeViewer for DeterminedArgument {
         match self {
             DeterminedArgument::One(determiner_modifier, retrieved_argument) => {
                 let category = "DeterminedArgument".to_string();
-                let mut content = row![];
+                let mut parts = vec![];
                 if is_full || !determiner_modifier.is_empty() {
-                    content = content
-                        .push(determiner_modifier.view(is_full))
-                        .push(Space::new().width(iced::Length::Fixed(10.0)));
+                    parts.push(determiner_modifier.view(is_full));
                 }
-                content = content
-                    .push(retrieved_argument.view(is_full))
-                    .align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                parts.push(retrieved_argument.view(is_full));
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -1077,13 +1015,10 @@ impl TreeViewer for RetrievedArgument {
         match self {
             RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
                 let category = "RetrievedArgument".to_string();
-                let content = row![
-                    text(argument_retriever.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(argument_retriever.get_string()).into(),
                     argument_retrieval_binary_predicate.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
         }
@@ -1102,14 +1037,11 @@ impl TreeViewer for ArgumentRetrievalBinaryPredicate {
                 argument_retrieval_with_argument_phrase,
             ) => {
                 let category = "ArgumentRetrievalBinaryPredicate".to_string();
-                let mut content = row![post_modified_binary_predicate_phrase.view(is_full)];
+                let mut parts = vec![post_modified_binary_predicate_phrase.view(is_full)];
                 if is_full || !argument_retrieval_with_argument_phrase.is_empty() {
-                    content = content
-                        .push(Space::new().width(iced::Length::Fixed(10.0)))
-                        .push(argument_retrieval_with_argument_phrase.view(is_full));
+                    parts.push(argument_retrieval_with_argument_phrase.view(is_full));
                 }
-                content = content.align_y(Alignment::Center);
-                category_box(category, content.into(), background)
+                category_box(category, row_with_separator(parts), background)
             }
         }
     }
@@ -1127,13 +1059,10 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
                 argument_phrase,
             ) => {
                 let category = "ArgumentRetrievalWithArgumentPhrase".to_string();
-                let content = row![
-                    text(post_argument_phrase_modifier.get_string()),
-                    Space::new().width(iced::Length::Fixed(10.0)),
+                let content = row_with_separator(vec![
+                    text(post_argument_phrase_modifier.get_string()).into(),
                     argument_phrase.view(is_full),
-                ]
-                .align_y(Alignment::Center)
-                .into();
+                ]);
                 category_box(category, content, background)
             }
             ArgumentRetrievalWithArgumentPhrase::Epsilon => {
@@ -1149,7 +1078,7 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
 }
 
 impl TreeViewer for QuantifierModifier {
-    fn view(&self, _is_full: bool) -> Element<'static, Message> {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(50, 50, 0);
         match self {
             QuantifierModifier::One(quantifier) => {
@@ -1159,7 +1088,7 @@ impl TreeViewer for QuantifierModifier {
             }
             QuantifierModifier::Two(numerical_expression) => {
                 let category = "QuantifierModifier".to_string();
-                let content = numerical_expression.view(_is_full);
+                let content = numerical_expression.view(is_full);
                 category_box(category, content, background)
             }
             QuantifierModifier::Epsilon => {

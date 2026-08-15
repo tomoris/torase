@@ -20,7 +20,7 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
     if let Err(e) = tokenize_result {
         let diagnostics = vec![Diagnostic {
             range: e.range,
-            message: "tokenize failed".to_string(),
+            message: "tokenize error".to_string(),
         }];
         return Err(diagnostics);
     }
@@ -49,7 +49,7 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
 
     // argument type checking
     for ast in &asts {
-        let argument_type_check_result = argument_type_check(ast.clone());
+        let argument_type_check_result = argument_type_check(ast);
         if let Err(e) = argument_type_check_result {
             let diagnostics_item = Diagnostic {
                 range: e.range,
@@ -61,7 +61,7 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
 
     // formal semantics type checking
     for ast in &asts {
-        let formal_type_check_result = formal_type_check(ast.clone());
+        let formal_type_check_result = formal_type_check(ast);
         if let Err(e) = formal_type_check_result {
             let diagnostics_item = Diagnostic {
                 range: e.range,
@@ -76,7 +76,7 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
     if let Some(idx) = find_contradiction_index(&formulas) {
         diagnostics.push(Diagnostic {
             range: ast_with_ranges[idx].1.clone(),
-            message: "contradiction".to_string(),
+            message: "contradiction error".to_string(),
         });
     }
 

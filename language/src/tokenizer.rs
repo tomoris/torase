@@ -17,6 +17,24 @@ impl IncompleteToken {
     }
 }
 
+fn make_range(
+    start_line: usize,
+    start_character: usize,
+    end_line: usize,
+    end_character: usize,
+) -> Range {
+    Range {
+        start: Position {
+            line: start_line,
+            character: start_character,
+        },
+        end: Position {
+            line: end_line,
+            character: end_character,
+        },
+    }
+}
+
 pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> {
     let tokens = split_with_utf8_ranges(input);
 
@@ -699,380 +717,150 @@ pub struct Eos {
     range: Range,
 }
 
-impl InterrogativeMarker {
-    fn is_match(string: &str) -> bool {
-        string == "ku"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid interrogative marker surface: {}", string);
+/// 表層文字列が固定の1語のみで、kindを持たない終端記号型向けのボイラープレート生成マクロ。
+macro_rules! define_fixed_token {
+    ($ty:ident, $label:literal, $surface:literal) => {
+        impl $ty {
+            fn is_match(string: &str) -> bool {
+                string == $surface
+            }
+            fn new(
+                string: &str,
+                start_line: usize,
+                start_character: usize,
+                end_line: usize,
+                end_character: usize,
+            ) -> Self {
+                if !Self::is_match(string) {
+                    panic!(concat!("Invalid ", $label, " surface: {}"), string);
+                }
+                $ty {
+                    range: make_range(start_line, start_character, end_line, end_character),
+                }
+            }
+            pub fn get_string(&self) -> String {
+                $surface.to_string()
+            }
         }
-        InterrogativeMarker {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub fn get_string(&self) -> String {
-        "ku".to_string()
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
+    };
 }
 
-impl ModalityBase {
-    fn is_match(string: &str) -> bool {
-        matches!(string, "hapa" | "hapi" | "hapu")
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "hapa" => ModalityBaseKind::Hapa,
-            "hapi" => ModalityBaseKind::Hapi,
-            "hapu" => ModalityBaseKind::Hapu,
-            _ => panic!("Invalid modality surface: {}", string),
-        };
-        ModalityBase {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
+/// 表層文字列の有限集合とkind enumのバリアントが1対1(または1対多)で対応する
+/// 終端記号型向けのボイラープレート生成マクロ。各バリアントの最初のsurfaceが
+/// get_string()の正規表現とする。
+macro_rules! define_surface_token {
+    ($ty:ident, $kind:ident, $label:literal, {
+        $($variant:ident : $canonical:literal $(| $alias:literal)*),+ $(,)?
+    }) => {
+        impl $ty {
+            fn is_match(string: &str) -> bool {
+                matches!(string, $($canonical $(| $alias)*)|+)
+            }
+            fn new(
+                string: &str,
+                start_line: usize,
+                start_character: usize,
+                end_line: usize,
+                end_character: usize,
+            ) -> Self {
+                let kind = match string {
+                    $($canonical $(| $alias)* => $kind::$variant,)+
+                    _ => panic!(concat!("Invalid ", $label, " surface: {}"), string),
+                };
+                $ty {
+                    range: make_range(start_line, start_character, end_line, end_character),
+                    kind,
+                }
+            }
+            pub fn get_string(&self) -> String {
+                match self.kind {
+                    $($kind::$variant => $canonical.to_string(),)+
+                }
+            }
         }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            ModalityBaseKind::Hapa => "hapa".to_string(),
-            ModalityBaseKind::Hapi => "hapi".to_string(),
-            ModalityBaseKind::Hapu => "hapu".to_string(),
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
+    };
 }
 
-impl ModalityForce {
-    fn is_match(string: &str) -> bool {
-        matches!(string, "□" | "◇" | "za" | "zi")
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "□" | "za" => ModalityForceKind::Necessary,
-            "◇" | "zi" => ModalityForceKind::Possible,
-            _ => panic!("Invalid modality force surface: {}", string),
-        };
-        ModalityForce {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            ModalityForceKind::Necessary => "□".to_string(),
-            ModalityForceKind::Possible => "◇".to_string(),
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
+/// `self.range.clone()` を返すだけの `get_range` を型名リストから一括生成する。
+macro_rules! impl_get_range {
+    ($($ty:ident),+ $(,)?) => {
+        $(impl $ty {
+            pub(crate) fn get_range(&self) -> Range {
+                self.range.clone()
+            }
+        })+
+    };
 }
 
-impl Tense {
-    fn is_match(string: &str) -> bool {
-        let re_tense = Regex::new(r"^(?:hi)(?:t[aiu])$").unwrap();
-        re_tense.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "hita" => TenseKind::Hita,
-            "hiti" => TenseKind::Hiti,
-            "hitu" => TenseKind::Hitu,
-            _ => panic!("Invalid tense surface: {}", string),
-        };
-        Tense {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            TenseKind::Hita => "hita".to_string(),
-            TenseKind::Hiti => "hiti".to_string(),
-            TenseKind::Hitu => "hitu".to_string(),
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-}
+impl_get_range!(
+    InterrogativeMarker,
+    ModalityBase,
+    ModalityForce,
+    Tense,
+    Aspect,
+    ModalityNegation,
+    TenseNegation,
+    AspectNegation,
+    Negation,
+    BinaryPredicate,
+    Argument,
+    PredicateOperator,
+    ArgumentOperator,
+    MtaEventOperator,
+    ArgumentRetriever,
+    Quantifier,
+    Number,
+    Determiner,
+    MtaEventToArgumentPhraseConverter,
+    MtaEventToArgumentPhraseConverterEnd,
+    PostBinaryPredicatePhraseModifier,
+    PostArgumentPhraseModifier,
+);
 
-impl Aspect {
-    fn is_match(string: &str) -> bool {
-        let re_aspect = Regex::new(r"^(?:(?:hu)(?:(?:d[aeou])|(?:did[aiu])))$").unwrap();
-        re_aspect.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "huda" => AspectKind::Huda,
-            "hude" => AspectKind::Hude,
-            "hudida" => AspectKind::Hudida,
-            "hudidi" => AspectKind::Hudidi,
-            "hudidu" => AspectKind::Hudidu,
-            "hudo" => AspectKind::Hudo,
-            "hudu" => AspectKind::Hudu,
-            _ => panic!("Invalid aspect surface: {}", string),
-        };
-        Aspect {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            AspectKind::Huda => "huda".to_string(),
-            AspectKind::Hude => "hude".to_string(),
-            AspectKind::Hudida => "hudida".to_string(),
-            AspectKind::Hudidi => "hudidi".to_string(),
-            AspectKind::Hudidu => "hudidu".to_string(),
-            AspectKind::Hudo => "hudo".to_string(),
-            AspectKind::Hudu => "hudu".to_string(),
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-}
+define_fixed_token!(InterrogativeMarker, "interrogative marker", "ku");
 
-impl ModalityNegation {
-    fn is_match(string: &str) -> bool {
-        let re_modality_negation = Regex::new(r"^(?:ha)(?:n[eo])$").unwrap();
-        re_modality_negation.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "hane" => ModalityNegationKind::Hane,
-            _ => panic!("Invalid modality negation surface: {}", string),
-        };
-        ModalityNegation {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            ModalityNegationKind::Hane => "hane".to_string(),
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-}
+define_surface_token!(ModalityBase, ModalityBaseKind, "modality", {
+    Hapa: "hapa",
+    Hapi: "hapi",
+    Hapu: "hapu",
+});
 
-impl TenseNegation {
-    fn is_match(string: &str) -> bool {
-        let re_tense_negation = Regex::new(r"^(?:hi)(?:n[eo])$").unwrap();
-        re_tense_negation.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "hine" => TenseNegationKind::Hine,
-            _ => panic!("Invalid tense negation surface: {}", string),
-        };
-        TenseNegation {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            TenseNegationKind::Hine => "hine".to_string(),
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-}
+define_surface_token!(ModalityForce, ModalityForceKind, "modality force", {
+    Necessary: "□" | "za",
+    Possible: "◇" | "zi",
+});
 
-impl AspectNegation {
-    fn is_match(string: &str) -> bool {
-        let re_aspect_negation = Regex::new(r"^(?:hu)(?:n[eo])$").unwrap();
-        re_aspect_negation.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "hune" => AspectNegationKind::Hune,
-            _ => panic!("Invalid tense negation surface: {}", string),
-        };
-        AspectNegation {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            AspectNegationKind::Hune => "hune".to_string(),
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-}
+define_surface_token!(Tense, TenseKind, "tense", {
+    Hita: "hita",
+    Hiti: "hiti",
+    Hitu: "hitu",
+});
 
-impl Negation {
-    fn is_match(string: &str) -> bool {
-        let re_negation = Regex::new(r"^(?:ne)$").unwrap();
-        re_negation.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "ne" => NegationKind::Ne,
-            _ => panic!("Invalid tense negation surface: {}", string),
-        };
-        Negation {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            NegationKind::Ne => "ne".to_string(),
-        }
-    }
-}
+define_surface_token!(Aspect, AspectKind, "aspect", {
+    Huda: "huda",
+    Hude: "hude",
+    Hudida: "hudida",
+    Hudidi: "hudidi",
+    Hudidu: "hudidu",
+    Hudo: "hudo",
+    Hudu: "hudu",
+});
+
+define_surface_token!(ModalityNegation, ModalityNegationKind, "modality negation", {
+    Hane: "hane",
+});
+
+define_surface_token!(TenseNegation, TenseNegationKind, "tense negation", {
+    Hine: "hine",
+});
+
+define_surface_token!(AspectNegation, AspectNegationKind, "aspect negation", {
+    Hune: "hune",
+});
+
+define_surface_token!(Negation, NegationKind, "negation", {
+    Ne: "ne",
+});
 
 impl BinaryPredicate {
     fn is_match(string: &str) -> bool {
@@ -1088,21 +876,9 @@ impl BinaryPredicate {
         end_character: usize,
     ) -> Self {
         BinaryPredicate {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
+            range: make_range(start_line, start_character, end_line, end_character),
             string: string.to_string(),
         }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
     }
     pub(crate) fn get_argument_types(&self) -> (Vec<ArgumentType>, Vec<ArgumentType>) {
         // 名詞的な命題
@@ -1167,7 +943,7 @@ impl BinaryPredicate {
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Time],
             )
-        } else if g.is_match(&self.string) || m.is_match(&self.string) || r.is_match(&self.string) {
+        } else if g.is_match(&self.string) || m.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Abstraction],
@@ -1242,49 +1018,21 @@ pub(crate) fn abstraction_family_types() -> Vec<ArgumentType> {
     ]
 }
 
+define_surface_token!(Argument, ArgumentKind, "argument", {
+    Ma: "ma",
+    Mi: "mi",
+    Mu: "mu",
+    Me: "me",
+    Ba: "ba",
+    Bu: "bu",
+    Be: "be",
+    Ga: "ga",
+    Gi: "gi",
+    Gu: "gu",
+    Ge: "ge",
+});
+
 impl Argument {
-    fn is_match(string: &str) -> bool {
-        let re_argument = Regex::new(r"^(:?(?:m[aiue])|(?:b[aue])|(?:g[aiue]))$").unwrap();
-        re_argument.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "ma" => ArgumentKind::Ma,
-            "mi" => ArgumentKind::Mi,
-            "mu" => ArgumentKind::Mu,
-            "me" => ArgumentKind::Me,
-            "ba" => ArgumentKind::Ba,
-            "bu" => ArgumentKind::Bu,
-            "be" => ArgumentKind::Be,
-            "ga" => ArgumentKind::Ga,
-            "gi" => ArgumentKind::Gi,
-            "gu" => ArgumentKind::Gu,
-            "ge" => ArgumentKind::Ge,
-            _ => panic!("Invalid argument surface: {}", string),
-        };
-        Argument {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
     pub(crate) fn get_type(&self) -> Vec<ArgumentType> {
         match self.kind {
             ArgumentKind::Ma => vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
@@ -1321,348 +1069,86 @@ impl Argument {
             ],
         }
     }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            ArgumentKind::Ma => "ma".to_string(),
-            ArgumentKind::Mi => "mi".to_string(),
-            ArgumentKind::Mu => "mu".to_string(),
-            ArgumentKind::Me => "me".to_string(),
-            ArgumentKind::Ba => "ba".to_string(),
-            ArgumentKind::Bu => "bu".to_string(),
-            ArgumentKind::Be => "be".to_string(),
-            ArgumentKind::Ga => "ga".to_string(),
-            ArgumentKind::Gi => "gi".to_string(),
-            ArgumentKind::Gu => "gu".to_string(),
-            ArgumentKind::Ge => "ge".to_string(),
-        }
-    }
 }
 
+define_surface_token!(CaseLabel, CaseLabelKind, "case label", {
+    Sa: "sa",
+    Si: "si",
+    Subu: "subu",
+    Sube: "sube",
+    Subo: "subo",
+    Suni: "suni",
+    Sune: "sune",
+    Suno: "suno",
+    Sugi: "sugi",
+    Suge: "suge",
+    Sugo: "sugo",
+    Sudu: "sudu",
+    Sute: "sute",
+    Suto: "suto",
+});
+
 impl CaseLabel {
-    fn is_match(string: &str) -> bool {
-        let re = Regex::new(r"^(?:sa|si|su(?:bu|be|bo|ni|ne|no|gi|ge|go|du|te|to))$").unwrap();
-        re.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "sa" => CaseLabelKind::Sa,
-            "si" => CaseLabelKind::Si,
-            "subu" => CaseLabelKind::Subu,
-            "sube" => CaseLabelKind::Sube,
-            "subo" => CaseLabelKind::Subo,
-            "suni" => CaseLabelKind::Suni,
-            "sune" => CaseLabelKind::Sune,
-            "suno" => CaseLabelKind::Suno,
-            "sugi" => CaseLabelKind::Sugi,
-            "suge" => CaseLabelKind::Suge,
-            "sugo" => CaseLabelKind::Sugo,
-            "sudu" => CaseLabelKind::Sudu,
-            "sute" => CaseLabelKind::Sute,
-            "suto" => CaseLabelKind::Suto,
-            _ => panic!("Invalid case label surface: {}", string),
-        };
-        CaseLabel {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            CaseLabelKind::Sa => "sa".to_string(),
-            CaseLabelKind::Si => "si".to_string(),
-            CaseLabelKind::Subu => "subu".to_string(),
-            CaseLabelKind::Sube => "sube".to_string(),
-            CaseLabelKind::Subo => "subo".to_string(),
-            CaseLabelKind::Suni => "suni".to_string(),
-            CaseLabelKind::Sune => "sune".to_string(),
-            CaseLabelKind::Suno => "suno".to_string(),
-            CaseLabelKind::Sugi => "sugi".to_string(),
-            CaseLabelKind::Suge => "suge".to_string(),
-            CaseLabelKind::Sugo => "sugo".to_string(),
-            CaseLabelKind::Sudu => "sudu".to_string(),
-            CaseLabelKind::Sute => "sute".to_string(),
-            CaseLabelKind::Suto => "suto".to_string(),
-        }
-    }
     pub fn get_kind(&self) -> &CaseLabelKind {
         &self.kind
     }
 }
 
-impl TypeOverride {
-    fn is_match(string: &str) -> bool {
-        string == "se"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid type override surface: {}", string);
-        }
-        TypeOverride {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub fn get_string(&self) -> String {
-        "se".to_string()
-    }
-}
+define_fixed_token!(TypeOverride, "type override", "se");
+
+define_surface_token!(PredicateOperator, PredicateOperatorKind, "predicate operator", {
+    And: "hoba",
+    Or: "hobi",
+    Xor: "hobu",
+});
 
 impl PredicateOperator {
-    fn is_match(string: &str) -> bool {
-        matches!(string, "hoba" | "hobi" | "hobu")
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "hoba" => PredicateOperatorKind::And,
-            "hobi" => PredicateOperatorKind::Or,
-            "hobu" => PredicateOperatorKind::Xor,
-            _ => panic!("Invalid predicate operator surface: {}", string),
-        };
-        PredicateOperator {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            PredicateOperatorKind::And => "hoba".to_string(),
-            PredicateOperatorKind::Or => "hobi".to_string(),
-            PredicateOperatorKind::Xor => "hobu".to_string(),
-        }
-    }
     pub fn get_kind(&self) -> &PredicateOperatorKind {
         &self.kind
     }
 }
 
+define_surface_token!(ArgumentOperator, ArgumentOperatorKind, "argument operator", {
+    And: "hoka",
+    Or: "hoki",
+    Xor: "hoku",
+});
+
 impl ArgumentOperator {
-    fn is_match(string: &str) -> bool {
-        matches!(string, "hoka" | "hoki" | "hoku")
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "hoka" => ArgumentOperatorKind::And,
-            "hoki" => ArgumentOperatorKind::Or,
-            "hoku" => ArgumentOperatorKind::Xor,
-            _ => panic!("Invalid argument operator surface: {}", string),
-        };
-        ArgumentOperator {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            ArgumentOperatorKind::And => "hoka".to_string(),
-            ArgumentOperatorKind::Or => "hoki".to_string(),
-            ArgumentOperatorKind::Xor => "hoku".to_string(),
-        }
-    }
     pub fn get_kind(&self) -> &ArgumentOperatorKind {
         &self.kind
     }
 }
 
+define_surface_token!(MtaEventOperator, MtaEventOperatorKind, "proposition operator", {
+    And: "homa",
+    Or: "homi",
+    Xor: "homu",
+});
+
 impl MtaEventOperator {
-    fn is_match(string: &str) -> bool {
-        matches!(string, "homa" | "homi" | "homu")
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "homa" => MtaEventOperatorKind::And,
-            "homi" => MtaEventOperatorKind::Or,
-            "homu" => MtaEventOperatorKind::Xor,
-            _ => panic!("Invalid proposition operator surface: {}", string),
-        };
-        MtaEventOperator {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            MtaEventOperatorKind::And => "homa".to_string(),
-            MtaEventOperatorKind::Or => "homi".to_string(),
-            MtaEventOperatorKind::Xor => "homu".to_string(),
-        }
-    }
     pub fn get_kind(&self) -> &MtaEventOperatorKind {
         &self.kind
     }
 }
 
+define_surface_token!(ArgumentRetriever, ArgumentRetrieverKind, "argument retriever", {
+    Nominative: "ra",
+    Accusative: "ri",
+});
+
 impl ArgumentRetriever {
-    fn is_match(string: &str) -> bool {
-        matches!(string, "ra" | "ri")
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "ra" => ArgumentRetrieverKind::Nominative,
-            "ri" => ArgumentRetrieverKind::Accusative,
-            _ => panic!("Invalid argument retriever surface: {}", string),
-        };
-        ArgumentRetriever {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
     pub fn get_kind(&self) -> &ArgumentRetrieverKind {
         &self.kind
     }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            ArgumentRetrieverKind::Nominative => "ra".to_string(),
-            ArgumentRetrieverKind::Accusative => "ri".to_string(),
-        }
-    }
 }
 
-impl Quantifier {
-    fn is_match(string: &str) -> bool {
-        let re_quantifier = Regex::new(r"^(?:t[aeio])$").unwrap();
-        re_quantifier.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "ta" => QuantifierKind::Ta,
-            "te" => QuantifierKind::Te,
-            "ti" => QuantifierKind::Ti,
-            "to" => QuantifierKind::To,
-            _ => panic!("Invalid quantifier surface: {}", string),
-        };
-        Quantifier {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            QuantifierKind::Ta => "ta".to_string(),
-            QuantifierKind::Te => "te".to_string(),
-            QuantifierKind::Ti => "ti".to_string(),
-            QuantifierKind::To => "to".to_string(),
-        }
-    }
-}
+define_surface_token!(Quantifier, QuantifierKind, "quantifier", {
+    Ta: "ta",
+    Te: "te",
+    Ti: "ti",
+    To: "to",
+});
 
 impl Number {
     // 数字テーブル: 子音p/k/m/s x 母音a/e/i/o で1桁(0〜15)を表す。
@@ -1773,22 +1259,10 @@ impl Number {
             (value, is_hex)
         };
         Number {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
+            range: make_range(start_line, start_character, end_line, end_character),
             value,
             is_hex,
         }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
     }
     pub fn get_value(&self) -> u64 {
         self.value
@@ -1829,281 +1303,61 @@ impl Number {
     }
 }
 
-impl Determiner {
-    fn is_match(string: &str) -> bool {
-        let re_determiner = Regex::new(r"^(?:[mbg]o)$").unwrap();
-        re_determiner.is_match(string)
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "mo" => DeterminerKind::Mo,
-            "bo" => DeterminerKind::Bo,
-            "go" => DeterminerKind::Go,
-            _ => panic!("Invalid determiner surface: {}", string),
-        };
-        Determiner {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            DeterminerKind::Mo => "mo".to_string(),
-            DeterminerKind::Bo => "bo".to_string(),
-            DeterminerKind::Go => "go".to_string(),
-        }
-    }
-}
+define_surface_token!(Determiner, DeterminerKind, "determiner", {
+    Mo: "mo",
+    Bo: "bo",
+    Go: "go",
+});
 
-impl MtaEventToArgumentPhraseConverter {
-    fn is_match(string: &str) -> bool {
-        string == "he"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!(
-                "Invalid mta event to argument phrase converter surface: {}",
-                string
-            );
-        }
-        MtaEventToArgumentPhraseConverter {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        "he".to_string()
-    }
-}
+define_fixed_token!(
+    MtaEventToArgumentPhraseConverter,
+    "mta event to argument phrase converter",
+    "he"
+);
 
-impl MtaEventToArgumentPhraseConverterEnd {
-    fn is_match(string: &str) -> bool {
-        string == "ho"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!(
-                "Invalid mta event to argument phrase converter end surface: {}",
-                string
-            );
-        }
-        MtaEventToArgumentPhraseConverterEnd {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        "ho".to_string()
-    }
-}
+define_fixed_token!(
+    MtaEventToArgumentPhraseConverterEnd,
+    "mta event to argument phrase converter end",
+    "ho"
+);
+
+define_surface_token!(PostMtaEventModifier, PostMtaEventModifierKind, "post mta event modifier", {
+    Da: "da",
+    Hesute: "hesute",
+    Henesute: "henesute",
+    Hesuto: "hesuto",
+    Henesuto: "henesuto",
+    Hehoma: "hehoma",
+    Hehomi: "hehomi",
+    Hehomu: "hehomu",
+    Hehita: "hehita",
+    Hehiti: "hehiti",
+    Hehitu: "hehitu",
+    Hezu: "hezu",
+    Hehema: "hehema",
+    Hehegi: "hehegi",
+    Hehenu: "hehenu",
+});
 
 impl PostMtaEventModifier {
-    fn is_match(string: &str) -> bool {
-        matches!(
-            string,
-            "da" | "hesute"
-                | "henesute"
-                | "hesuto"
-                | "henesuto"
-                | "hehoma"
-                | "hehomi"
-                | "hehomu"
-                | "hehita"
-                | "hehiti"
-                | "hehitu"
-                | "hezu"
-                | "hehema"
-                | "hehegi"
-                | "hehenu"
-        )
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        let kind = match string {
-            "da" => PostMtaEventModifierKind::Da,
-            "hesute" => PostMtaEventModifierKind::Hesute,
-            "henesute" => PostMtaEventModifierKind::Henesute,
-            "hesuto" => PostMtaEventModifierKind::Hesuto,
-            "henesuto" => PostMtaEventModifierKind::Henesuto,
-            "hehoma" => PostMtaEventModifierKind::Hehoma,
-            "hehomi" => PostMtaEventModifierKind::Hehomi,
-            "hehomu" => PostMtaEventModifierKind::Hehomu,
-            "hehita" => PostMtaEventModifierKind::Hehita,
-            "hehiti" => PostMtaEventModifierKind::Hehiti,
-            "hehitu" => PostMtaEventModifierKind::Hehitu,
-            "hezu" => PostMtaEventModifierKind::Hezu,
-            "hehema" => PostMtaEventModifierKind::Hehema,
-            "hehegi" => PostMtaEventModifierKind::Hehegi,
-            "hehenu" => PostMtaEventModifierKind::Hehenu,
-            _ => panic!("Invalid post mta event modifier surface: {}", string),
-        };
-        PostMtaEventModifier {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-            kind,
-        }
-    }
-    pub fn get_string(&self) -> String {
-        match self.kind {
-            PostMtaEventModifierKind::Da => "da".to_string(),
-            PostMtaEventModifierKind::Hesute => "hesute".to_string(),
-            PostMtaEventModifierKind::Henesute => "henesute".to_string(),
-            PostMtaEventModifierKind::Hesuto => "hesuto".to_string(),
-            PostMtaEventModifierKind::Henesuto => "henesuto".to_string(),
-            PostMtaEventModifierKind::Hehoma => "hehoma".to_string(),
-            PostMtaEventModifierKind::Hehomi => "hehomi".to_string(),
-            PostMtaEventModifierKind::Hehomu => "hehomu".to_string(),
-            PostMtaEventModifierKind::Hehita => "hehita".to_string(),
-            PostMtaEventModifierKind::Hehiti => "hehiti".to_string(),
-            PostMtaEventModifierKind::Hehitu => "hehitu".to_string(),
-            PostMtaEventModifierKind::Hezu => "hezu".to_string(),
-            PostMtaEventModifierKind::Hehema => "hehema".to_string(),
-            PostMtaEventModifierKind::Hehegi => "hehegi".to_string(),
-            PostMtaEventModifierKind::Hehenu => "hehenu".to_string(),
-        }
-    }
     pub fn get_kind(&self) -> &PostMtaEventModifierKind {
         &self.kind
     }
 }
 
-impl PostBinaryPredicatePhraseModifier {
-    fn is_match(string: &str) -> bool {
-        string == "di"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!(
-                "Invalid post binary predicate phrase modifier surface: {}",
-                string
-            );
-        }
-        PostBinaryPredicatePhraseModifier {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        "di".to_string()
-    }
-}
+define_fixed_token!(
+    PostBinaryPredicatePhraseModifier,
+    "post binary predicate phrase modifier",
+    "di"
+);
 
-impl PostArgumentPhraseModifier {
-    fn is_match(string: &str) -> bool {
-        string == "du"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid post argument phrase modifier surface: {}", string);
-        }
-        PostArgumentPhraseModifier {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
-                },
-            },
-        }
-    }
-    pub(crate) fn get_range(&self) -> Range {
-        self.range.clone()
-    }
-    pub fn get_string(&self) -> String {
-        "du".to_string()
-    }
-}
+define_fixed_token!(
+    PostArgumentPhraseModifier,
+    "post argument phrase modifier",
+    "du"
+);
+
+define_fixed_token!(Eos, "eos", "eos");
 
 impl Eos {
     pub fn new_omitted_token() -> Self {
@@ -2116,32 +1370,6 @@ impl Eos {
                 end: Position {
                     line: usize::MAX,
                     character: usize::MAX,
-                },
-            },
-        }
-    }
-    fn is_match(string: &str) -> bool {
-        string == "eos"
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid eos surface: {}", string);
-        }
-        Eos {
-            range: Range {
-                start: Position {
-                    line: start_line,
-                    character: start_character,
-                },
-                end: Position {
-                    line: end_line,
-                    character: end_character,
                 },
             },
         }

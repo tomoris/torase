@@ -131,149 +131,58 @@ fn parse_node(
     }
 }
 
-fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonTerminalType {
-    match dummy_non_terminal {
-        DummyNonTerminalType::S => NonTerminalType::S(S::new(rhs)),
-        DummyNonTerminalType::DeclarativeSentence => {
-            NonTerminalType::DeclarativeSentence(DeclarativeSentence::new(rhs))
+/// `DummyNonTerminalType` の各バリアントに対する `new_non_terminal`/`parse_table` の
+/// ディスパッチを、型名リストから一括生成する。バリアント一覧は
+/// `DummyNonTerminalType`/`NonTerminalType` の定義と揃えること。
+macro_rules! non_terminal_dispatch {
+    ($($name:ident),+ $(,)?) => {
+        fn new_non_terminal(dummy_non_terminal: &DummyNonTerminalType, rhs: Rhs) -> NonTerminalType {
+            match dummy_non_terminal {
+                $(DummyNonTerminalType::$name => NonTerminalType::$name($name::new(rhs)),)+
+            }
         }
-        DummyNonTerminalType::InterrogativeSentence => {
-            NonTerminalType::InterrogativeSentence(InterrogativeSentence::new(rhs))
+
+        fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRhs, ()> {
+            match nt {
+                $(DummyNonTerminalType::$name => $name::parse_table(t),)+
+            }
         }
-        DummyNonTerminalType::PostModifiedMtaEvent => {
-            NonTerminalType::PostModifiedMtaEvent(PostModifiedMtaEvent::new(rhs))
-        }
-        DummyNonTerminalType::PostMtaEventExpression => {
-            NonTerminalType::PostMtaEventExpression(PostMtaEventExpression::new(rhs))
-        }
-        DummyNonTerminalType::ModalityExpression => {
-            NonTerminalType::ModalityExpression(ModalityExpression::new(rhs))
-        }
-        DummyNonTerminalType::ModifiedModality => {
-            NonTerminalType::ModifiedModality(ModifiedModality::new(rhs))
-        }
-        DummyNonTerminalType::TenseExpression => {
-            NonTerminalType::TenseExpression(TenseExpression::new(rhs))
-        }
-        DummyNonTerminalType::ModifiedTense => {
-            NonTerminalType::ModifiedTense(ModifiedTense::new(rhs))
-        }
-        DummyNonTerminalType::AspectExpression => {
-            NonTerminalType::AspectExpression(AspectExpression::new(rhs))
-        }
-        DummyNonTerminalType::ModifiedAspect => {
-            NonTerminalType::ModifiedAspect(ModifiedAspect::new(rhs))
-        }
-        DummyNonTerminalType::MtaEvent => NonTerminalType::MtaEvent(MtaEvent::new(rhs)),
-        DummyNonTerminalType::TaEvent => NonTerminalType::TaEvent(TaEvent::new(rhs)),
-        DummyNonTerminalType::AEvent => NonTerminalType::AEvent(AEvent::new(rhs)),
-        DummyNonTerminalType::Event => NonTerminalType::Event(Event::new(rhs)),
-        DummyNonTerminalType::PostModifiedBinaryPredicatePhrase => {
-            NonTerminalType::PostModifiedBinaryPredicatePhrase(
-                PostModifiedBinaryPredicatePhrase::new(rhs),
-            )
-        }
-        DummyNonTerminalType::PostBinaryPredicatePhraseExpression => {
-            NonTerminalType::PostBinaryPredicatePhraseExpression(
-                PostBinaryPredicatePhraseExpression::new(rhs),
-            )
-        }
-        DummyNonTerminalType::BinaryPredicatePhrase => {
-            NonTerminalType::BinaryPredicatePhrase(BinaryPredicatePhrase::new(rhs))
-        }
-        DummyNonTerminalType::NonNegatedBinaryPredicatePhrase => {
-            NonTerminalType::NonNegatedBinaryPredicatePhrase(NonNegatedBinaryPredicatePhrase::new(
-                rhs,
-            ))
-        }
-        DummyNonTerminalType::ArgumentPhrase => {
-            NonTerminalType::ArgumentPhrase(ArgumentPhrase::new(rhs))
-        }
-        DummyNonTerminalType::NonNegatedArgumentPhrase => {
-            NonTerminalType::NonNegatedArgumentPhrase(NonNegatedArgumentPhrase::new(rhs))
-        }
-        DummyNonTerminalType::OptionalCaseArgs => {
-            NonTerminalType::OptionalCaseArgs(OptionalCaseArgs::new(rhs))
-        }
-        DummyNonTerminalType::QuantifiedArgument => {
-            NonTerminalType::QuantifiedArgument(QuantifiedArgument::new(rhs))
-        }
-        DummyNonTerminalType::DeterminedArgument => {
-            NonTerminalType::DeterminedArgument(DeterminedArgument::new(rhs))
-        }
-        DummyNonTerminalType::RetrievedArgument => {
-            NonTerminalType::RetrievedArgument(RetrievedArgument::new(rhs))
-        }
-        DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
-            NonTerminalType::ArgumentRetrievalBinaryPredicate(
-                ArgumentRetrievalBinaryPredicate::new(rhs),
-            )
-        }
-        DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => {
-            NonTerminalType::ArgumentRetrievalWithArgumentPhrase(
-                ArgumentRetrievalWithArgumentPhrase::new(rhs),
-            )
-        }
-        DummyNonTerminalType::QuantifierModifier => {
-            NonTerminalType::QuantifierModifier(QuantifierModifier::new(rhs))
-        }
-        DummyNonTerminalType::NumericalExpression => {
-            NonTerminalType::NumericalExpression(NumericalExpression::new(rhs))
-        }
-        DummyNonTerminalType::DeterminerModifier => {
-            NonTerminalType::DeterminerModifier(DeterminerModifier::new(rhs))
-        }
-        DummyNonTerminalType::TypeOverrideModifier => {
-            NonTerminalType::TypeOverrideModifier(TypeOverrideModifier::new(rhs))
-        }
-    }
+    };
 }
 
-fn parse_table(nt: DummyNonTerminalType, t: DummyTerminalType) -> Result<DummyRhs, ()> {
-    match nt {
-        DummyNonTerminalType::S => S::parse_table(t),
-        DummyNonTerminalType::DeclarativeSentence => DeclarativeSentence::parse_table(t),
-        DummyNonTerminalType::InterrogativeSentence => InterrogativeSentence::parse_table(t),
-        DummyNonTerminalType::PostModifiedMtaEvent => PostModifiedMtaEvent::parse_table(t),
-        DummyNonTerminalType::PostMtaEventExpression => PostMtaEventExpression::parse_table(t),
-        DummyNonTerminalType::ModalityExpression => ModalityExpression::parse_table(t),
-        DummyNonTerminalType::ModifiedModality => ModifiedModality::parse_table(t),
-        DummyNonTerminalType::TenseExpression => TenseExpression::parse_table(t),
-        DummyNonTerminalType::ModifiedTense => ModifiedTense::parse_table(t),
-        DummyNonTerminalType::AspectExpression => AspectExpression::parse_table(t),
-        DummyNonTerminalType::ModifiedAspect => ModifiedAspect::parse_table(t),
-        DummyNonTerminalType::MtaEvent => MtaEvent::parse_table(t),
-        DummyNonTerminalType::TaEvent => TaEvent::parse_table(t),
-        DummyNonTerminalType::AEvent => AEvent::parse_table(t),
-        DummyNonTerminalType::Event => Event::parse_table(t),
-        DummyNonTerminalType::PostModifiedBinaryPredicatePhrase => {
-            PostModifiedBinaryPredicatePhrase::parse_table(t)
-        }
-        DummyNonTerminalType::PostBinaryPredicatePhraseExpression => {
-            PostBinaryPredicatePhraseExpression::parse_table(t)
-        }
-        DummyNonTerminalType::BinaryPredicatePhrase => BinaryPredicatePhrase::parse_table(t),
-        DummyNonTerminalType::NonNegatedBinaryPredicatePhrase => {
-            NonNegatedBinaryPredicatePhrase::parse_table(t)
-        }
-        DummyNonTerminalType::ArgumentPhrase => ArgumentPhrase::parse_table(t),
-        DummyNonTerminalType::NonNegatedArgumentPhrase => NonNegatedArgumentPhrase::parse_table(t),
-        DummyNonTerminalType::OptionalCaseArgs => OptionalCaseArgs::parse_table(t),
-        DummyNonTerminalType::QuantifiedArgument => QuantifiedArgument::parse_table(t),
-        DummyNonTerminalType::DeterminedArgument => DeterminedArgument::parse_table(t),
-        DummyNonTerminalType::RetrievedArgument => RetrievedArgument::parse_table(t),
-        DummyNonTerminalType::ArgumentRetrievalBinaryPredicate => {
-            ArgumentRetrievalBinaryPredicate::parse_table(t)
-        }
-        DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase => {
-            ArgumentRetrievalWithArgumentPhrase::parse_table(t)
-        }
-        DummyNonTerminalType::QuantifierModifier => QuantifierModifier::parse_table(t),
-        DummyNonTerminalType::NumericalExpression => NumericalExpression::parse_table(t),
-        DummyNonTerminalType::DeterminerModifier => DeterminerModifier::parse_table(t),
-        DummyNonTerminalType::TypeOverrideModifier => TypeOverrideModifier::parse_table(t),
-    }
-}
+non_terminal_dispatch!(
+    S,
+    DeclarativeSentence,
+    InterrogativeSentence,
+    PostModifiedMtaEvent,
+    PostMtaEventExpression,
+    ModalityExpression,
+    ModifiedModality,
+    TenseExpression,
+    ModifiedTense,
+    AspectExpression,
+    ModifiedAspect,
+    MtaEvent,
+    TaEvent,
+    AEvent,
+    Event,
+    PostModifiedBinaryPredicatePhrase,
+    PostBinaryPredicatePhraseExpression,
+    BinaryPredicatePhrase,
+    NonNegatedBinaryPredicatePhrase,
+    ArgumentPhrase,
+    NonNegatedArgumentPhrase,
+    OptionalCaseArgs,
+    QuantifiedArgument,
+    DeterminedArgument,
+    RetrievedArgument,
+    ArgumentRetrievalBinaryPredicate,
+    ArgumentRetrievalWithArgumentPhrase,
+    QuantifierModifier,
+    NumericalExpression,
+    DeterminerModifier,
+    TypeOverrideModifier,
+);
 
 #[derive(Clone, Debug)]
 enum Rhs {
@@ -596,52 +505,16 @@ impl S {
                     DummyNonTerminalType::InterrogativeSentence,
                 )]))
             }
-            DummyTerminalType::ModalityBase => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::Tense => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::Aspect => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::ModalityNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::TenseNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::AspectNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::Negation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::BinaryPredicate => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::PredicateOperator => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::DeclarativeSentence,
-                )]))
-            }
-            DummyTerminalType::MtaEventOperator => {
+            DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator
+            | DummyTerminalType::MtaEventOperator => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
@@ -672,52 +545,16 @@ impl S {
 impl DeclarativeSentence {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::ModalityBase => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::Tense => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::Aspect => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::ModalityNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::TenseNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::AspectNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::Negation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::BinaryPredicate => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::PredicateOperator => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedMtaEvent,
-                )]))
-            }
-            DummyTerminalType::MtaEventOperator => {
+            DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator
+            | DummyTerminalType::MtaEventOperator => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
@@ -773,43 +610,16 @@ impl InterrogativeSentence {
 impl PostModifiedMtaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::ModalityBase => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::Tense => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
-            ])),
-            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator
+            | DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
             ])),
@@ -864,23 +674,18 @@ impl PostMtaEventExpression {
 impl ModalityExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::ModalityBase => {
+            DummyTerminalType::ModalityBase | DummyTerminalType::ModalityNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ModifiedModality,
                 )]))
             }
-            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ModalityNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ModifiedModality,
-                )]))
-            }
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -940,21 +745,16 @@ impl ModifiedModality {
 impl TenseExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Tense => {
+            DummyTerminalType::Tense | DummyTerminalType::TenseNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ModifiedTense,
                 )]))
             }
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ModifiedTense,
-                )]))
-            }
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Aspect
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1010,19 +810,14 @@ impl ModifiedTense {
 impl AspectExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Aspect => {
+            DummyTerminalType::Aspect | DummyTerminalType::AspectNegation => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::ModifiedAspect,
                 )]))
             }
-            DummyTerminalType::AspectNegation => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ModifiedAspect,
-                )]))
-            }
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1078,39 +873,15 @@ impl ModifiedAspect {
 impl MtaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::ModalityBase => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::Tense => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
-            ])),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ModalityExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TaEvent),
             ])),
@@ -1152,31 +923,13 @@ impl MtaEvent {
 impl TaEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Tense => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
-            ])),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
-            ])),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
-            ])),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
-            ])),
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
-            ])),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::TenseExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AEvent),
             ])),
@@ -1204,23 +957,11 @@ impl TaEvent {
 impl AEvent {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Aspect => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
-            ])),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
-            ])),
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
-            ])),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Aspect
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::AspectExpression),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::Event),
             ])),
@@ -1248,19 +989,9 @@ impl AEvent {
 impl Event {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
-                ),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
-                ),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::OptionalCaseArgs),
-            ])),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
@@ -1301,19 +1032,19 @@ impl OptionalCaseArgs {
             // MtaEvent::Two (homa/homi/homu) lets an MtaEvent be immediately followed by
             // another MtaEvent, so OptionalCaseArgs must epsilon out on any token that can
             // start an MtaEvent too (same terminal set as MtaEvent::parse_table's FIRST set).
-            DummyTerminalType::ModalityBase => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator
+            | DummyTerminalType::MtaEventOperator
+            | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
+            | DummyTerminalType::PostMtaEventModifier
+            | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1339,19 +1070,9 @@ impl OptionalCaseArgs {
 impl PostModifiedBinaryPredicatePhrase {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
-                ),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
-                ),
-            ])),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostBinaryPredicatePhraseExpression,
@@ -1383,36 +1104,36 @@ impl PostModifiedBinaryPredicatePhrase {
 impl PostBinaryPredicatePhraseExpression {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::CaseLabel => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
             // MtaEvent::Two (homa/homi/homu) lets an MtaEvent be immediately followed by
             // another MtaEvent (see OptionalCaseArgs for the same rationale).
-            DummyTerminalType::ModalityBase => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation
+            | DummyTerminalType::Argument
+            | DummyTerminalType::CaseLabel
+            | DummyTerminalType::ArgumentOperator
+            | DummyTerminalType::Quantifier
+            | DummyTerminalType::Number
+            | DummyTerminalType::Determiner
+            | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator
+            | DummyTerminalType::MtaEventOperator
+            | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
+            | DummyTerminalType::PostMtaEventModifier
+            | DummyTerminalType::PostArgumentPhraseModifier
+            | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostBinaryPredicatePhraseModifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(
                     DummyTerminalType::PostBinaryPredicatePhraseModifier,
                 ),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::BinaryPredicatePhrase),
             ])),
-            DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1503,22 +1224,10 @@ impl ArgumentPhrase {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            DummyTerminalType::Quantifier => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::QuantifiedArgument,
-                )]))
-            }
-            DummyTerminalType::Number => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::QuantifiedArgument,
-                )]))
-            }
-            DummyTerminalType::Determiner => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::QuantifiedArgument,
-                )]))
-            }
-            DummyTerminalType::ArgumentRetriever => {
+            DummyTerminalType::Quantifier
+            | DummyTerminalType::Number
+            | DummyTerminalType::Determiner
+            | DummyTerminalType::ArgumentRetriever => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::QuantifiedArgument,
                 )]))
@@ -1607,22 +1316,10 @@ impl NonNegatedArgumentPhrase {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            DummyTerminalType::Quantifier => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::QuantifiedArgument,
-                )]))
-            }
-            DummyTerminalType::Number => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::QuantifiedArgument,
-                )]))
-            }
-            DummyTerminalType::Determiner => {
-                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::QuantifiedArgument,
-                )]))
-            }
-            DummyTerminalType::ArgumentRetriever => {
+            DummyTerminalType::Quantifier
+            | DummyTerminalType::Number
+            | DummyTerminalType::Determiner
+            | DummyTerminalType::ArgumentRetriever => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::QuantifiedArgument,
                 )]))
@@ -1647,19 +1344,10 @@ impl NonNegatedArgumentPhrase {
 impl QuantifiedArgument {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Quantifier => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
-            DummyTerminalType::Number => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
-            DummyTerminalType::Determiner => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
-            ])),
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Quantifier
+            | DummyTerminalType::Number
+            | DummyTerminalType::Determiner
+            | DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
             ])),
@@ -1687,14 +1375,12 @@ impl QuantifiedArgument {
 impl DeterminedArgument {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Determiner => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RetrievedArgument),
-            ])),
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RetrievedArgument),
-            ])),
+            DummyTerminalType::Determiner | DummyTerminalType::ArgumentRetriever => {
+                Ok(DummyRhs::Sequence(vec![
+                    DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
+                    DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RetrievedArgument),
+                ]))
+            }
             _ => Err(()),
         }
     }
@@ -1751,23 +1437,9 @@ impl RetrievedArgument {
 impl ArgumentRetrievalBinaryPredicate {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
-                ),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
-                ),
-            ])),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
-                ),
-                DummySymbolType::DummyNonTerminal(
-                    DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
-                ),
-            ])),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
+            DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedBinaryPredicatePhrase,
                 ),
@@ -1803,33 +1475,33 @@ impl ArgumentRetrievalBinaryPredicate {
 impl ArgumentRetrievalWithArgumentPhrase {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::CaseLabel => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
             // MtaEvent::Two (homa/homi/homu) lets an MtaEvent be immediately followed by
             // another MtaEvent (see OptionalCaseArgs for the same rationale).
-            DummyTerminalType::ModalityBase => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Tense => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Aspect => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ModalityNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::TenseNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::AspectNegation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::BinaryPredicate => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PredicateOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation
+            | DummyTerminalType::Argument
+            | DummyTerminalType::CaseLabel
+            | DummyTerminalType::ArgumentOperator
+            | DummyTerminalType::Quantifier
+            | DummyTerminalType::Number
+            | DummyTerminalType::Determiner
+            | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator
+            | DummyTerminalType::MtaEventOperator
+            | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
+            | DummyTerminalType::PostMtaEventModifier
+            | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::PostArgumentPhraseModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::ArgumentPhrase),
             ])),
-            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1948,14 +1620,14 @@ impl TypeOverrideModifier {
             }
             // Epsilon on every token in FIRST(ArgumentPhrase) (see ArgumentPhrase::parse_table)
             // so this modifier can be skipped when `se` is absent.
-            DummyTerminalType::Negation => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Argument => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentOperator => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Quantifier => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Number => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::Negation
+            | DummyTerminalType::Argument
+            | DummyTerminalType::ArgumentOperator
+            | DummyTerminalType::Quantifier
+            | DummyTerminalType::Number
+            | DummyTerminalType::Determiner
+            | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }

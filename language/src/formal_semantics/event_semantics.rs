@@ -1,3 +1,5 @@
+//! 型チェック済みASTをネオ・デイヴィドソン流の一階述語論理式(`Formula`)へ変換する。
+
 use crate::parser::{
     AEvent, ArgumentPhrase, ArgumentRetrievalBinaryPredicate, ArgumentRetrievalWithArgumentPhrase,
     Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument, DeterminerModifier, Event,

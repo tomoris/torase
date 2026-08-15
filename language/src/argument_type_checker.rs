@@ -1,3 +1,6 @@
+//! 格ラベルごとの選択制限(項の意味的な型)を検証する型チェッカー。
+//! `formal_semantics::type_checker` のモンタギュー流の型システムとは別の、格構造に基づく型システムを扱う。
+
 use std::collections::HashSet;
 use std::hash::Hash;
 
@@ -13,7 +16,7 @@ pub struct TypeMismatch {
 
 type TypeMismatchResult = Result<(), TypeMismatch>;
 
-pub fn type_check(ast: Ast) -> TypeMismatchResult {
+pub fn type_check(ast: &Ast) -> TypeMismatchResult {
     ast.get_s().type_check()
 }
 
@@ -513,7 +516,7 @@ mod tests {
         let source = "parobe sa ma si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -522,7 +525,7 @@ mod tests {
         let source = "parobe sa ri didora si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -531,7 +534,7 @@ mod tests {
         let source = "kahoraka sa mi si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -540,7 +543,7 @@ mod tests {
         let source = "pisarepa sa mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -549,7 +552,7 @@ mod tests {
         let source = "pusatanada sa ra bahomo eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -558,7 +561,7 @@ mod tests {
         let source = "pisarepa sa mi si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -567,7 +570,7 @@ mod tests {
         let source = "parobe sa ra bahomo si ri bidoga eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -576,7 +579,7 @@ mod tests {
         let source = "parobe sa ra patirada si ri patirada eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -586,7 +589,7 @@ mod tests {
         let source = "parobe sa mi si ro re pisarepa eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -595,7 +598,7 @@ mod tests {
         let source = "pagibe sa mi si ri behapare subu gi sube mi subo ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -604,7 +607,7 @@ mod tests {
         let source = "parobe sa mi si ba subu ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -613,7 +616,7 @@ mod tests {
         let source = "parobe sa mi si ba sube ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -622,7 +625,7 @@ mod tests {
         let source = "parobe sa mi si ba subo ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -631,7 +634,7 @@ mod tests {
         let source = "parobe sa mi si ba sute ri kahoraka suto ri kahoraka eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -640,7 +643,7 @@ mod tests {
         let source = "parobe sa mi si ba sute ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -649,7 +652,7 @@ mod tests {
         let source = "parobe sa mi si ba suto ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -658,7 +661,7 @@ mod tests {
         let source = "parobe sa mi si ba sudu ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -667,7 +670,7 @@ mod tests {
         let source = "parobe sa mi si ba sudu mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -676,7 +679,7 @@ mod tests {
         let source = "parobe sa mi si ba suni me sune be suno ge eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -685,7 +688,7 @@ mod tests {
         let source = "parobe sa mi si ba suni mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -694,7 +697,7 @@ mod tests {
         let source = "parobe sa mi si ba suni me suni ge eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -703,7 +706,7 @@ mod tests {
         let source = "parobe sa mi si ba sugi me suge be sugo ge eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -712,7 +715,7 @@ mod tests {
         let source = "parobe sa mi si ba sugi mi eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -721,7 +724,7 @@ mod tests {
         let source = "parobe sa se ri didora si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -730,7 +733,7 @@ mod tests {
         let source = "kahoraka sa mi si se ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -739,7 +742,7 @@ mod tests {
         let source = "parobe sa se ri didora si se ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -748,7 +751,7 @@ mod tests {
         let source = "parobe sa mi si ba subu se ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
     }
 
@@ -757,7 +760,7 @@ mod tests {
         let source = "parobe sa se ri didora si ba subu ri didora eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 
@@ -766,7 +769,7 @@ mod tests {
         let source = "pisarepa sa mi si se ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(ast);
+        let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
     }
 }
