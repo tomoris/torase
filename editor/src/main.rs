@@ -464,6 +464,18 @@ fn row_with_separator(elements: Vec<Element<'static, Message>>) -> Element<'stat
     r.align_y(Alignment::Center).into()
 }
 
+// 各ノードの背景色は、文法上の意味的なまとまり(ファミリー)ごとに1色相を割り当て、
+// ネストが深くなるほどその色相の中で単調に濃くする(白との混合比を下げる)ことで
+// 系統立てている。ファミリーと色相の対応:
+//   S/DeclarativeSentence/InterrogativeSentence : ニュートラル(文全体の枠)
+//   ModalityExpression/ModifiedModality         : blue
+//   TenseExpression/ModifiedTense                : yellow
+//   AspectExpression/ModifiedAspect              : green
+//   PostModifiedMtaEvent〜Event (MTAイベント連鎖) : orange
+//   PostModifiedBinaryPredicatePhrase〜BinaryPredicatePhrase (述語句) : aqua
+//   ArgumentPhrase/OptionalCaseArgs              : magenta
+//   QuantifiedArgument〜ArgumentRetrievalWithArgumentPhrase (項検索連鎖) : violet
+//   QuantifierModifier/NumericalExpression/DeterminerModifier/TypeOverrideModifier (修飾子葉) : red
 trait TreeViewer {
     fn view(&self, is_full: bool) -> Element<'static, Message>;
     fn is_empty(&self) -> bool;
@@ -536,7 +548,7 @@ impl TreeViewer for InterrogativeSentence {
 
 impl TreeViewer for PostModifiedMtaEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(255, 220, 185);
+        let background = iced::Color::from_rgb8(253, 240, 235);
         match self {
             PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
                 let category = "PostModifiedMtaEvent".to_string();
@@ -555,7 +567,7 @@ impl TreeViewer for PostModifiedMtaEvent {
 
 impl TreeViewer for PostMtaEventExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(255, 200, 160);
+        let background = iced::Color::from_rgb8(251, 228, 218);
         match self {
             PostMtaEventExpression::One(post_mta_event_modifier, mta_event) => {
                 let category = "PostMtaEventExpression".to_string();
@@ -579,7 +591,7 @@ impl TreeViewer for PostMtaEventExpression {
 
 impl TreeViewer for ModalityExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(0, 190, 255);
+        let background = iced::Color::from_rgb8(225, 236, 249);
         match self {
             ModalityExpression::One(modality_with_agent) => {
                 let category = "ModalityExpression".to_string();
@@ -600,7 +612,7 @@ impl TreeViewer for ModalityExpression {
 
 impl TreeViewer for ModifiedModality {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(0, 255, 255);
+        let background = iced::Color::from_rgb8(187, 212, 242);
         match self {
             ModifiedModality::One(modality, modality_force) => {
                 let category = "ModifiedModality".to_string();
@@ -628,7 +640,7 @@ impl TreeViewer for ModifiedModality {
 
 impl TreeViewer for TenseExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(250, 240, 160);
+        let background = iced::Color::from_rgb8(252, 242, 219);
         match self {
             TenseExpression::One(modified_tense) => {
                 let category = "TenseExpression".to_string();
@@ -649,7 +661,7 @@ impl TreeViewer for TenseExpression {
 
 impl TreeViewer for ModifiedTense {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(240, 230, 140);
+        let background = iced::Color::from_rgb8(249, 225, 173);
         match self {
             ModifiedTense::One(tense) => {
                 let category = "ModifiedTense".to_string();
@@ -673,7 +685,7 @@ impl TreeViewer for ModifiedTense {
 
 impl TreeViewer for AspectExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(155, 250, 155);
+        let background = iced::Color::from_rgb8(219, 238, 219);
         match self {
             AspectExpression::One(modified_aspect) => {
                 let category = "AspectExpression".to_string();
@@ -694,7 +706,7 @@ impl TreeViewer for AspectExpression {
 
 impl TreeViewer for ModifiedAspect {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(140, 250, 140);
+        let background = iced::Color::from_rgb8(173, 215, 173);
         match self {
             ModifiedAspect::One(aspect) => {
                 let category = "ModifiedAspect".to_string();
@@ -718,7 +730,7 @@ impl TreeViewer for ModifiedAspect {
 
 impl TreeViewer for MtaEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(135, 205, 250);
+        let background = iced::Color::from_rgb8(250, 216, 202);
         match self {
             MtaEvent::One(modality_expression, ta_event) => {
                 let category = "MtaEvent".to_string();
@@ -747,7 +759,7 @@ impl TreeViewer for MtaEvent {
 
 impl TreeViewer for TaEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(250, 245, 170);
+        let background = iced::Color::from_rgb8(248, 204, 186);
         match self {
             TaEvent::One(tense_expression, a_event) => {
                 let category = "TaEvent".to_string();
@@ -767,7 +779,7 @@ impl TreeViewer for TaEvent {
 
 impl TreeViewer for AEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(170, 250, 170);
+        let background = iced::Color::from_rgb8(247, 192, 170);
         match self {
             AEvent::One(aspect_expression, event) => {
                 let category = "AEvent".to_string();
@@ -787,7 +799,7 @@ impl TreeViewer for AEvent {
 
 impl TreeViewer for Event {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(240, 255, 240);
+        let background = iced::Color::from_rgb8(245, 180, 154);
         match self {
             Event::One(post_modified_binary_predicate_phrase, optional_case_args) => {
                 let category = "Event".to_string();
@@ -806,7 +818,7 @@ impl TreeViewer for Event {
 
 impl TreeViewer for PostModifiedBinaryPredicatePhrase {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(175, 225, 230);
+        let background = iced::Color::from_rgb8(221, 243, 235);
         match self {
             PostModifiedBinaryPredicatePhrase::One(
                 binary_predicate_phrase,
@@ -828,7 +840,7 @@ impl TreeViewer for PostModifiedBinaryPredicatePhrase {
 
 impl TreeViewer for PostBinaryPredicatePhraseExpression {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(175, 240, 240);
+        let background = iced::Color::from_rgb8(198, 235, 222);
         match self {
             PostBinaryPredicatePhraseExpression::One(
                 post_binary_predicate_phrase_modifier,
@@ -855,7 +867,7 @@ impl TreeViewer for PostBinaryPredicatePhraseExpression {
 
 impl TreeViewer for BinaryPredicatePhrase {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(225, 255, 255);
+        let background = iced::Color::from_rgb8(175, 227, 208);
         match self {
             BinaryPredicatePhrase::One(binary_predicate) => {
                 let category = "BinaryPredicatePhrase".to_string();
@@ -892,7 +904,7 @@ impl TreeViewer for BinaryPredicatePhrase {
 
 impl TreeViewer for ArgumentPhrase {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(240, 230, 170);
+        let background = iced::Color::from_rgb8(251, 231, 239);
         match self {
             ArgumentPhrase::One(argument) => {
                 let category = "ArgumentPhrase".to_string();
@@ -943,7 +955,7 @@ impl TreeViewer for ArgumentPhrase {
 
 impl TreeViewer for OptionalCaseArgs {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(250, 240, 205);
+        let background = iced::Color::from_rgb8(248, 215, 228);
         match self {
             OptionalCaseArgs::One(CaseArg::One(label, type_override, arg), rest) => {
                 let category = "OptionalCaseArgs".to_string();
@@ -971,7 +983,7 @@ impl TreeViewer for OptionalCaseArgs {
 
 impl TreeViewer for QuantifiedArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(50, 50, 50);
+        let background = iced::Color::from_rgb8(228, 225, 242);
         match self {
             QuantifiedArgument::One(quantifier_modifier, determined_argument) => {
                 let category = "QuantifiedArgument".to_string();
@@ -991,7 +1003,7 @@ impl TreeViewer for QuantifiedArgument {
 
 impl TreeViewer for DeterminedArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(50, 50, 50);
+        let background = iced::Color::from_rgb8(215, 212, 236);
         match self {
             DeterminedArgument::One(determiner_modifier, retrieved_argument) => {
                 let category = "DeterminedArgument".to_string();
@@ -1011,7 +1023,7 @@ impl TreeViewer for DeterminedArgument {
 
 impl TreeViewer for RetrievedArgument {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(50, 50, 50);
+        let background = iced::Color::from_rgb8(203, 198, 229);
         match self {
             RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
                 let category = "RetrievedArgument".to_string();
@@ -1030,7 +1042,7 @@ impl TreeViewer for RetrievedArgument {
 
 impl TreeViewer for ArgumentRetrievalBinaryPredicate {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(50, 50, 50);
+        let background = iced::Color::from_rgb8(190, 184, 223);
         match self {
             ArgumentRetrievalBinaryPredicate::One(
                 post_modified_binary_predicate_phrase,
@@ -1052,7 +1064,7 @@ impl TreeViewer for ArgumentRetrievalBinaryPredicate {
 
 impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(50, 0, 50);
+        let background = iced::Color::from_rgb8(177, 170, 217);
         match self {
             ArgumentRetrievalWithArgumentPhrase::One(
                 post_argument_phrase_modifier,
@@ -1079,7 +1091,7 @@ impl TreeViewer for ArgumentRetrievalWithArgumentPhrase {
 
 impl TreeViewer for QuantifierModifier {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(50, 50, 0);
+        let background = iced::Color::from_rgb8(251, 228, 228);
         match self {
             QuantifierModifier::One(quantifier) => {
                 let category = "QuantifierModifier".to_string();
@@ -1105,7 +1117,7 @@ impl TreeViewer for QuantifierModifier {
 
 impl TreeViewer for NumericalExpression {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(0, 50, 0);
+        let background = iced::Color::from_rgb8(247, 200, 200);
         match self {
             NumericalExpression::One(number) => {
                 let category = "NumericalExpression".to_string();
@@ -1121,7 +1133,7 @@ impl TreeViewer for NumericalExpression {
 
 impl TreeViewer for DeterminerModifier {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(0, 50, 0);
+        let background = iced::Color::from_rgb8(251, 228, 228);
         match self {
             DeterminerModifier::One(determiner) => {
                 let category = "DeterminerModifier".to_string();
@@ -1142,7 +1154,7 @@ impl TreeViewer for DeterminerModifier {
 
 impl TreeViewer for TypeOverrideModifier {
     fn view(&self, _is_full: bool) -> Element<'static, Message> {
-        let background = iced::Color::from_rgb8(0, 50, 30);
+        let background = iced::Color::from_rgb8(251, 228, 228);
         match self {
             TypeOverrideModifier::One(type_override) => {
                 let category = "TypeOverrideModifier".to_string();
