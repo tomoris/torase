@@ -37,6 +37,7 @@
 - [tokenizer](../../language/src/tokenizer.rs)
   - [音韻論](./phonology.md)
   - [形態論](./morphology.md)
+  - [借用規則](./borrowing.md)
 - [parser](../../language/src/parser.rs)
   - [統語論](./syntax.md)
 - [type checker](../../language/src/formal_semantics/type_checker.rs)
