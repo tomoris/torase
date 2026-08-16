@@ -1,14 +1,1710 @@
 {
+    "bo": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Determiner",
+        "definition": null,
+        "description": "限定詞:その。"
+    },
+    "da": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "命題修飾句の前置詞。"
+    },
+    "di": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostBinaryPredicatePhraseModifier",
+        "definition": null,
+        "description": "述語修飾句の前置詞。"
+    },
+    "du": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostArgumentPhraseModifier",
+        "definition": null,
+        "description": "項修飾句の前置詞。"
+    },
+    "eos": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Eos",
+        "definition": null,
+        "description": "文末マーカー。文と文の区切りを示す。"
+    },
+    "go": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Determiner",
+        "definition": null,
+        "description": "限定詞:あの。"
+    },
+    "hane": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ModalityNegation",
+        "definition": null,
+        "description": "モダリティの否定。"
+    },
+    "hapa": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ModalityBase",
+        "definition": null,
+        "description": "認識モダリティの基盤。量化対象は話し手が知っている事実と矛盾しない世界。 `hapa □`=確実にe、`hapa ◇`=eかもしれない。"
+    },
+    "hapi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ModalityBase",
+        "definition": null,
+        "description": "義務モダリティの基盤。量化対象は法律・規則・道徳を守っている世界。 `hapi □`=eしなければならない、`hapi ◇`=eしてもよい。"
+    },
+    "hapu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ModalityBase",
+        "definition": null,
+        "description": "能力・状況モダリティの基盤。量化対象は現実の能力・環境条件を保持した世界。 `hapu □`=eを必ずできる、`hapu ◇`=eすることができる。"
+    },
+    "he": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "MtaEventToArgumentPhraseConverter",
+        "definition": null,
+        "description": "命題を項に変換する開始マーカー。命題の始まりに置く。"
+    },
+    "hehegi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(言い換え)。P1つまりP2。"
+    },
+    "hehema": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(例示)。P1例えばP2。"
+    },
+    "hehenu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(対比)。P1、一方P2。"
+    },
+    "hehezu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(定義)。P1はP2と同値(P1↔P2)。単なる言い換えの`hehegi`(論理式ではP1∧P2)とは異なり、辞書の`definition`を計画言語自身で書くための専用接続詞。`hi`(全称量化マーカー)・`ha`/`hu`(定義用のスキーマ変数)と組み合わせて使う。"
+    },
+    "hehita": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(時間前)。P1の前にP2する。"
+    },
+    "hehiti": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(同時)。P1、P2を同時にする。"
+    },
+    "hehitu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(時間後)。P1の後にP2する。"
+    },
+    "hehoma": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(and)。P1並びにP2する。"
+    },
+    "hehomi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(or)。P1もしくはP2する。"
+    },
+    "hehomu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(xor)。P1もしくはP2のどちらか片方だけする。"
+    },
+    "henesute": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(結果→反対の原因)。P1したP2なのにもかかわらず。"
+    },
+    "henesuto": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(反対の原因→結果)。P1なのにもかかわらずP2する。"
+    },
+    "hesute": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(結果→原因)。P1したなぜならP2だから。"
+    },
+    "hesuto": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(原因→結果)。P1なのでP2する。"
+    },
+    "hezu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(条件)。P1ならP2する。"
+    },
+    "hi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "UniversalMarker",
+        "definition": null,
+        "description": "全称量化マーカー。文頭に置き、直後に`ha`/`hu`の量化子宣言(`za`=∀、`zi`=∃)を必要な数だけ並べてから平叙文を続ける。 辞書の`definition`を計画言語自身で書いて新語を既知語で定義する際、`ha`/`hu`と`hehezu`とともに使う。"
+    },
+    "hine": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "TenseNegation",
+        "definition": null,
+        "description": "テンスの否定。"
+    },
+    "hita": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Tense",
+        "definition": null,
+        "description": "テンス:過去。"
+    },
+    "hiti": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Tense",
+        "definition": null,
+        "description": "テンス:現在。"
+    },
+    "hitu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Tense",
+        "definition": null,
+        "description": "テンス:未来。"
+    },
+    "ho": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "MtaEventToArgumentPhraseConverterEnd",
+        "definition": null,
+        "description": "命題を項に変換する終了マーカー。命題の終わりに置く。"
+    },
+    "hoba": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PredicateOperator",
+        "definition": null,
+        "description": "述語のand。"
+    },
+    "hobi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PredicateOperator",
+        "definition": null,
+        "description": "述語のor。"
+    },
+    "hobu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PredicateOperator",
+        "definition": null,
+        "description": "述語のxor。"
+    },
+    "hoka": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ArgumentOperator",
+        "definition": null,
+        "description": "項のand。"
+    },
+    "hoki": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ArgumentOperator",
+        "definition": null,
+        "description": "項のor。"
+    },
+    "hoku": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ArgumentOperator",
+        "definition": null,
+        "description": "項のxor。"
+    },
+    "homa": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "MtaEventOperator",
+        "definition": null,
+        "description": "命題のand。"
+    },
+    "homi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "MtaEventOperator",
+        "definition": null,
+        "description": "命題のor。"
+    },
+    "homu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "MtaEventOperator",
+        "definition": null,
+        "description": "命題のxor。"
+    },
+    "huda": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Aspect",
+        "definition": null,
+        "description": "アスペクト:未然(まだ起きていない)。"
+    },
+    "hude": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Aspect",
+        "definition": null,
+        "description": "アスペクト:開始。"
+    },
+    "hudida": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Aspect",
+        "definition": null,
+        "description": "アスペクト:進行。"
+    },
+    "hudidi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Aspect",
+        "definition": null,
+        "description": "アスペクト:習慣。"
+    },
+    "hudidu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Aspect",
+        "definition": null,
+        "description": "アスペクト:反復。"
+    },
+    "hudo": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Aspect",
+        "definition": null,
+        "description": "アスペクト:終了。"
+    },
+    "hudu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Aspect",
+        "definition": null,
+        "description": "アスペクト:事後(既にし終わっている)。"
+    },
+    "hune": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "AspectNegation",
+        "definition": null,
+        "description": "アスペクトの否定。"
+    },
+    "ku": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "InterrogativeMarker",
+        "definition": null,
+        "description": "疑問文マーカー。文頭に置き、平叙文を疑問文にする。 読み・表記は`ku`のみ(ロジバンの`ku`とは無関係)。"
+    },
+    "mo": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Determiner",
+        "definition": null,
+        "description": "限定詞:この。"
+    },
+    "ne": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Negation",
+        "definition": null,
+        "description": "述語・項の否定。"
+    },
+    "ra": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ArgumentRetriever",
+        "definition": null,
+        "description": "項抽出。述語の第一項(x1)を抽出し、項句(名詞句)に変換する。"
+    },
+    "ri": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ArgumentRetriever",
+        "definition": null,
+        "description": "項抽出。述語の第二項(x2)を抽出し、項句(名詞句)に変換する。"
+    },
+    "sa": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "主格。述語の第一項(x1)を示す。二項述語の項構造に対応する必須格。"
+    },
+    "se": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "TypeOverride",
+        "definition": null,
+        "description": "型オーバーライド。格標識(`sa`/`si`/`su[CV]`)の直後・項句の直前に置く任意のトークンで、その項を型検査の対象から除外する。比喩・見立て表現用。"
+    },
+    "si": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "対格。述語の第二項(x2)を示す。二項述語の項構造に対応する必須格。"
+    },
+    "sube": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "奪格(人間起点格)。だれから、だれの。付加詞で省略可、x1は生物(`bV`)。"
+    },
+    "subo": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "与格(人間目標格)。だれまで、だれに。付加詞で省略可、x1は生物(`bV`)。"
+    },
+    "subu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "随伴格。だれと。付加詞で省略可、x1は生物(`bV`)。"
+    },
+    "sudu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "具格。何々を使って。付加詞で省略可、x1は人工物(`dV`)。"
+    },
+    "suge": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "時間起点格。いつから。付加詞で省略可、x1は指示代名詞(空間・時間対応のもの)、`ziV`(時間関係)、または`zuV`(時間の尺度)。"
+    },
+    "sugi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "時間格。いつ。付加詞で省略可、x1は指示代名詞、`ziV`、または`zuV`。"
+    },
+    "sugo": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "時間目標格。いつまで。付加詞で省略可、x1は指示代名詞、`ziV`、または`zuV`。"
+    },
+    "sune": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "空間起点格。どこから。付加詞で省略可、x1は指示代名詞、または`zaV`。"
+    },
+    "suni": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "空間格。どこで。付加詞で省略可、x1は指示代名詞、または`zaV`(空間関係)。"
+    },
+    "suno": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "空間目標格。どこまで。付加詞で省略可、x1は指示代名詞、または`zaV`。"
+    },
+    "sute": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "原因格(理由起点格)。何々のせいで。付加詞で省略可、x1は抽象概念(`gV|mV|rV|zV`)。"
+    },
+    "suto": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "CaseLabel",
+        "definition": null,
+        "description": "目的格(理由目標格)。何々のために。付加詞で省略可、x1は抽象概念(`gV|mV|rV|zV`)。"
+    },
+    "ta": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Quantifier",
+        "definition": null,
+        "description": "量化詞:すべての。"
+    },
+    "te": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Quantifier",
+        "definition": null,
+        "description": "量化詞:多くの。"
+    },
+    "ti": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Quantifier",
+        "definition": null,
+        "description": "量化詞:半分の。"
+    },
+    "to": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Quantifier",
+        "definition": null,
+        "description": "量化詞:少しの。"
+    },
+    "za": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ModalityForce",
+        "definition": null,
+        "description": "様相の必然(□)。`hi`の量化子宣言では全称量化(∀)としても使う。 `□`とも書ける(発音は同じ`za`)。"
+    },
+    "zi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ModalityForce",
+        "definition": null,
+        "description": "様相の可能(◇)。`hi`の量化子宣言では存在量化(∃)としても使う。 `◇`とも書ける(発音は同じ`zi`)。"
+    },
+    "ba": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "あなた"
+    },
+    "be": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "それ"
+    },
+    "bu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "あなたたち"
+    },
+    "ga": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "誰か(単数か複数か指定しない)"
+    },
+    "ge": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "あれ"
+    },
+    "gi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "彼/彼女"
+    },
+    "gu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "彼ら"
+    },
+    "ha": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "定義用のスキーマ変数(x1)。 `hi`の量化子宣言(`za`/`zi`)で明示的に宣言しない限り使えない(未束縛だと型検査でエラーになる)。`me`/`be`/`ge`と同じく指示物の種類を限定しないが、定数ではなく述語論理上の変数として扱われる点が異なる。辞書の`definition`を計画言語自身で書いて新語を既知語で言い換える際に使う。"
+    },
+    "hu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "定義用のスキーマ変数(x2)。 `ha`と対になるx2用のスキーマ変数。用法は`ha`を参照。"
+    },
     "ma": {
         "original_spelling": null,
         "original_pronunciation": null,
         "terminal_type": "Argument",
-        "definition": ""
+        "definition": null,
+        "description": "私とあなた(たち)"
+    },
+    "me": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "これ"
+    },
+    "mi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "私"
+    },
+    "mu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "あなたを含まない私たち"
+    },
+    "badokatora": {
+        "original_spelling": "doctor",
+        "original_pronunciation": "dɒktər",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を医者と定義する。"
+    },
+    "bahomo": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を人と定義する。"
+    },
+    "behapare": {
+        "original_spelling": "apple",
+        "original_pronunciation": "æpəl",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をりんごと定義する。"
+    },
+    "behoranage": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をみかんと定義する。"
+    },
+    "bidoga": {
+        "original_spelling": "dog",
+        "original_pronunciation": "dɔːɡ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を犬と定義する。"
+    },
+    "bihimera": {
+        "original_spelling": "female",
+        "original_pronunciation": "fiːmeɪl",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を生物学的に雌(メス)と定義する。 `bimare`(雄)と対になる語。性自認上の性別は`gumare`/`guhemare`を使う。"
+    },
+    "bimare": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を生物学的に雄(オス)と定義する。 `bihimera`(雌)と対になる語。性自認上の性別は`gumare`/`guhemare`を使う。"
+    },
+    "dabara": {
+        "original_spelling": "ball",
+        "original_pronunciation": "bɔːl",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をボールと定義する。"
+    },
+    "dahone": {
+        "original_spelling": "phone",
+        "original_pronunciation": "foʊn",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を電話と定義する。"
+    },
+    "dakara": {
+        "original_spelling": "car",
+        "original_pronunciation": "kɑːr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を車と定義する。"
+    },
+    "dapapera": {
+        "original_spelling": "paper",
+        "original_pronunciation": "peɪpər",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を紙と定義する。"
+    },
+    "dasinaga": {
+        "original_spelling": "thing",
+        "original_pronunciation": "θɪŋ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をものと定義する。 `disinaga`/`dusinaga`と近義語。「何もない」のような強調に`hoki`(or)で並べて使う用例がある。"
+    },
+    "daterebisina": {
+        "original_spelling": "television",
+        "original_pronunciation": "tɛləvɪʒən",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をテレビと定義する。"
+    },
+    "dibeda": {
+        "original_spelling": "bed",
+        "original_pronunciation": "bɛd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をベッドと定義する。"
+    },
+    "didora": {
+        "original_spelling": "door",
+        "original_pronunciation": "dɔːr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をドアと定義する。"
+    },
+    "diharora": {
+        "original_spelling": "floor",
+        "original_pronunciation": "flɔːr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を床と定義する。"
+    },
+    "dihohise": {
+        "original_spelling": "office",
+        "original_pronunciation": "ɒfɪs",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を事務所/オフィスと定義する。"
+    },
+    "dihome": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を家(建物)と定義する。 概念上の故郷を表す`rahome`とは別語。"
+    },
+    "diroma": {
+        "original_spelling": "room",
+        "original_pronunciation": "ruːm",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を部屋と定義する。"
+    },
+    "disakura": {
+        "original_spelling": "school",
+        "original_pronunciation": "skuːl",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を学校と定義する。"
+    },
+    "disinaga": {
+        "original_spelling": "thing",
+        "original_pronunciation": "θɪŋ",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu disinaga sa ha si hu hehezu dasinaga sa ha si hu",
+        "description": "x1はx2をものと定義する。 `dasinaga`/`dusinaga`と近義語。`dasinaga`の言い換え(`definition`参照)。"
+    },
+    "ditabare": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をテーブルと定義する。"
+    },
+    "duboka": {
+        "original_spelling": "book",
+        "original_pronunciation": "bʊk",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu duboka sa ha si hu hehezu homa dapapera sa ha si hu rihorada sa ha si hu",
+        "description": "x1はx2を本と定義する。"
+    },
+    "dumobi": {
+        "original_spelling": "movie",
+        "original_pronunciation": "muːvi",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を映画と定義する。"
+    },
+    "dusinaga": {
+        "original_spelling": "thing",
+        "original_pronunciation": "θɪŋ",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu dusinaga sa ha si hu hehezu dasinaga sa ha si hu",
+        "description": "x1はx2をものと定義する。 `dasinaga`/`disinaga`と近義語。`dasinaga`の言い換え(`definition`参照)。"
+    },
+    "gabusunesa": {
+        "original_spelling": "business",
+        "original_pronunciation": "bɪznɪs",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をビジネス/事業と定義する。"
+    },
+    "guhemare": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(性自認上)女性と定義する。 生物学的な雌は`bihimera`。"
+    },
+    "gumare": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(性自認上)男性と定義する。 生物学的な雄は`bimare`。"
+    },
+    "gumesoda": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を方法と定義する。"
+    },
+    "guminada": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を考え/アイデアと定義する。"
+    },
+    "guresona": {
+        "original_spelling": "reason",
+        "original_pronunciation": "riːzən",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を理由と定義する。"
+    },
+    "guside": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を側面/局面と定義する。"
+    },
+    "kagame": {
+        "original_spelling": "game",
+        "original_pronunciation": "ɡeɪm",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)というゲームをする。"
+    },
+    "kahanadarasatanada": {
+        "original_spelling": "understand",
+        "original_pronunciation": "ʌndɜːrstænd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)を理解する。"
+    },
+    "kahanata": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)を望む/欲する。"
+    },
+    "kahapahi": {
+        "original_spelling": "happy",
+        "original_pronunciation": "hæpi",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)について楽しむ/喜ぶ。"
+    },
+    "kahehara": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)にはx2(概念)のようだ(伝聞・推量)。"
+    },
+    "kaheperihenese": {
+        "original_spelling": "experience",
+        "original_pronunciation": "ɪkspɪəriəns",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)を経験したことがある。"
+    },
+    "kaho": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)に肯定する。 よく使う語なので短い文字列にした造語(`ka`+`o`)。単独で「はい」の返答として使う(例:`kaho sa mi si be`)。"
+    },
+    "kahorada": {
+        "original_spelling": "hold",
+        "original_pronunciation": "hoʊld",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)という会合を開催する。"
+    },
+    "kahoraka": {
+        "original_spelling": "work",
+        "original_pronunciation": "wɜːrk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)という仕事をする。"
+    },
+    "kakatagaraza": {
+        "original_spelling": "categorize",
+        "original_pronunciation": "kætʌgɜːraɪz",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)をあるラベル集合に分類する。"
+    },
+    "kano": {
+        "original_spelling": "know",
+        "original_pronunciation": "noʊ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)を知っている。"
+    },
+    "karememabera": {
+        "original_spelling": "remember",
+        "original_pronunciation": "rɪmɛmbər",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)を覚えている。"
+    },
+    "kareta": {
+        "original_spelling": "let",
+        "original_pronunciation": "lɛt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)という命題をさせる(使役)。"
+    },
+    "kasahi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)を言う。"
+    },
+    "kasinaka": {
+        "original_spelling": "think",
+        "original_pronunciation": "θɪŋk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)だと考える。"
+    },
+    "katime": {
+        "original_spelling": "time",
+        "original_pronunciation": "taɪm",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)の時間を計測する。"
+    },
+    "katoka": {
+        "original_spelling": "talk",
+        "original_pronunciation": "tɔːk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(概念)について話す。"
+    },
+    "nahararada": {
+        "original_spelling": "world",
+        "original_pronunciation": "wɜːrld",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を世界と定義する。"
+    },
+    "namanatana": {
+        "original_spelling": "mountain",
+        "original_pronunciation": "maʊntʌn",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu namanatana sa ha si hu hehezu homa dasinaga sa ha si hu reha sa ha si hu",
+        "description": "x1はx2を山と定義する。"
+    },
+    "namuna": {
+        "original_spelling": "moon",
+        "original_pronunciation": "muːn",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を月(天体)と定義する。"
+    },
+    "nasaka": {
+        "original_spelling": "sky",
+        "original_pronunciation": "skaɪ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を空と定義する。"
+    },
+    "nasana": {
+        "original_spelling": "sun",
+        "original_pronunciation": "sʌn",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu nasana sa ha si hu hehezu homa nohahara sa ha si hu rebiga sa ha si hu",
+        "description": "x1はx2を太陽と定義する。"
+    },
+    "nasatora": {
+        "original_spelling": "star",
+        "original_pronunciation": "stɑːr",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu nasatora sa ha si hu hehezu homa nohahara sa ha si hu resamara sa ha si hu",
+        "description": "x1はx2を星と定義する。"
+    },
+    "nasi": {
+        "original_spelling": "sea",
+        "original_pronunciation": "siː",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu nasi sa ha si hu hehezu homa nihotara sa ha si hu rebiga sa ha si hu",
+        "description": "x1はx2を海と定義する。"
+    },
+    "netohana": {
+        "original_spelling": "town",
+        "original_pronunciation": "taʊn",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を町と定義する。"
+    },
+    "nihotara": {
+        "original_spelling": "water",
+        "original_pronunciation": "wɔːtɜːr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を水と定義する。"
+    },
+    "nodinera": {
+        "original_spelling": "dinner",
+        "original_pronunciation": "dɪnər",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を夕食と定義する。"
+    },
+    "nohahara": {
+        "original_spelling": "fire",
+        "original_pronunciation": "faɪɜːr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を火と定義する。"
+    },
+    "nohoda": {
+        "original_spelling": "food",
+        "original_pronunciation": "fuːd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を食べ物と定義する。"
+    },
+    "norena": {
+        "original_spelling": "rain",
+        "original_pronunciation": "reɪn",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を雨と定義する。"
+    },
+    "nuhanada": {
+        "original_spelling": "hand",
+        "original_pronunciation": "hænd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を手と定義する。"
+    },
+    "nuhara": {
+        "original_spelling": "hair",
+        "original_pronunciation": "hɛr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を髪と定義する。"
+    },
+    "nuhase": {
+        "original_spelling": "face",
+        "original_pronunciation": "feɪs",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を顔と定義する。"
+    },
+    "nuheda": {
+        "original_spelling": "head",
+        "original_pronunciation": "hɛd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を頭と定義する。"
+    },
+    "nuhehi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を目と定義する。"
+    },
+    "nuherata": {
+        "original_spelling": "heart",
+        "original_pronunciation": "hɑːrt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を心臓と定義する。"
+    },
+    "pabuhi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を買う。"
+    },
+    "padaropa": {
+        "original_spelling": "drop",
+        "original_pronunciation": "drɒp",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を落とす/x2(物)が落ちる。"
+    },
+    "padirati": {
+        "original_spelling": "dirty",
+        "original_pronunciation": "dɜːrti",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を汚す。"
+    },
+    "pagibe": {
+        "original_spelling": "give",
+        "original_pronunciation": "ɡɪv",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)をあげる。"
+    },
+    "pagibeto": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)にあげる。"
+    },
+    "pahamiri": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)の家族だ。 `dictionary.txt`の下書きでは`pehamiri`(`pe`接頭辞)だったが、x1・x2ともに生物である関係のため`pa`接頭辞に修正した。"
+    },
+    "paharenada": {
+        "original_spelling": "friend",
+        "original_pronunciation": "frend",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)の友達だ。"
+    },
+    "paherapa": {
+        "original_spelling": "help",
+        "original_pronunciation": "help",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)を助ける。"
+    },
+    "pahete": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を食べる。"
+    },
+    "pakarena": {
+        "original_spelling": "clean",
+        "original_pronunciation": "kliːn",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を綺麗にする。"
+    },
+    "pamobe": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)の所有を移す(`sube`=起点、`subo`=目標)。 `sube`のみなら「もらう」、`subo`のみなら「あげる」の意味になる。"
+    },
+    "paparatanera": {
+        "original_spelling": "partner",
+        "original_pronunciation": "pɑːrtnər",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)のパートナー/配偶者だ。"
+    },
+    "paperanata": {
+        "original_spelling": "parent",
+        "original_pronunciation": "perʌnt",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu paperanata sa ha si hu hehezu patirada sa hu si ha",
+        "description": "x1(人)はx2(人)の親だ。"
+    },
+    "parobe": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)を愛す。"
+    },
+    "pasibarina": {
+        "original_spelling": "sibling",
+        "original_pronunciation": "sɪblɪŋ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)のきょうだいだ。"
+    },
+    "patirada": {
+        "original_spelling": "child",
+        "original_pronunciation": "tʃaɪld",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)の子だ。"
+    },
+    "pebareka": {
+        "original_spelling": "break",
+        "original_pronunciation": "breɪk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を壊す。"
+    },
+    "pebirada": {
+        "original_spelling": "build",
+        "original_pronunciation": "bɪld",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を建てる/作る。"
+    },
+    "pehira": {
+        "original_spelling": "hear",
+        "original_pronunciation": "hɪr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)の音を聞く。"
+    },
+    "pehopana": {
+        "original_spelling": "open",
+        "original_pronunciation": "oʊpʌn",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を開ける。"
+    },
+    "pehuza": {
+        "original_spelling": "use",
+        "original_pronunciation": "juːz",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を使う。"
+    },
+    "pekaroza": {
+        "original_spelling": "close",
+        "original_pronunciation": "kloʊz",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を閉じる。"
+    },
+    "pemarige": {
+        "original_spelling": "marriage",
+        "original_pronunciation": "mærɪdʒ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)と結婚する。"
+    },
+    "pemeka": {
+        "original_spelling": "make",
+        "original_pronunciation": "meɪk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を作る。"
+    },
+    "peputa": {
+        "original_spelling": "put",
+        "original_pronunciation": "pʊt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を置く。"
+    },
+    "perata": {
+        "original_spelling": "write",
+        "original_pronunciation": "raɪt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を書く。"
+    },
+    "perida": {
+        "original_spelling": "read",
+        "original_pronunciation": "riːd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を読む。"
+    },
+    "peroka": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を見る。"
+    },
+    "peteka": {
+        "original_spelling": "take",
+        "original_pronunciation": "teɪk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を取る。"
+    },
+    "pida": {
+        "original_spelling": "die",
+        "original_pronunciation": "daɪ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)は死ぬ。"
+    },
+    "pigo": {
+        "original_spelling": "go",
+        "original_pronunciation": "goʊ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)は行く。"
+    },
+    "piharaba": {
+        "original_spelling": "alive",
+        "original_pronunciation": "ʌlaɪv",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha piharaba sa ha hehezu hudu ne pida sa ha",
+        "description": "x1(人)は生きている。"
+    },
+    "pihezisata": {
+        "original_spelling": "exist",
+        "original_pronunciation": "ɪɡzɪst",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(生物)は存在する。"
+    },
+    "pihoka": {
+        "original_spelling": "walk",
+        "original_pronunciation": "wɔːk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)は歩く。"
+    },
+    "pikama": {
+        "original_spelling": "come",
+        "original_pronunciation": "kʌm",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)は来る。"
     },
     "pirana": {
         "original_spelling": "run",
         "original_pronunciation": "rʌn",
         "terminal_type": "BinaryPredicate",
-        "definition": ""
+        "definition": null,
+        "description": "x1(人)は走る。"
+    },
+    "piriba": {
+        "original_spelling": "live",
+        "original_pronunciation": "lɪv",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)は生活する/住む。"
+    },
+    "pisaripa": {
+        "original_spelling": "sleep",
+        "original_pronunciation": "sliːp",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)は眠る。"
+    },
+    "puhezisata": {
+        "original_spelling": "exist",
+        "original_pronunciation": "ɪɡzɪst",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(非生物)は存在する。"
+    },
+    "rahome": {
+        "original_spelling": "home",
+        "original_pronunciation": "hoʊm",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(概念上の)故郷/心の拠り所と定義する。 建物としての家は`dihome`。"
+    },
+    "raparobarema": {
+        "original_spelling": "problem",
+        "original_pronunciation": "prɒbləm",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu raparobarema sa ha si hu hehezu homa dasinaga sa ha si hu rebada sa ha si hu",
+        "description": "x1はx2を問題と定義する。"
+    },
+    "rebada": {
+        "original_spelling": "bad",
+        "original_pronunciation": "bæd",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rebada sa ha si hu hehezu ne reguda sa ha si hu",
+        "description": "x1はx2を悪いと定義する。"
+    },
+    "rebaraka": {
+        "original_spelling": "black",
+        "original_pronunciation": "blæk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を黒いと定義する。"
+    },
+    "rebaru": {
+        "original_spelling": "blue",
+        "original_pronunciation": "bluː",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を青いと定義する。"
+    },
+    "rebiga": {
+        "original_spelling": "big",
+        "original_pronunciation": "bɪg",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rebiga sa ha si hu hehezu ne resamara sa ha si hu",
+        "description": "x1はx2を大きいと定義する。"
+    },
+    "rediharanata": {
+        "original_spelling": "different",
+        "original_pronunciation": "dɪfɜːrnt",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rediharanata sa ha si hu hehezu ne resema sa ha si hu",
+        "description": "x1はx2を異なる(別個の)と定義する。"
+    },
+    "regarina": {
+        "original_spelling": "green",
+        "original_pronunciation": "griːn",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を緑色と定義する。"
+    },
+    "reguda": {
+        "original_spelling": "good",
+        "original_pronunciation": "gʊd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を良いと定義する。"
+    },
+    "reha": {
+        "original_spelling": "high",
+        "original_pronunciation": "haɪ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(位置・程度が)高いと定義する。"
+    },
+    "rehasata": {
+        "original_spelling": "fast",
+        "original_pronunciation": "fæst",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を速いと定義する。"
+    },
+    "rehata": {
+        "original_spelling": "white",
+        "original_pronunciation": "waɪt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を白いと定義する。"
+    },
+    "rehebi": {
+        "original_spelling": "heavy",
+        "original_pronunciation": "heviː",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を重いと定義する。"
+    },
+    "rehemapati": {
+        "original_spelling": "empty",
+        "original_pronunciation": "emptiː",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rehemapati sa ha si hu hehezu ne rehura sa ha si hu",
+        "description": "x1はx2を空(から)と定義する。"
+    },
+    "rehero": {
+        "original_spelling": "yellow",
+        "original_pronunciation": "jeloʊ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を黄色と定義する。"
+    },
+    "rehorada": {
+        "original_spelling": "old",
+        "original_pronunciation": "oʊld",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rehorada sa ha si hu hehezu ne renu sa ha si hu",
+        "description": "x1はx2を古いと定義する。"
+    },
+    "rehota": {
+        "original_spelling": "hot",
+        "original_pronunciation": "hɑːt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を熱い/暑いと定義する。"
+    },
+    "rehura": {
+        "original_spelling": "full",
+        "original_pronunciation": "fʊl",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を満ちている/いっぱいのと定義する。"
+    },
+    "rekorada": {
+        "original_spelling": "cold",
+        "original_pronunciation": "koʊld",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rekorada sa ha si hu hehezu ne rehota sa ha si hu",
+        "description": "x1はx2を冷たい/寒いと定義する。"
+    },
+    "renu": {
+        "original_spelling": "new",
+        "original_pronunciation": "nuː",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を新しいと定義する。"
+    },
+    "rereda": {
+        "original_spelling": "red",
+        "original_pronunciation": "red",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を赤いと定義する。"
+    },
+    "rero": {
+        "original_spelling": "low",
+        "original_pronunciation": "loʊ",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rero sa ha si hu hehezu ne reha sa ha si hu",
+        "description": "x1はx2を(位置・程度が)低いと定義する。"
+    },
+    "rerona": {
+        "original_spelling": "long",
+        "original_pronunciation": "lɔːŋ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(距離・時間が)長いと定義する。"
+    },
+    "resamara": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を小さいと定義する。"
+    },
+    "resatarona": {
+        "original_spelling": "strong",
+        "original_pronunciation": "strɔːŋ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を強いと定義する。"
+    },
+    "resema": {
+        "original_spelling": "same",
+        "original_pronunciation": "seɪm",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を同じ(均一な)と定義する。"
+    },
+    "resorata": {
+        "original_spelling": "short",
+        "original_pronunciation": "ʃɔːrt",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu resorata sa ha si hu hehezu ne rerona sa ha si hu",
+        "description": "x1はx2を短いと定義する。"
+    },
+    "retaru": {
+        "original_spelling": "true",
+        "original_pronunciation": "truː",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を真実/正しいと定義する。"
+    },
+    "rihorada": {
+        "original_spelling": "word",
+        "original_pronunciation": "wɜːrd",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を言葉と定義する。"
+    },
+    "riname": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を名前と定義する。"
+    },
+    "riparata": {
+        "original_spelling": "part",
+        "original_pronunciation": "pɑːrt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を部分と定義する。"
+    },
+    "ronehasa": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu ronehasa sa ha si hu hehezu homa rihorada sa ha si hu renu sa ha si hu",
+        "description": "x1はx2をニュース/知らせと定義する。"
+    },
+    "rosatori": {
+        "original_spelling": "story",
+        "original_pronunciation": "stɔːri",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を物語と定義する。"
+    },
+    "ruhage": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を年齢/年齢的な成熟度と定義する。"
+    },
+    "rukopare": {
+        "original_spelling": "couple",
+        "original_pronunciation": "kʌpəl",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(2人の)組/カップルと定義する。"
+    },
+    "rumonehi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2をお金と定義する。"
+    },
+    "runumabera": {
+        "original_spelling": "number",
+        "original_pronunciation": "nʌmbər",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を数と定義する。"
+    },
+    "zahatano": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を上/表面(空間関係)と定義する。"
+    },
+    "zudahi": {
+        "original_spelling": "day",
+        "original_pronunciation": "deɪ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を日(1日)と定義する。"
+    },
+    "zudeta": {
+        "original_spelling": "date",
+        "original_pronunciation": "deɪt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(暦の)日付と定義する。"
+    },
+    "zuhahara": {
+        "original_spelling": "hour",
+        "original_pronunciation": "aʊɜːr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を時間(1時間)と定義する。"
+    },
+    "zuharahahi": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を常に/いつも(という時間)と定義する。"
+    },
+    "zuhika": {
+        "original_spelling": "week",
+        "original_pronunciation": "wiːk",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を週(1週間)と定義する。"
+    },
+    "zuhira": {
+        "original_spelling": "year",
+        "original_pronunciation": "jɪr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を年(1年)と定義する。"
+    },
+    "zuhita": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(基準より)前の時点と定義する。 テンス`hita`(過去)の語根を流用した内部派生語で、英語からの借用語ではない。`suge`/`sugi`格と`du`で「N日前」のように使う。"
+    },
+    "zuhitu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を(基準より)後の時点と定義する。 テンス`hitu`(未来)の語根を流用した内部派生語で、英語からの借用語ではない。`sugi`格と`du`で「N日後」のように使う。"
+    },
+    "zumanasa": {
+        "original_spelling": "month",
+        "original_pronunciation": "mʌnθ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を月(1か月)と定義する。"
+    },
+    "zuminite": {
+        "original_spelling": "minute",
+        "original_pronunciation": "mɪnɪt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を分(1分)と定義する。"
+    },
+    "zunata": {
+        "original_spelling": "night",
+        "original_pronunciation": "naɪt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を夜と定義する。"
     }
 }
