@@ -839,6 +839,13 @@
         "definition": null,
         "description": "x1はx2を側面/局面と定義する。"
     },
+    "kadina": {
+        "original_spelling": "deny",
+        "original_pronunciation": "dɪnaɪ",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu kadina sa ha si hu hehezu ne kaho sa ha si hu",
+        "description": "x1(人)はx2(概念)を否定する。"
+    },
     "kagame": {
         "original_spelling": "game",
         "original_pronunciation": "ɡeɪm",
@@ -866,6 +873,13 @@
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(概念)について楽しむ/喜ぶ。"
+    },
+    "kaharageta": {
+        "original_spelling": "forget",
+        "original_pronunciation": "fɜːrget",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu kaharageta sa ha si hu hehezu ne karememabera sa ha si hu",
+        "description": "x1(人)はx2(概念)を忘れる。"
     },
     "kahehara": {
         "original_spelling": null,
@@ -1147,6 +1161,13 @@
         "definition": null,
         "description": "x1(人)はx2(人)を助ける。"
     },
+    "paheta": {
+        "original_spelling": "hate",
+        "original_pronunciation": "heɪt",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu paheta sa ha si hu hehezu ne parobe sa ha si hu",
+        "description": "x1(人)はx2(人)を憎む。"
+    },
     "pahete": {
         "original_spelling": null,
         "original_pronunciation": null,
@@ -1242,7 +1263,7 @@
         "original_spelling": "close",
         "original_pronunciation": "kloʊz",
         "terminal_type": "BinaryPredicate",
-        "definition": null,
+        "definition": "hi za ha za hu pekaroza sa ha si hu hehezu ne pehopana sa ha si hu",
         "description": "x1(人)はx2(物)を閉じる。"
     },
     "pemarige": {
@@ -1469,12 +1490,26 @@
         "definition": null,
         "description": "x1はx2を黄色と定義する。"
     },
+    "rehika": {
+        "original_spelling": "weak",
+        "original_pronunciation": "wiːk",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rehika sa ha si hu hehezu ne resatarona sa ha si hu",
+        "description": "x1はx2を弱いと定義する。"
+    },
     "rehorada": {
         "original_spelling": "old",
         "original_pronunciation": "oʊld",
         "terminal_type": "BinaryPredicate",
         "definition": "hi za ha za hu rehorada sa ha si hu hehezu ne renu sa ha si hu",
         "description": "x1はx2を古いと定義する。"
+    },
+    "rehorasa": {
+        "original_spelling": "false",
+        "original_pronunciation": "fɔːls",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rehorasa sa ha si hu hehezu ne retaru sa ha si hu",
+        "description": "x1はx2を偽/間違っていると定義する。"
     },
     "rehota": {
         "original_spelling": "hot",
@@ -1504,6 +1539,13 @@
         "definition": null,
         "description": "x1はx2を新しいと定義する。"
     },
+    "rerata": {
+        "original_spelling": "light",
+        "original_pronunciation": "laɪt",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu rerata sa ha si hu hehezu ne rehebi sa ha si hu",
+        "description": "x1はx2を(重さが)軽いと定義する。"
+    },
     "rereda": {
         "original_spelling": "red",
         "original_pronunciation": "red",
@@ -1531,6 +1573,13 @@
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を小さいと定義する。"
+    },
+    "resaro": {
+        "original_spelling": "slow",
+        "original_pronunciation": "sloʊ",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu resaro sa ha si hu hehezu ne rehasata sa ha si hu",
+        "description": "x1はx2を遅いと定義する。"
     },
     "resatarona": {
         "original_spelling": "strong",
@@ -1623,12 +1672,19 @@
         "definition": null,
         "description": "x1はx2を数と定義する。"
     },
+    "zabotama": {
+        "original_spelling": "bottom",
+        "original_pronunciation": "bɑːtʌm",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu zabotama sa ha si hu hehezu ne zahatano sa ha si hu",
+        "description": "x1はx2を下/底(空間関係)と定義する。"
+    },
     "zahatano": {
         "original_spelling": null,
         "original_pronunciation": null,
         "terminal_type": "BinaryPredicate",
         "definition": null,
-        "description": "x1はx2を上/表面(空間関係)と定義する。"
+        "description": "x1はx2を上/表面(空間関係)と定義する。 (対義語: `zabotama`=下/底)"
     },
     "zudahi": {
         "original_spelling": "day",
