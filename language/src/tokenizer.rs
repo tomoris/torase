@@ -45,6 +45,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
+        } else if UniversalMarker::is_match(token.0) {
+            doc.push(TerminalType::UniversalMarker(UniversalMarker::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if ModalityBase::is_match(token.0) {
             doc.push(TerminalType::ModalityBase(ModalityBase::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -242,6 +246,7 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TerminalType {
     InterrogativeMarker(InterrogativeMarker),
+    UniversalMarker(UniversalMarker),
     ModalityBase(ModalityBase),
     ModalityForce(ModalityForce),
     Tense(Tense),
@@ -272,6 +277,7 @@ pub enum TerminalType {
 #[derive(Clone, Debug)]
 pub enum DummyTerminalType {
     InterrogativeMarker,
+    UniversalMarker,
     ModalityBase,
     ModalityForce,
     Tense,
@@ -302,6 +308,7 @@ pub enum DummyTerminalType {
 pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
     match terminal {
         TerminalType::InterrogativeMarker(_) => DummyTerminalType::InterrogativeMarker,
+        TerminalType::UniversalMarker(_) => DummyTerminalType::UniversalMarker,
         TerminalType::ModalityBase(_) => DummyTerminalType::ModalityBase,
         TerminalType::ModalityForce(_) => DummyTerminalType::ModalityForce,
         TerminalType::Tense(_) => DummyTerminalType::Tense,
@@ -342,6 +349,7 @@ impl TerminalType {
     pub fn start(&self) -> Position {
         match self {
             TerminalType::InterrogativeMarker(marker) => marker.range.start.clone(),
+            TerminalType::UniversalMarker(marker) => marker.range.start.clone(),
             TerminalType::ModalityBase(modality) => modality.range.start.clone(),
             TerminalType::ModalityForce(force) => force.range.start.clone(),
             TerminalType::Tense(tense) => tense.range.start.clone(),
@@ -378,6 +386,7 @@ impl TerminalType {
     pub fn end(&self) -> Position {
         match self {
             TerminalType::InterrogativeMarker(marker) => marker.range.end.clone(),
+            TerminalType::UniversalMarker(marker) => marker.range.end.clone(),
             TerminalType::ModalityBase(modality) => modality.range.end.clone(),
             TerminalType::ModalityForce(force) => force.range.end.clone(),
             TerminalType::Tense(tense) => tense.range.end.clone(),
@@ -419,6 +428,13 @@ impl TerminalType {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InterrogativeMarker {
+    range: Range,
+}
+
+/// 定義文の先頭に置く全称量化マーカー(`hi`)。`ha`/`hu`(スキーマ変数)を含む平叙文を
+/// `∀ha. ∀hu. (...)`として閉じる。詳細は`docs/language_design/morphology.md`参照。
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UniversalMarker {
     range: Range,
 }
 
@@ -472,9 +488,16 @@ pub struct ModalityForce {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum ModalityForceKind {
+pub(crate) enum ModalityForceKind {
     Necessary, // □ 必然
     Possible,  // ◇ 可能
+}
+
+impl ModalityForce {
+    /// `hi`の直後の量化子宣言(`za`=∀, `zi`=∃)で使う。
+    pub(crate) fn get_kind(&self) -> &ModalityForceKind {
+        &self.kind
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -546,6 +569,8 @@ enum ArgumentKind {
     Gi, // 彼、彼女
     Gu, // 彼ら
     Ge, // あれ
+    Ha, // 定義用のスキーマ変数(x1)
+    Hu, // 定義用のスキーマ変数(x2)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -700,6 +725,7 @@ pub enum PostMtaEventModifierKind {
     Hehema,   // 接続詞(例示)
     Hehegi,   // 接続詞(言い換え)
     Hehenu,   // 接続詞(対比)
+    Hehezu,   // 接続詞(定義。P↔Q)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -794,6 +820,7 @@ macro_rules! impl_get_range {
 
 impl_get_range!(
     InterrogativeMarker,
+    UniversalMarker,
     ModalityBase,
     ModalityForce,
     Tense,
@@ -818,6 +845,7 @@ impl_get_range!(
 );
 
 define_fixed_token!(InterrogativeMarker, "interrogative marker", "ku");
+define_fixed_token!(UniversalMarker, "universal marker", "hi");
 
 define_surface_token!(ModalityBase, ModalityBaseKind, "modality", {
     Hapa: "hapa",
@@ -1030,6 +1058,8 @@ define_surface_token!(Argument, ArgumentKind, "argument", {
     Gi: "gi",
     Gu: "gu",
     Ge: "ge",
+    Ha: "ha",
+    Hu: "hu",
 });
 
 impl Argument {
@@ -1067,7 +1097,32 @@ impl Argument {
                 ArgumentType::Space,
                 ArgumentType::Time,
             ],
+            // ha/huは指示代名詞(me/be/ge)と同じく型を限定しない。ただしFOLでは定数ではなく
+            // 変数として扱われ、hi(全称量化マーカー)の付いた文でのみ`Forall`に束縛される
+            // (event_semantics.rsのto_fol/free_variables、Argument::is_schema_variable参照)。
+            ArgumentKind::Ha => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
+                ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ArgumentType::Abstraction,
+                ArgumentType::Space,
+                ArgumentType::Time,
+            ],
+            ArgumentKind::Hu => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
+                ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ArgumentType::Abstraction,
+                ArgumentType::Space,
+                ArgumentType::Time,
+            ],
         }
+    }
+
+    /// `ha`/`hu`(定義文用のスキーマ変数)かどうか。`ha`/`hu`かどうかの判定はここに集約し、
+    /// 呼び出し側(event_semantics.rs)で表層文字列を直接比較しないようにする。
+    pub(crate) fn is_schema_variable(&self) -> bool {
+        matches!(self.kind, ArgumentKind::Ha | ArgumentKind::Hu)
     }
 }
 
@@ -1337,6 +1392,7 @@ define_surface_token!(PostMtaEventModifier, PostMtaEventModifierKind, "post mta 
     Hehema: "hehema",
     Hehegi: "hehegi",
     Hehenu: "hehenu",
+    Hehezu: "hehezu",
 });
 
 impl PostMtaEventModifier {

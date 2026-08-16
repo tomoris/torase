@@ -25,6 +25,7 @@ impl S {
         match self {
             S::One(declarative_sentence) => declarative_sentence.type_check(),
             S::Two(interrogative_sentence) => interrogative_sentence.type_check(),
+            S::Three(universal_sentence) => universal_sentence.type_check(),
         }
     }
 }
@@ -46,6 +47,38 @@ impl InterrogativeSentence {
                 post_modified_mta_event.type_check()
             }
         }
+    }
+}
+
+impl UniversalSentence {
+    fn type_check(&self) -> TypeMismatchResult {
+        match self {
+            UniversalSentence::One(
+                _universal_marker,
+                quantified_variable_list,
+                post_modified_mta_event,
+            ) => {
+                quantified_variable_list.type_check()?;
+                post_modified_mta_event.type_check()
+            }
+        }
+    }
+}
+
+impl QuantifiedVariableList {
+    /// `hi`直後で宣言された変数は`ha`/`hu`(スキーマ変数)でなければならない。
+    fn type_check(&self) -> TypeMismatchResult {
+        for (_force, arg) in self.variables() {
+            if !arg.is_schema_variable() {
+                return Err(TypeMismatch {
+                    range: arg.get_range(),
+                    actual: arg.get_type(),
+                    expected: vec![],
+                    message: "hiの量化子宣言で使える項はha/huのみです".to_string(),
+                });
+            }
+        }
+        Ok(())
     }
 }
 

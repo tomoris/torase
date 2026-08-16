@@ -5,11 +5,11 @@ use crate::parser::{
     Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument, DeterminerModifier, Event,
     InterrogativeSentence, MtaEvent, PostBinaryPredicatePhraseExpression,
     PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent, PostMtaEventExpression,
-    QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent,
+    QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent, UniversalSentence,
 };
 use crate::tokenizer::{
-    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, MtaEventOperatorKind,
-    PostMtaEventModifierKind, PredicateOperatorKind,
+    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, ModalityForceKind,
+    MtaEventOperatorKind, PostMtaEventModifierKind, PredicateOperatorKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -202,6 +202,10 @@ enum ArgCtx {
     /// Fresh existential variable with no restriction (from epsilon arg2).
     /// `scope()` wraps with ∃var.body.
     ExistOnly(String),
+    /// Schema variable (`ha`/`hu`). Contributes `Term::Var(name)` like `ExistOnly`, but
+    /// `scope()` is a no-op (unlike `ExistOnly`): the variable is left free here and is
+    /// closed only by an enclosing `hi`(全称量化マーカー) via `UniversalSentence::to_fol`.
+    FreeVar(String),
     /// Negated argument phrase.
     Neg(Box<ArgCtx>),
     /// Coordinated argument phrases (distributed in `build_event_inner`).
@@ -227,7 +231,9 @@ impl ArgCtx {
     /// The term this context contributes to the atomic formula.
     fn term(&self) -> Term {
         match self {
-            ArgCtx::Quant { var, .. } | ArgCtx::ExistOnly(var) => Term::Var(var.clone()),
+            ArgCtx::Quant { var, .. } | ArgCtx::ExistOnly(var) | ArgCtx::FreeVar(var) => {
+                Term::Var(var.clone())
+            }
             ArgCtx::Const(s) => Term::Const(s.clone()),
             ArgCtx::Neg(inner) => inner.term(),
             ArgCtx::Coord { left, .. } => left.term(), // distribution is handled externally
@@ -269,6 +275,7 @@ impl ArgCtx {
             },
             ArgCtx::Const(_) => body,
             ArgCtx::ExistOnly(var) => Formula::Exists(var, Box::new(body)),
+            ArgCtx::FreeVar(_) => body,
             ArgCtx::Neg(inner) => {
                 // Negate the restriction of the inner quantifier.
                 let ctx = negate_restriction(*inner);
@@ -355,6 +362,7 @@ impl S {
         match self {
             S::One(d) => d.to_fol(vg),
             S::Two(i) => i.to_fol(vg),
+            S::Three(u) => u.to_fol(vg),
         }
     }
 }
@@ -371,6 +379,80 @@ impl InterrogativeSentence {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
             InterrogativeSentence::One(_, pm) => pm.to_fol(vg),
+        }
+    }
+}
+
+impl UniversalSentence {
+    /// hi(全称量化マーカー)。直後に宣言された量化子(za→∀, zi→∃)+変数のリストを宣言順にたどり、
+    /// 逆順に畳み込んで本文を明示的に束縛する。`ta`(すべての)が`Forall`に翻訳されるのと同じ、
+    /// 素直なASTからの翻訳(本文を後から走査して推測することはしない)。
+    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+        match self {
+            UniversalSentence::One(_, quantified_variable_list, pm) => {
+                let body = pm.to_fol(vg);
+                quantified_variable_list.variables().into_iter().rev().fold(
+                    body,
+                    |acc, (force, arg)| {
+                        let name = arg.get_string();
+                        match force.get_kind() {
+                            ModalityForceKind::Necessary => Formula::Forall(name, Box::new(acc)),
+                            ModalityForceKind::Possible => Formula::Exists(name, Box::new(acc)),
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/// `ha`/`hu`(定義文用のスキーマ変数)を指す名前かどうか。`free_variables`の結果から
+/// スキーマ変数だけを絞り込むために使う(`lib.rs`参照)。
+pub fn is_schema_variable_name(name: &str) -> bool {
+    name == "ha" || name == "hu"
+}
+
+/// `formula`に含まれる、`Forall`/`Exists`/`GenQ`で束縛されていない`Term::Var`の名前を、
+/// 最初に出現した順で(重複無く)返す。`hi`マーカーの`to_fol`(上記)で使う。
+///
+/// 注意: `ha`/`hu`以外にも、この関数は既存の(このスキーマ変数機能とは無関係な)
+/// 述語生成コードに起因する未束縛変数(例: 項が省略された`ri`/`ra`によるイベント名詞化で
+/// 生じるAgent/Patientのプレースホルダ変数)も返しうる。呼び出し側で`ha`/`hu`かどうかを
+/// `is_schema_variable_name`で絞り込むこと。
+pub fn free_variables(formula: &Formula) -> Vec<String> {
+    let mut bound = std::collections::HashSet::new();
+    let mut free = Vec::new();
+    collect_free_variables(formula, &mut bound, &mut free);
+    free
+}
+
+fn collect_free_variables(
+    formula: &Formula,
+    bound: &mut std::collections::HashSet<String>,
+    free: &mut Vec<String>,
+) {
+    match formula {
+        Formula::Atom(_, args) => {
+            for term in args {
+                if let Term::Var(name) = term
+                    && !bound.contains(name)
+                    && !free.contains(name)
+                {
+                    free.push(name.clone());
+                }
+            }
+        }
+        Formula::Not(phi) => collect_free_variables(phi, bound, free),
+        Formula::And(l, r) | Formula::Or(l, r) | Formula::Implies(l, r) => {
+            collect_free_variables(l, bound, free);
+            collect_free_variables(r, bound, free);
+        }
+        Formula::Forall(x, phi) | Formula::Exists(x, phi) | Formula::GenQ(_, x, phi) => {
+            let newly_bound = bound.insert(x.clone());
+            collect_free_variables(phi, bound, free);
+            if newly_bound {
+                bound.remove(x);
+            }
         }
     }
 }
@@ -411,6 +493,17 @@ impl PostModifiedMtaEvent {
                     // hezu (条件): P1ならP2する
                     PostMtaEventModifierKind::Hezu => {
                         Formula::Implies(Box::new(mta.to_fol(vg)), Box::new(mta2.to_fol(vg)))
+                    }
+                    // hehezu (定義): P1とP2は同値(P1↔P2)。hehegi(単なる言い換え、And)とは異なり、
+                    // 辞書の定義文で使う。P1↔P2 は (P1→P2)∧(P2→P1) として組み立てる
+                    // (Formula::Iffは存在しないため、既存のAnd/Impliesだけで表現する)。
+                    PostMtaEventModifierKind::Hehezu => {
+                        let p = mta.to_fol(vg);
+                        let q = mta2.to_fol(vg);
+                        Formula::And(
+                            Box::new(Formula::Implies(Box::new(p.clone()), Box::new(q.clone()))),
+                            Box::new(Formula::Implies(Box::new(q), Box::new(p))),
+                        )
                     }
                 },
             },
@@ -644,7 +737,10 @@ fn build_event_inner(
 impl ArgumentPhrase {
     fn to_fol(&self, vg: &mut VarGen) -> ArgCtx {
         match self {
-            // Bare pronoun → individual constant.
+            // Bare pronoun → individual constant, except ha/hu (schema variables) → free variable.
+            ArgumentPhrase::One(arg) if arg.is_schema_variable() => {
+                ArgCtx::FreeVar(arg.get_string())
+            }
             ArgumentPhrase::One(arg) => ArgCtx::Const(arg.get_string()),
 
             // Negated argument phrase.

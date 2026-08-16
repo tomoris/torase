@@ -158,6 +158,7 @@ impl S {
         match self {
             S::One(d) => d.infer_type(),
             S::Two(i) => i.infer_type(),
+            S::Three(u) => u.infer_type(),
         }
     }
 }
@@ -176,6 +177,16 @@ impl InterrogativeSentence {
     fn infer_type(&self) -> TCResult {
         match self {
             InterrogativeSentence::One(_marker, pm) => pm.infer_type(),
+        }
+    }
+}
+
+impl UniversalSentence {
+    /// UniversalSentence : t  (hiと量化子宣言は型を持たず、中の平叙文の型をそのまま引き継ぐ。
+    /// ModalityExpressionと同様に型システム上は素通しでよい)
+    fn infer_type(&self) -> TCResult {
+        match self {
+            UniversalSentence::One(_marker, _quantified_variable_list, pm) => pm.infer_type(),
         }
     }
 }

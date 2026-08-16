@@ -154,6 +154,8 @@ non_terminal_dispatch!(
     S,
     DeclarativeSentence,
     InterrogativeSentence,
+    UniversalSentence,
+    QuantifiedVariableList,
     PostModifiedMtaEvent,
     PostMtaEventExpression,
     ModalityExpression,
@@ -237,6 +239,8 @@ pub enum NonTerminalType {
     S(S),
     DeclarativeSentence(DeclarativeSentence),
     InterrogativeSentence(InterrogativeSentence),
+    UniversalSentence(UniversalSentence),
+    QuantifiedVariableList(QuantifiedVariableList),
     PostModifiedMtaEvent(PostModifiedMtaEvent),
     PostMtaEventExpression(PostMtaEventExpression),
     ModalityExpression(ModalityExpression),
@@ -272,6 +276,8 @@ pub enum DummyNonTerminalType {
     S,
     DeclarativeSentence,
     InterrogativeSentence,
+    UniversalSentence,
+    QuantifiedVariableList,
     PostModifiedMtaEvent,
     PostMtaEventExpression,
     ModalityExpression,
@@ -308,6 +314,7 @@ pub enum DummyNonTerminalType {
 pub enum S {
     One(DeclarativeSentence),
     Two(InterrogativeSentence),
+    Three(UniversalSentence),
 }
 
 #[derive(Clone, Debug)]
@@ -318,6 +325,18 @@ pub enum DeclarativeSentence {
 #[derive(Clone, Debug)]
 pub enum InterrogativeSentence {
     One(InterrogativeMarker, PostModifiedMtaEvent),
+}
+
+/// 定義文(全称量化された平叙文)。`ha`/`hu`(スキーマ変数)を含む平叙文を`hi`で始めることで、
+/// `∀ha. ∀hu. (...)`として閉じる。`InterrogativeSentence`(`ku`)と全く同じ構造(開始マーカーのみ、
+/// 閉じマーカー無し)。詳細は`docs/language_design/morphology.md`参照。
+#[derive(Clone, Debug)]
+pub enum UniversalSentence {
+    One(
+        UniversalMarker,
+        QuantifiedVariableList,
+        PostModifiedMtaEvent,
+    ),
 }
 
 #[derive(Clone, Debug)]
@@ -397,6 +416,20 @@ pub enum OptionalCaseArgs {
 #[derive(Clone, Debug)]
 pub enum CaseArg {
     One(CaseLabel, TypeOverrideModifier, ArgumentPhrase),
+}
+
+/// `hi`の直後の量化子宣言1つ分(`za ha`や`zi hu`)。`CaseArg`と同じく、それ自体はLL(1)の
+/// 非終端記号として登録せず、`QuantifiedVariableList`の中だけで組み立てるデータ型。
+#[derive(Clone, Debug)]
+pub enum QuantifiedVariable {
+    One(ModalityForce, Argument),
+}
+
+/// `hi`の直後に並ぶ量化子宣言の可変長リスト(`za ha zi hu`等)。`OptionalCaseArgs`と同じ形。
+#[derive(Clone, Debug)]
+pub enum QuantifiedVariableList {
+    One(QuantifiedVariable, Box<QuantifiedVariableList>),
+    Epsilon,
 }
 
 #[derive(Clone, Debug)]
@@ -505,6 +538,11 @@ impl S {
                     DummyNonTerminalType::InterrogativeSentence,
                 )]))
             }
+            DummyTerminalType::UniversalMarker => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::UniversalSentence,
+                )]))
+            }
             DummyTerminalType::ModalityBase
             | DummyTerminalType::Tense
             | DummyTerminalType::Aspect
@@ -530,6 +568,9 @@ impl S {
                 }
                 [SymbolType::NonTerminal(NonTerminalType::InterrogativeSentence(child1))] => {
                     Self::Two(child1.clone())
+                }
+                [SymbolType::NonTerminal(NonTerminalType::UniversalSentence(child1))] => {
+                    Self::Three(child1.clone())
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -596,6 +637,78 @@ impl InterrogativeSentence {
                     SymbolType::Terminal(TerminalType::InterrogativeMarker(child1)),
                     SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child2)),
                 ] => Self::One(child1.clone(), child2.clone()),
+                _ => {
+                    panic!("Unexpected symbols: {:?}", symbols);
+                }
+            },
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon");
+            }
+        }
+    }
+}
+
+impl QuantifiedVariableList {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
+        match current_token {
+            DummyTerminalType::ModalityForce => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityForce),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Argument),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifiedVariableList),
+            ])),
+            // QuantifiedVariableListはUniversalSentence内でPostModifiedMtaEventの直前にしか
+            // 現れないため、epsilonはPostModifiedMtaEvent(実質MtaEvent)のFIRST集合のみでよい
+            // (OptionalCaseArgsのように複数箇所に埋め込まれるわけではない)。
+            DummyTerminalType::ModalityBase
+            | DummyTerminalType::Tense
+            | DummyTerminalType::Aspect
+            | DummyTerminalType::ModalityNegation
+            | DummyTerminalType::TenseNegation
+            | DummyTerminalType::AspectNegation
+            | DummyTerminalType::Negation
+            | DummyTerminalType::BinaryPredicate
+            | DummyTerminalType::PredicateOperator
+            | DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
+            _ => Err(()),
+        }
+    }
+    fn new(rhs: Rhs) -> Self {
+        match rhs {
+            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
+                [
+                    SymbolType::Terminal(TerminalType::ModalityForce(child1)),
+                    SymbolType::Terminal(TerminalType::Argument(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::QuantifiedVariableList(child3)),
+                ] => Self::One(
+                    QuantifiedVariable::One(child1.clone(), child2.clone()),
+                    Box::new(child3.clone()),
+                ),
+                _ => panic!("Unexpected symbols: {:?}", symbols),
+            },
+            Rhs::Epsilon => Self::Epsilon,
+        }
+    }
+}
+
+impl UniversalSentence {
+    fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
+        match current_token {
+            DummyTerminalType::UniversalMarker => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::UniversalMarker),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifiedVariableList),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostModifiedMtaEvent),
+            ])),
+            _ => Err(()),
+        }
+    }
+    fn new(rhs: Rhs) -> Self {
+        match rhs {
+            Rhs::Sequence(ref symbols) => match symbols.as_slice() {
+                [
+                    SymbolType::Terminal(TerminalType::UniversalMarker(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::QuantifiedVariableList(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::PostModifiedMtaEvent(child3)),
+                ] => Self::One(child1.clone(), child2.clone(), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -2050,11 +2163,41 @@ impl InterrogativeSentence {
     }
 }
 
+impl UniversalSentence {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            UniversalSentence::One(
+                universal_marker,
+                _quantified_variable_list,
+                post_modified_mta_event,
+            ) => Range::new(
+                universal_marker.get_range().start(),
+                post_modified_mta_event.get_range().end(),
+            ),
+        }
+    }
+}
+
+impl QuantifiedVariableList {
+    /// `hi`直後に宣言された(量化力, 変数)のペアを宣言順で返す。
+    pub(crate) fn variables(&self) -> Vec<(&ModalityForce, &Argument)> {
+        match self {
+            QuantifiedVariableList::One(QuantifiedVariable::One(force, arg), rest) => {
+                let mut result = vec![(force, arg)];
+                result.extend(rest.variables());
+                result
+            }
+            QuantifiedVariableList::Epsilon => vec![],
+        }
+    }
+}
+
 impl S {
     pub(crate) fn get_range(&self) -> Range {
         match self {
             S::One(declarative_sentence) => declarative_sentence.get_range(),
             S::Two(interrogative_sentence) => interrogative_sentence.get_range(),
+            S::Three(universal_sentence) => universal_sentence.get_range(),
         }
     }
 }
@@ -2079,6 +2222,20 @@ mod tests {
         );
         let interrogative_sentence = grammar::NonTerminal(
             type_name::<InterrogativeSentence>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let universal_sentence = grammar::NonTerminal(
+            type_name::<UniversalSentence>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let quantified_variable_list = grammar::NonTerminal(
+            type_name::<QuantifiedVariableList>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2284,6 +2441,13 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let universal_marker = grammar::Terminal(
+            type_name::<UniversalMarker>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
         let modality = grammar::Terminal(
             type_name::<ModalityBase>()
                 .split("::")
@@ -2458,6 +2622,9 @@ mod tests {
                 grammar::Rhs::Sequence(vec![grammar::Symbol::NonTerminal(
                     interrogative_sentence.clone(),
                 )]),
+                grammar::Rhs::Sequence(vec![grammar::Symbol::NonTerminal(
+                    universal_sentence.clone(),
+                )]),
             ],
         );
         rules.insert(
@@ -2472,6 +2639,25 @@ mod tests {
                 grammar::Symbol::Terminal(interrogative_marker.clone()),
                 grammar::Symbol::NonTerminal(post_modified_mta_event.clone()),
             ])],
+        );
+        rules.insert(
+            universal_sentence.clone(),
+            vec![grammar::Rhs::Sequence(vec![
+                grammar::Symbol::Terminal(universal_marker.clone()),
+                grammar::Symbol::NonTerminal(quantified_variable_list.clone()),
+                grammar::Symbol::NonTerminal(post_modified_mta_event.clone()),
+            ])],
+        );
+        rules.insert(
+            quantified_variable_list.clone(),
+            vec![
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(modality_force.clone()),
+                    grammar::Symbol::Terminal(argument.clone()),
+                    grammar::Symbol::NonTerminal(quantified_variable_list.clone()),
+                ]),
+                grammar::Rhs::Epsilon,
+            ],
         );
         rules.insert(
             post_modified_mta_event.clone(),
@@ -2758,6 +2944,7 @@ mod tests {
                 let lt = grammar::Lookahead::Terminal(t.clone());
                 let tt = match t.0.as_str() {
                     "InterrogativeMarker" => DummyTerminalType::InterrogativeMarker,
+                    "UniversalMarker" => DummyTerminalType::UniversalMarker,
                     "ModalityBase" => DummyTerminalType::ModalityBase,
                     "ModalityForce" => DummyTerminalType::ModalityForce,
                     "Tense" => DummyTerminalType::Tense,
@@ -2812,6 +2999,8 @@ mod tests {
             "S" => S::parse_table(tt),
             "DeclarativeSentence" => DeclarativeSentence::parse_table(tt),
             "InterrogativeSentence" => InterrogativeSentence::parse_table(tt),
+            "UniversalSentence" => UniversalSentence::parse_table(tt),
+            "QuantifiedVariableList" => QuantifiedVariableList::parse_table(tt),
             "PostModifiedMtaEvent" => PostModifiedMtaEvent::parse_table(tt),
             "PostMtaEventExpression" => PostMtaEventExpression::parse_table(tt),
             "ModalityExpression" => ModalityExpression::parse_table(tt),
@@ -2873,6 +3062,8 @@ mod tests {
                                                 DummyNonTerminalType::S => "S",
                                                 DummyNonTerminalType::DeclarativeSentence => "DeclarativeSentence",
                                                 DummyNonTerminalType::InterrogativeSentence => "InterrogativeSentence",
+                                                DummyNonTerminalType::UniversalSentence => "UniversalSentence",
+                                                DummyNonTerminalType::QuantifiedVariableList => "QuantifiedVariableList",
                                                 DummyNonTerminalType::PostModifiedMtaEvent => "PostModifiedMtaEvent",
                                                 DummyNonTerminalType::PostMtaEventExpression => "PostMtaEventExpression",
                                                 DummyNonTerminalType::ModalityExpression => "ModalityExpression",
@@ -2915,6 +3106,7 @@ mod tests {
                                         DummyTerminalType::InterrogativeMarker => {
                                             "InterrogativeMarker"
                                         }
+                                        DummyTerminalType::UniversalMarker => "UniversalMarker",
                                         DummyTerminalType::ModalityBase => "ModalityBase",
                                         DummyTerminalType::ModalityForce => "ModalityForce",
                                         DummyTerminalType::Tense => "Tense",

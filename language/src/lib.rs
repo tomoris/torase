@@ -5,7 +5,10 @@ pub mod parser;
 pub mod tokenizer;
 
 use argument_type_checker::type_check as argument_type_check;
-use formal_semantics::{find_contradiction_index, to_fol, type_check as formal_type_check};
+use formal_semantics::{
+    find_contradiction_index, free_variables, is_schema_variable_name, to_fol,
+    type_check as formal_type_check,
+};
 use parser::{Ast, parse};
 use tokenizer::{Range, add_eos_to_last_sentence, tokenize};
 
@@ -72,8 +75,25 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
         }
     }
 
-    // contradiction checking
+    // formula construction + unbound schema variable check
     let formulas: Vec<_> = ast_with_ranges.iter().map(|(a, _)| to_fol(a)).collect();
+    for (formula, (_, range)) in formulas.iter().zip(ast_with_ranges.iter()) {
+        let free: Vec<_> = free_variables(formula)
+            .into_iter()
+            .filter(|name| is_schema_variable_name(name))
+            .collect();
+        if !free.is_empty() {
+            diagnostics.push(Diagnostic {
+                range: range.clone(),
+                message: format!(
+                    "unbound schema variable(s) (use hi to quantify): {}",
+                    free.join(", ")
+                ),
+            });
+        }
+    }
+
+    // contradiction checking
     if let Some(idx) = find_contradiction_index(&formulas) {
         diagnostics.push(Diagnostic {
             range: ast_with_ranges[idx].1.clone(),
@@ -897,7 +917,7 @@ mod tests {
 
     #[test]
     fn test_私は全てのこのりんごを食べる() {
-        // ∀x (apple(x) ∧ this(x))
+        // ∀x (apple(x) -> eat(mi, x))
         let text = "pahete sa mi si ta mo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -928,5 +948,112 @@ mod tests {
         let text = "parobe sa ri didora si ba".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_haとhuはhiが無いと未束縛変数エラーになる() {
+        let text = "kaho sa ha si hu".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_hiとhehezuで定義文が書ける() {
+        // ∀ha.∀hu. (kagurita(ha,hu) ↔ kaho(ha,hu))
+        let text = "hi za ha za hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_hiの中でも宣言した変数だけが閉じられる() {
+        // 単項述語の定義: hiの直後でhaだけ宣言する場合、Forall(hu, ...)は付かない
+        // (pi[CV]+は生物x1のみの自動詞なのでx2は無い)。
+        let text = "hi za ha pirana sa ha hehezu kaho sa ha si ha".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_hi無しの通常の文は今まで通り通る() {
+        // 回帰確認: ha/huを使わない文はhiの有無に関わらず今まで通り。
+        let text = "pahete sa mi si ri behapare hehegi pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_宣言し忘れた変数はhiの中でも未束縛エラーになる() {
+        // hu用の宣言(za hu / zi hu)を忘れると、huは自由変数のまま残りエラーになる。
+        let text = "hi za ha kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ha_hu以外を量化子宣言に使うとエラーになる() {
+        let text = "hi za mi kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_zaとziでforallとexistsを使い分けられる() {
+        use formal_semantics::{Formula, to_fol};
+
+        // hi za ha zi hu [本文]: haは∀、huは∃で閉じる。
+        let text = "hi za ha zi hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let tokens = tokenizer::tokenize(&text).unwrap();
+        let sentences = tokenizer::add_eos_to_last_sentence(tokens);
+        let ast = parser::parse(sentences[0].clone()).unwrap();
+        let formula = to_fol(&ast);
+
+        match formula {
+            Formula::Forall(x1, body1) => {
+                assert_eq!(x1, "ha");
+                match *body1 {
+                    Formula::Exists(x2, body2) => {
+                        assert_eq!(x2, "hu");
+                        assert!(matches!(*body2, Formula::And(_, _)));
+                    }
+                    other => panic!("expected nested Exists(hu, ...), got {other:?}"),
+                }
+            }
+            other => panic!("expected Forall(ha, ...), got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_hiとhehezuの論理式がforallとiffの組み合わせになっている() {
+        use formal_semantics::{Formula, to_fol};
+
+        let text = "hi za ha za hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let tokens = tokenizer::tokenize(&text).unwrap();
+        let sentences = tokenizer::add_eos_to_last_sentence(tokens);
+        let ast = parser::parse(sentences[0].clone()).unwrap();
+        let formula = to_fol(&ast);
+
+        match formula {
+            Formula::Forall(x1, body1) => {
+                assert_eq!(x1, "ha");
+                match *body1 {
+                    Formula::Forall(x2, body2) => {
+                        assert_eq!(x2, "hu");
+                        assert!(matches!(*body2, Formula::And(_, _)));
+                    }
+                    other => panic!("expected nested Forall(hu, ...), got {other:?}"),
+                }
+            }
+            other => panic!("expected Forall(ha, ...), got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_2つの無関係な定義文をまとめて解析しても束縛が独立している() {
+        // ha/huは本物の束縛変数なので、無関係な2つの定義文を1回のdiagnose()に
+        // まとめても互いに干渉しない(定数ベースだった旧設計ではここが問題になっていた)。
+        let text = "hi za ha za hu kagurita sa ha si hu hehezu kaho sa ha si hu eos hi za ha za hu guzorata sa ha si hu hehezu parobe sa ha si hu".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
     }
 }

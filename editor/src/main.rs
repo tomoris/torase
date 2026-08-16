@@ -256,7 +256,9 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::ModalityNegation(_)
         | TerminalType::TenseNegation(_)
         | TerminalType::AspectNegation(_) => Some(Color::from_rgba8(230, 120, 60, 0.25)),
-        TerminalType::InterrogativeMarker(_) => Some(Color::from_rgba8(210, 210, 50, 0.25)),
+        TerminalType::InterrogativeMarker(_) | TerminalType::UniversalMarker(_) => {
+            Some(Color::from_rgba8(210, 210, 50, 0.25))
+        }
         TerminalType::CaseLabel(_) => Some(Color::from_rgba8(60, 160, 180, 0.25)),
         TerminalType::TypeOverride(_) => Some(Color::from_rgba8(60, 200, 120, 0.25)),
         TerminalType::PredicateOperator(_)
@@ -504,6 +506,10 @@ impl TreeViewer for S {
                 let content = interrogative_sentence.view(is_full);
                 category_box("s".to_string(), content, background)
             }
+            S::Three(universal_sentence) => {
+                let content = universal_sentence.view(is_full);
+                category_box("s".to_string(), content, background)
+            }
         }
     }
     fn is_empty(&self) -> bool {
@@ -543,6 +549,57 @@ impl TreeViewer for InterrogativeSentence {
     }
     fn is_empty(&self) -> bool {
         false
+    }
+}
+
+impl TreeViewer for UniversalSentence {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(255, 250, 205);
+        match self {
+            UniversalSentence::One(
+                universal_marker,
+                quantified_variable_list,
+                post_modified_mta_event,
+            ) => {
+                let category = "UniversalSentence".to_string();
+                let mut parts = vec![text(universal_marker.get_string()).into()];
+                if is_full || !quantified_variable_list.is_empty() {
+                    parts.push(quantified_variable_list.view(is_full));
+                }
+                parts.push(post_modified_mta_event.view(is_full));
+                category_box(category, row_with_separator(parts), background)
+            }
+        }
+    }
+    fn is_empty(&self) -> bool {
+        false
+    }
+}
+
+impl TreeViewer for QuantifiedVariableList {
+    fn view(&self, is_full: bool) -> Element<'static, Message> {
+        let background = iced::Color::from_rgb8(248, 215, 228);
+        match self {
+            QuantifiedVariableList::One(QuantifiedVariable::One(force, arg), rest) => {
+                let category = "QuantifiedVariableList".to_string();
+                let mut parts = vec![
+                    text(force.get_string()).into(),
+                    text(arg.get_string()).into(),
+                ];
+                if is_full || !rest.is_empty() {
+                    parts.push(rest.view(is_full));
+                }
+                category_box(category, row_with_separator(parts), background)
+            }
+            QuantifiedVariableList::Epsilon => {
+                let category = "QuantifiedVariableList".to_string();
+                let content = text("ε").into();
+                category_box(category, content, background)
+            }
+        }
+    }
+    fn is_empty(&self) -> bool {
+        matches!(self, QuantifiedVariableList::Epsilon)
     }
 }
 
