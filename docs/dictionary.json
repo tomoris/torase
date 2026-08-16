@@ -846,6 +846,13 @@
         "definition": "hi za ha za hu kadina sa ha si hu hehezu ne kaho sa ha si hu",
         "description": "x1(人)はx2(概念)を否定する。"
     },
+    "kadisaraka": {
+        "original_spelling": "dislike",
+        "original_pronunciation": "dɪslaɪk",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha za hu kadisaraka sa ha si hu hehezu ne kahapahi sa ha si hu",
+        "description": "x1(人)はx2(概念)を嫌う。"
+    },
     "kagame": {
         "original_spelling": "game",
         "original_pronunciation": "ɡeɪm",
@@ -1335,6 +1342,13 @@
         "terminal_type": "BinaryPredicate",
         "definition": "hi za ha piharaba sa ha hehezu hudu ne pida sa ha",
         "description": "x1(人)は生きている。"
+    },
+    "piheka": {
+        "original_spelling": "wake",
+        "original_pronunciation": "weɪk",
+        "terminal_type": "BinaryPredicate",
+        "definition": "hi za ha piheka sa ha hehezu hudu ne pisaripa sa ha",
+        "description": "x1(人)は目覚めている/起きている。"
     },
     "pihezisata": {
         "original_spelling": "exist",
