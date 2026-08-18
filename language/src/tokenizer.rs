@@ -1,7 +1,7 @@
 use core::panic;
 use std::mem::discriminant;
 
-use regex::Regex;
+use crate::regex_engine::Regex;
 
 #[derive(Debug)]
 pub struct IncompleteToken {
@@ -900,9 +900,9 @@ impl Negation {
 
 impl BinaryPredicate {
     fn is_match(string: &str) -> bool {
-        let re_binary_predicate =
-            Regex::new(r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$").unwrap();
-        re_binary_predicate.is_match(string)
+        const RE_BINARY_PREDICATE: Regex =
+            Regex::compile(r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$");
+        RE_BINARY_PREDICATE.is_match(string)
     }
     fn new(
         string: &str,
@@ -918,78 +918,78 @@ impl BinaryPredicate {
     }
     pub(crate) fn get_argument_types(&self) -> (Vec<ArgumentType>, Vec<ArgumentType>) {
         // 名詞的な命題
-        let b = Regex::new(r"^(?:b)").unwrap();
-        let d = Regex::new(r"^(?:d)").unwrap();
-        let n = Regex::new(r"^(?:n)").unwrap();
-        let g = Regex::new(r"^(?:g)").unwrap();
-        let m = Regex::new(r"^(?:m)").unwrap();
-        let r = Regex::new(r"^(?:r)").unwrap();
+        const B: Regex = Regex::compile(r"^(?:b)");
+        const D: Regex = Regex::compile(r"^(?:d)");
+        const N: Regex = Regex::compile(r"^(?:n)");
+        const G: Regex = Regex::compile(r"^(?:g)");
+        const M: Regex = Regex::compile(r"^(?:m)");
+        const R: Regex = Regex::compile(r"^(?:r)");
         // 空間・時間に関する名詞的な命題
-        let za = Regex::new(r"^(?:za)").unwrap();
-        let zi = Regex::new(r"^(?:zi)").unwrap();
-        let zu = Regex::new(r"^(?:zu)").unwrap();
-        let ze = Regex::new(r"^(?:ze)").unwrap();
+        const ZA: Regex = Regex::compile(r"^(?:za)");
+        const ZI: Regex = Regex::compile(r"^(?:zi)");
+        const ZU: Regex = Regex::compile(r"^(?:zu)");
+        const ZE: Regex = Regex::compile(r"^(?:ze)");
         // 動詞的な命題
-        let pa = Regex::new(r"^(?:pa)").unwrap();
-        let pe = Regex::new(r"^(?:pe)").unwrap();
-        let pi = Regex::new(r"^(?:pi)").unwrap();
-        let po = Regex::new(r"^(?:po)").unwrap();
-        let pu = Regex::new(r"^(?:pu)").unwrap();
-        let ka = Regex::new(r"^(?:ka)").unwrap();
-        let ki = Regex::new(r"^(?:ki)").unwrap();
-        let ku = Regex::new(r"^(?:ku)").unwrap();
+        const PA: Regex = Regex::compile(r"^(?:pa)");
+        const PE: Regex = Regex::compile(r"^(?:pe)");
+        const PI: Regex = Regex::compile(r"^(?:pi)");
+        const PO: Regex = Regex::compile(r"^(?:po)");
+        const PU: Regex = Regex::compile(r"^(?:pu)");
+        const KA: Regex = Regex::compile(r"^(?:ka)");
+        const KI: Regex = Regex::compile(r"^(?:ki)");
+        const KU: Regex = Regex::compile(r"^(?:ku)");
 
-        if b.is_match(&self.string) {
+        if B.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             )
-        } else if d.is_match(&self.string) {
+        } else if D.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
             )
-        } else if n.is_match(&self.string) {
+        } else if N.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::NOther)],
             )
-        } else if r.is_match(&self.string) {
+        } else if R.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Abstraction],
             )
-        } else if za.is_match(&self.string) {
+        } else if ZA.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Space],
             )
-        } else if zi.is_match(&self.string) {
+        } else if ZI.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Time],
             )
-        } else if ze.is_match(&self.string) {
+        } else if ZE.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Space],
             )
-        } else if zu.is_match(&self.string) {
+        } else if ZU.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Time],
             )
-        } else if g.is_match(&self.string) || m.is_match(&self.string) {
+        } else if G.is_match(&self.string) || M.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Abstraction],
             )
-        } else if pa.is_match(&self.string) {
+        } else if PA.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             )
-        } else if pe.is_match(&self.string) {
+        } else if PE.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![
@@ -997,12 +997,12 @@ impl BinaryPredicate {
                     ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ],
             )
-        } else if pi.is_match(&self.string) {
+        } else if PI.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Epsilon],
             )
-        } else if po.is_match(&self.string) {
+        } else if PO.is_match(&self.string) {
             (
                 vec![
                     ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -1013,7 +1013,7 @@ impl BinaryPredicate {
                     ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ],
             )
-        } else if pu.is_match(&self.string) {
+        } else if PU.is_match(&self.string) {
             (
                 vec![
                     ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -1021,12 +1021,12 @@ impl BinaryPredicate {
                 ],
                 vec![ArgumentType::Epsilon],
             )
-        } else if ka.is_match(&self.string) {
+        } else if KA.is_match(&self.string) {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 abstraction_family_types(),
             )
-        } else if ki.is_match(&self.string) {
+        } else if KI.is_match(&self.string) {
             (
                 vec![
                     ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -1034,7 +1034,7 @@ impl BinaryPredicate {
                 ],
                 abstraction_family_types(),
             )
-        } else if ku.is_match(&self.string) {
+        } else if KU.is_match(&self.string) {
             (abstraction_family_types(), abstraction_family_types())
         } else {
             panic!("Invalid binary predicate surface: {}", self.string);
@@ -1224,11 +1224,10 @@ impl Number {
         if Self::is_arabic_numeral_match(string) {
             return true;
         }
-        let re_number = Regex::new(
+        const RE_NUMBER: Regex = Regex::compile(
             r"^tu(?:ru)?(?:(?:[pkms][aeio][dgzn][aeio])+(?:[pkms][aeio])?|[pkms][aeio])$",
-        )
-        .unwrap();
-        if !re_number.is_match(string) {
+        );
+        if !RE_NUMBER.is_match(string) {
             return false;
         }
         let rest = &string[2..];
@@ -1244,8 +1243,8 @@ impl Number {
     // 数詞の代替入力表記として1桁目〜任意桁の数字列、または"1_000"のように
     // 3桁ごとにアンダースコアで区切った数字列を受け付ける(常に10進数として解釈する)。
     fn is_arabic_numeral_match(string: &str) -> bool {
-        let re_arabic = Regex::new(r"^(?:[0-9]+|[0-9]{1,3}(?:_[0-9]{3})*)$").unwrap();
-        if !re_arabic.is_match(string) {
+        const RE_ARABIC: Regex = Regex::compile(r"^(?:[0-9]+|[0-9]{1,3}(?:_[0-9]{3})*)$");
+        if !RE_ARABIC.is_match(string) {
             return false;
         }
         let digits_only: String = string.chars().filter(|&c| c != '_').collect();

@@ -580,9 +580,11 @@ mod tests {
         )
         .unwrap();
 
-        let re = regex::Regex::new(r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$").unwrap();
+        const RE: crate::regex_engine::Regex = crate::regex_engine::Regex::compile(
+            r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$",
+        );
         assert!(
-            re.is_match(&result.word),
+            RE.is_match(&result.word),
             "生成された語 {} は述語のトークン規則を満たさない",
             result.word
         );
