@@ -1109,6 +1109,55 @@
         "definition": null,
         "description": "x1はx2を心臓と定義する。"
     },
+    "nuhira": {
+        "original_spelling": "ear",
+        "original_pronunciation": "ɪr",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を耳と定義する。"
+    },
+    "nuhorama": {
+        "original_spelling": "arm",
+        "original_pronunciation": "ɑːrm",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を腕と定義する。"
+    },
+    "nuhuta": {
+        "original_spelling": "foot",
+        "original_pronunciation": "fʊt",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を足と定義する。"
+    },
+    "numasa": {
+        "original_spelling": "mouth",
+        "original_pronunciation": "maʊθ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を口と定義する。"
+    },
+    "nunoza": {
+        "original_spelling": "nose",
+        "original_pronunciation": "noʊz",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を鼻と定義する。"
+    },
+    "nurega": {
+        "original_spelling": "leg",
+        "original_pronunciation": "lɛɡ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を脚と定義する。"
+    },
+    "nutusa": {
+        "original_spelling": "tooth",
+        "original_pronunciation": "tuːθ",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1はx2を歯と定義する。"
+    },
     "pabuhi": {
         "original_spelling": null,
         "original_pronunciation": null,
