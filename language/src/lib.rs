@@ -285,6 +285,26 @@ mod tests {
     }
 
     #[test]
+    fn test_述語反意化_noは文法的に正しい() {
+        let text = "no pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_述語反意化_no_noの二重スタックはエラーになる() {
+        let text = "no no pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_述語反意化_noとneのスタックもエラーになる() {
+        assert!(diagnose("no ne pahete sa mi si ri behapare".to_string()).is_err());
+        assert!(diagnose("ne no pahete sa mi si ri behapare".to_string()).is_err());
+    }
+
+    #[test]
     fn test_私はりんごを食べるな() {
         let text = "hane hapi □ pahete sa mi si ri behapare".to_string();
         let result = diagnose(text);

@@ -9,7 +9,7 @@ use crate::parser::{
 };
 use crate::tokenizer::{
     ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, ModalityForceKind,
-    MtaEventOperatorKind, PostMtaEventModifierKind, PredicateOperatorKind,
+    MtaEventOperatorKind, NegationKind, PostMtaEventModifierKind, PredicateOperatorKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -153,6 +153,10 @@ enum PredCtx {
         left: Box<PredCtx>,
         right: Box<PredCtx>,
     },
+    /// no P — derive a new, independent atom "P@anti" (not a `Not`-wrap of P).
+    /// No logical relationship to P is asserted; unlike `Neg`, this leaves room
+    /// for neither P nor P@anti to hold (a genuine contrary, not a contradictory).
+    Antonym(Box<PredCtx>),
 }
 
 fn extract_pred(phrase: &PostModifiedBinaryPredicatePhrase) -> PredCtx {
@@ -174,12 +178,32 @@ fn extract_pred(phrase: &PostModifiedBinaryPredicatePhrase) -> PredCtx {
 fn extract_bp(phrase: &BinaryPredicatePhrase) -> PredCtx {
     match phrase {
         BinaryPredicatePhrase::One(pred) => PredCtx::Simple(pred.get_string()),
-        BinaryPredicatePhrase::Two(_neg, inner) => PredCtx::Neg(Box::new(extract_bp(inner))),
+        BinaryPredicatePhrase::Two(neg, inner) => match neg.get_kind() {
+            NegationKind::Ne => PredCtx::Neg(Box::new(extract_bp(inner))),
+            NegationKind::No => PredCtx::Antonym(Box::new(extract_bp(inner))),
+        },
         BinaryPredicatePhrase::Three(op, p1, p2) => PredCtx::Coord {
             op: op.get_kind().clone(),
             left: Box::new(extract_bp(p1)),
             right: Box::new(extract_bp(p2)),
         },
+    }
+}
+
+/// Rename every `Simple` leaf `n` in `ctx` to `n@anti` (recursing through
+/// `Neg`/`Coord`/nested `Antonym` so `no` still works under `hoba`/`ne`).
+/// `@` never round-trips through the tokenizer — it only ever exists inside
+/// `Formula`/`PredCtx`, so this can never collide with a real dictionary word.
+fn antonym_rename(ctx: &PredCtx) -> PredCtx {
+    match ctx {
+        PredCtx::Simple(n) => PredCtx::Simple(format!("{n}@anti")),
+        PredCtx::Neg(i) => PredCtx::Neg(Box::new(antonym_rename(i))),
+        PredCtx::Coord { op, left, right } => PredCtx::Coord {
+            op: op.clone(),
+            left: Box::new(antonym_rename(left)),
+            right: Box::new(antonym_rename(right)),
+        },
+        PredCtx::Antonym(i) => PredCtx::Antonym(Box::new(antonym_rename(i))),
     }
 }
 
@@ -668,6 +692,12 @@ fn build_event_inner(
             )))
         }
 
+        PredCtx::Antonym(inner) => {
+            // no P: derive a fresh, independent atom "P@anti" and compile it exactly
+            // like an ordinary predicate (no `Not`, no asserted relationship to P).
+            build_event_inner(&antonym_rename(inner), arg1, arg2, extra_roles, vg)
+        }
+
         PredCtx::Coord { op, left, right } => {
             // P di Q / P hoba|hobi|hobu Q: both predicates apply to the same args.
             let f1 = build_event_inner(left, arg1.clone(), arg2.clone(), extra_roles.clone(), vg);
@@ -880,9 +910,10 @@ fn build_bp_restriction(phrase: &BinaryPredicatePhrase, var: &str) -> Formula {
         BinaryPredicatePhrase::One(pred) => {
             Formula::Atom(pred.get_string(), vec![Term::Var(var.to_string())])
         }
-        BinaryPredicatePhrase::Two(_neg, inner) => {
-            Formula::Not(Box::new(build_bp_restriction(inner, var)))
-        }
+        BinaryPredicatePhrase::Two(neg, inner) => match neg.get_kind() {
+            NegationKind::Ne => Formula::Not(Box::new(build_bp_restriction(inner, var))),
+            NegationKind::No => rename_formula_atoms(build_bp_restriction(inner, var)),
+        },
         BinaryPredicatePhrase::Three(op, p1, p2) => {
             let f1 = build_bp_restriction(p1, var);
             let f2 = build_bp_restriction(p2, var);
@@ -892,6 +923,24 @@ fn build_bp_restriction(phrase: &BinaryPredicatePhrase, var: &str) -> Formula {
                 PredicateOperatorKind::Xor => xor_formula(f1, f2),
             }
         }
+    }
+}
+
+/// Rename every atom name `n` to `n@anti` in a formula built by `build_bp_restriction`
+/// (whose output is limited to `Atom`/`Not`/`And`/`Or` — see that function's own recursion).
+fn rename_formula_atoms(f: Formula) -> Formula {
+    match f {
+        Formula::Atom(n, args) => Formula::Atom(format!("{n}@anti"), args),
+        Formula::Not(inner) => Formula::Not(Box::new(rename_formula_atoms(*inner))),
+        Formula::And(l, r) => Formula::And(
+            Box::new(rename_formula_atoms(*l)),
+            Box::new(rename_formula_atoms(*r)),
+        ),
+        Formula::Or(l, r) => Formula::Or(
+            Box::new(rename_formula_atoms(*l)),
+            Box::new(rename_formula_atoms(*r)),
+        ),
+        _ => unreachable!("build_bp_restriction only ever produces Atom/Not/And/Or"),
     }
 }
 
@@ -912,6 +961,7 @@ fn build_binary_restriction(pred: &PredCtx, t1: Term, t2: Term, vg: &mut VarGen)
             )
         }
         PredCtx::Neg(inner) => Formula::Not(Box::new(build_binary_restriction(inner, t1, t2, vg))),
+        PredCtx::Antonym(inner) => build_binary_restriction(&antonym_rename(inner), t1, t2, vg),
         PredCtx::Coord { op, left, right } => {
             let f1 = build_binary_restriction(left, t1.clone(), t2.clone(), vg);
             let f2 = build_binary_restriction(right, t1, t2, vg);
@@ -1157,6 +1207,31 @@ mod tests {
         check(
             "ne pahete sa mi si ri behapare",
             "¬∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_述語反意化_no_neとは異なる派生atomを作る() {
+        // `no`はNotで全体を包まず、独立した新しい原子述語"pahete@anti"を作る。
+        check(
+            "no pahete sa mi si ri behapare",
+            "∃x.(behapare(x) ∧ ∃e.(pahete@anti(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_述語反意化_noとneは異なる式になる() {
+        let no_form = to_fol_string("no pahete sa mi si ri behapare").unwrap();
+        let ne_form = to_fol_string("ne pahete sa mi si ri behapare").unwrap();
+        assert_ne!(no_form, ne_form);
+        assert!(!no_form.contains('¬'));
+    }
+
+    #[test]
+    fn test_述語反意化_hoba配下にネストしても両方の葉に付く() {
+        check(
+            "no hoba pahete pahete sa mi si ri behapare",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete@anti(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃x.(behapare(x) ∧ ∃e1.(pahete@anti(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x)))))",
         );
     }
 

@@ -540,8 +540,9 @@ pub struct Negation {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum NegationKind {
-    Ne, // 否定
+pub enum NegationKind {
+    Ne, // 否定(命題・事象レベル。¬P)
+    No, // 反意化(述語レベル。Pとは独立した新しい原子述語@antiを作る)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -888,7 +889,14 @@ define_surface_token!(AspectNegation, AspectNegationKind, "aspect negation", {
 
 define_surface_token!(Negation, NegationKind, "negation", {
     Ne: "ne",
+    No: "no",
 });
+
+impl Negation {
+    pub fn get_kind(&self) -> &NegationKind {
+        &self.kind
+    }
+}
 
 impl BinaryPredicate {
     fn is_match(string: &str) -> bool {
