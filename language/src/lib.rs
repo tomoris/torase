@@ -238,21 +238,7 @@ mod tests {
 
     #[test]
     fn test_誰かがこのりんごを食べそうだ() {
-        let text = "hapa □ hitu pahete sa ga si mo ri behapare".to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_誰かがこのりんごを食べそうだ_za表記() {
-        let text = "hapa za hitu pahete sa ga si mo ri behapare".to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_私はりんごを食べたい_zi表記() {
-        let text = "hapu zi pahete sa mi si ri behapare".to_string();
+        let text = "hapa ta hitu pahete sa ga si mo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -307,14 +293,14 @@ mod tests {
 
     #[test]
     fn test_私はりんごを食べるな() {
-        let text = "hane hapi □ pahete sa mi si ri behapare".to_string();
+        let text = "hane hapi ta pahete sa mi si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私はりんごを食べるな_二重否定がエラーになる() {
-        let text = "hane hane hapi □ pahete sa mi si ri behapare".to_string();
+        let text = "hane hane hapi ta pahete sa mi si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
@@ -349,14 +335,14 @@ mod tests {
 
     #[test]
     fn test_私はりんごを過去じゃないときに食べないを開始してないと事実性高く思わない() {
-        let text = "hane hapa □ hine hita hune hude ne pahete sa mi si ri behapare".to_string();
+        let text = "hane hapa ta hine hita hune hude ne pahete sa mi si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私はりんごを食べられない_りんごがないので状況的に食べられない() {
-        let text = "hane hapu ◇ pahete sa mi si ri behapare".to_string();
+        let text = "hane hapu to pahete sa mi si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -377,21 +363,21 @@ mod tests {
 
     #[test]
     fn test_りんごは食べられない_りんごの性質として可食でなくなった() {
-        let text = "hapu □ pahete si ri behapare".to_string();
+        let text = "hapu ta pahete si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私はりんごを食べたい() {
-        let text = "hapu ◇ pahete sa mi si ri behapare".to_string();
+        let text = "hapu to pahete sa mi si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私はりんごを買いたい() {
-        let text = "hapu ◇ pabuhi sa mi si ri behapare".to_string();
+        let text = "hapu to pabuhi sa mi si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -412,7 +398,7 @@ mod tests {
 
     #[test]
     fn test_あのりんごは食べられそうだ() {
-        let text = "hapu ◇ padaropa si bo ri behapare".to_string();
+        let text = "hapu to padaropa si bo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -602,7 +588,7 @@ mod tests {
 
     #[test]
     fn test_あなたはみかんを食べたかったですか() {
-        let text = "ku hapu ◇ hita pahete sa ba si ri behoranage".to_string();
+        let text = "ku hapu to hita pahete sa ba si ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -613,7 +599,7 @@ mod tests {
         let result = diagnose(text);
         assert!(result.is_ok());
 
-        let text = "hapu ◇ pahete sa mi si ri behoranage".to_string();
+        let text = "hapu to pahete sa mi si ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -670,15 +656,16 @@ mod tests {
 
     #[test]
     fn test_りんごは食べることができない_なぜなら_りんごは綺麗ではないから() {
-        let text = "hane hapu ◇ pahete si ri behapare sute he hudu ne pakarena sa ri behoranage ho"
-            .to_string();
+        let text =
+            "hane hapu to pahete si ri behapare sute he hudu ne pakarena sa ri behoranage ho"
+                .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_みかんを食べましょうよ_勧誘() {
-        let text = "hapi ◇ pahete sa ba si ri behapare".to_string();
+        let text = "hapi to pahete sa ba si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -692,11 +679,11 @@ mod tests {
 
     #[test]
     fn test_あそこでみかんを食べろ_りんごは食べるな() {
-        let text = "hapi □ pahete si ri behoranage suni ge".to_string();
+        let text = "hapi ta pahete si ri behoranage suni ge".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
 
-        let text = "hapi □ ne pahete si ri behoranage".to_string();
+        let text = "hapi ta ne pahete si ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -759,7 +746,7 @@ mod tests {
 
     #[test]
     fn test_貴様はりんごを食べたいと言った() {
-        let text = "hita kasahi sa ba si he hapu ◇ pahete sa ba si ri behapare ho".to_string();
+        let text = "hita kasahi sa ba si he hapu to pahete sa ba si ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -767,7 +754,7 @@ mod tests {
     #[test]
     fn test_私はりんごを食べたいと言った覚えがない() {
         let text =
-            "ne karememabera sa mi si he hita kasahi sa mi si he hapu ◇ pahete sa mi si ri behapare ho ho"
+            "ne karememabera sa mi si he hita kasahi sa mi si he hapu to pahete sa mi si ri behapare ho ho"
                 .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -776,21 +763,21 @@ mod tests {
     #[test]
     fn test_あなたは確か私はりんごを食べたいと言ったはずだ() {
         let text =
-            "hapa □ hita kasahi sa ba si he hapu ◇ pahete sa ba si ri behapare ho".to_string();
+            "hapa ta hita kasahi sa ba si he hapu to pahete sa ba si ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_私はもしかしたらそう言ったかもしれない() {
-        let text = "hapa ◇ hita kasahi sa mi si be".to_string();
+        let text = "hapa to hita kasahi sa mi si be".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_あなたは絶対に私に対してりんごを食べたいと言った() {
-        let text = "hapa □ hita kasahi sa ba subo mi si he kahanata sa ba si he pahete sa ba si ri behapare ho ho"
+        let text = "hapa ta hita kasahi sa ba subo mi si he kahanata sa ba si he pahete sa ba si ri behapare ho ho"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -981,7 +968,7 @@ mod tests {
     #[test]
     fn test_hiとhehezuで定義文が書ける() {
         // ∀ha.∀hu. (kagurita(ha,hu) ↔ kaho(ha,hu))
-        let text = "hi za ha za hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let text = "hi ta ha ta hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -990,7 +977,7 @@ mod tests {
     fn test_hiの中でも宣言した変数だけが閉じられる() {
         // 単項述語の定義: hiの直後でhaだけ宣言する場合、Forall(hu, ...)は付かない
         // (pi[CV]+は生物x1のみの自動詞なのでx2は無い)。
-        let text = "hi za ha pirana sa ha hehezu kaho sa ha si ha".to_string();
+        let text = "hi ta ha pirana sa ha hehezu kaho sa ha si ha".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -1005,25 +992,32 @@ mod tests {
 
     #[test]
     fn test_宣言し忘れた変数はhiの中でも未束縛エラーになる() {
-        // hu用の宣言(za hu / zi hu)を忘れると、huは自由変数のまま残りエラーになる。
-        let text = "hi za ha kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        // hu用の宣言(ta hu / to hu)を忘れると、huは自由変数のまま残りエラーになる。
+        let text = "hi ta ha kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_ha_hu以外を量化子宣言に使うとエラーになる() {
-        let text = "hi za mi kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let text = "hi ta mi kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_zaとziでforallとexistsを使い分けられる() {
+    fn test_teやtiを量化子宣言に使うとエラーになる() {
+        let text = "hi te ha to hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let result = diagnose(text);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_taとtoでforallとexistsを使い分けられる() {
         use formal_semantics::{Formula, to_fol};
 
-        // hi za ha zi hu [本文]: haは∀、huは∃で閉じる。
-        let text = "hi za ha zi hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        // hi ta ha to hu [本文]: haは∀、huは∃で閉じる。
+        let text = "hi ta ha to hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
         let tokens = tokenizer::tokenize(&text).unwrap();
         let sentences = tokenizer::add_eos_to_last_sentence(tokens);
         let ast = parser::parse(sentences[0].clone()).unwrap();
@@ -1048,7 +1042,7 @@ mod tests {
     fn test_hiとhehezuの論理式がforallとiffの組み合わせになっている() {
         use formal_semantics::{Formula, to_fol};
 
-        let text = "hi za ha za hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let text = "hi ta ha ta hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
         let tokens = tokenizer::tokenize(&text).unwrap();
         let sentences = tokenizer::add_eos_to_last_sentence(tokens);
         let ast = parser::parse(sentences[0].clone()).unwrap();
@@ -1071,7 +1065,7 @@ mod tests {
 
     #[test]
     fn test_2つの無関係な定義文をまとめて解析しても束縛が独立している() {
-        let text = "hi za ha za hu kagurita sa ha si hu hehezu kaho sa ha si hu eos hi za ha za hu guzorata sa ha si hu hehezu parobe sa ha si hu".to_string();
+        let text = "hi ta ha ta hu kagurita sa ha si hu hehezu kaho sa ha si hu eos hi ta ha ta hu guzorata sa ha si hu hehezu parobe sa ha si hu".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

@@ -5,7 +5,9 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::parser::*;
-use crate::tokenizer::{ArgumentRetrieverKind, ArgumentType, CaseLabelKind, PhysicalEntity, Range};
+use crate::tokenizer::{
+    ArgumentRetrieverKind, ArgumentType, CaseLabelKind, PhysicalEntity, Quantifier, Range,
+};
 
 pub struct TypeMismatch {
     pub range: Range,
@@ -65,10 +67,27 @@ impl UniversalSentence {
     }
 }
 
+/// `hi`の量化子宣言・様相の力として使えるのは`ta`(∀/必然)・`to`(∃/可能)のみ。
+/// `te`/`ti`はNP量化詞(`ta X`等)専用で、ここでは意味を持たない。
+fn check_universal_existential_quantifier(quantifier: &Quantifier) -> TypeMismatchResult {
+    let s = quantifier.get_string();
+    if s == "ta" || s == "to" {
+        Ok(())
+    } else {
+        Err(TypeMismatch {
+            range: quantifier.get_range(),
+            actual: vec![],
+            expected: vec![],
+            message: "ここで使える量化子はta(∀/必然)/to(∃/可能)のみです".to_string(),
+        })
+    }
+}
+
 impl QuantifiedVariableList {
     /// `hi`直後で宣言された変数は`ha`/`hu`(スキーマ変数)でなければならない。
     fn type_check(&self) -> TypeMismatchResult {
-        for (_force, arg) in self.variables() {
+        for (force, arg) in self.variables() {
+            check_universal_existential_quantifier(force)?;
             if !arg.is_schema_variable() {
                 return Err(TypeMismatch {
                     range: arg.get_range(),
@@ -116,8 +135,12 @@ impl ModalityExpression {
 impl ModifiedModality {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            ModifiedModality::One(_modality, _) => Ok(()),
-            ModifiedModality::Two(_modality_negation, _modality, _) => Ok(()),
+            ModifiedModality::One(_modality, force) => {
+                check_universal_existential_quantifier(force)
+            }
+            ModifiedModality::Two(_modality_negation, _modality, force) => {
+                check_universal_existential_quantifier(force)
+            }
         }
     }
 }

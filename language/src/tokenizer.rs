@@ -53,10 +53,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::ModalityBase(ModalityBase::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if ModalityForce::is_match(token.0) {
-            doc.push(TerminalType::ModalityForce(ModalityForce::new(
-                token.0, token.1, token.2, token.3, token.4,
-            )));
         } else if Tense::is_match(token.0) {
             doc.push(TerminalType::Tense(Tense::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -248,7 +244,6 @@ pub enum TerminalType {
     InterrogativeMarker(InterrogativeMarker),
     UniversalMarker(UniversalMarker),
     ModalityBase(ModalityBase),
-    ModalityForce(ModalityForce),
     Tense(Tense),
     Aspect(Aspect),
     ModalityNegation(ModalityNegation),
@@ -279,7 +274,6 @@ pub enum DummyTerminalType {
     InterrogativeMarker,
     UniversalMarker,
     ModalityBase,
-    ModalityForce,
     Tense,
     Aspect,
     ModalityNegation,
@@ -310,7 +304,6 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::InterrogativeMarker(_) => DummyTerminalType::InterrogativeMarker,
         TerminalType::UniversalMarker(_) => DummyTerminalType::UniversalMarker,
         TerminalType::ModalityBase(_) => DummyTerminalType::ModalityBase,
-        TerminalType::ModalityForce(_) => DummyTerminalType::ModalityForce,
         TerminalType::Tense(_) => DummyTerminalType::Tense,
         TerminalType::Aspect(_) => DummyTerminalType::Aspect,
         TerminalType::ModalityNegation(_) => DummyTerminalType::ModalityNegation,
@@ -351,7 +344,6 @@ impl TerminalType {
             TerminalType::InterrogativeMarker(marker) => marker.range.start.clone(),
             TerminalType::UniversalMarker(marker) => marker.range.start.clone(),
             TerminalType::ModalityBase(modality) => modality.range.start.clone(),
-            TerminalType::ModalityForce(force) => force.range.start.clone(),
             TerminalType::Tense(tense) => tense.range.start.clone(),
             TerminalType::Aspect(aspect) => aspect.range.start.clone(),
             TerminalType::ModalityNegation(negation) => negation.range.start.clone(),
@@ -388,7 +380,6 @@ impl TerminalType {
             TerminalType::InterrogativeMarker(marker) => marker.range.end.clone(),
             TerminalType::UniversalMarker(marker) => marker.range.end.clone(),
             TerminalType::ModalityBase(modality) => modality.range.end.clone(),
-            TerminalType::ModalityForce(force) => force.range.end.clone(),
             TerminalType::Tense(tense) => tense.range.end.clone(),
             TerminalType::Aspect(aspect) => aspect.range.end.clone(),
             TerminalType::ModalityNegation(negation) => negation.range.end.clone(),
@@ -479,25 +470,6 @@ enum AspectKind {
     Hudidu, // 反復
     Hudo,   // 終了
     Hudu,   // 事後
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ModalityForce {
-    range: Range,
-    kind: ModalityForceKind,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum ModalityForceKind {
-    Necessary, // □ 必然
-    Possible,  // ◇ 可能
-}
-
-impl ModalityForce {
-    /// `hi`の直後の量化子宣言(`za`=∀, `zi`=∃)で使う。
-    pub(crate) fn get_kind(&self) -> &ModalityForceKind {
-        &self.kind
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -670,7 +642,7 @@ enum QuantifierKind {
     Ta, // 全ての
     Te, // 多くの
     Ti, // 半分の
-    To, // 少しの
+    To, // 少なくとも1つは存在する
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -823,7 +795,6 @@ impl_get_range!(
     InterrogativeMarker,
     UniversalMarker,
     ModalityBase,
-    ModalityForce,
     Tense,
     Aspect,
     ModalityNegation,
@@ -852,11 +823,6 @@ define_surface_token!(ModalityBase, ModalityBaseKind, "modality", {
     Hapa: "hapa",
     Hapi: "hapi",
     Hapu: "hapu",
-});
-
-define_surface_token!(ModalityForce, ModalityForceKind, "modality force", {
-    Necessary: "□" | "za",
-    Possible: "◇" | "zi",
 });
 
 define_surface_token!(Tense, TenseKind, "tense", {
@@ -1239,9 +1205,9 @@ impl Number {
         // (10〜15を含む桁を言いたい場合は必ずruを付ける)。
         Self::parse_terms(rest).iter().all(|&(digit, _)| digit <= 9)
     }
-    // アラビア数字表記(算用数字)。"□"がzaの代替表記であるのと同様、
-    // 数詞の代替入力表記として1桁目〜任意桁の数字列、または"1_000"のように
-    // 3桁ごとにアンダースコアで区切った数字列を受け付ける(常に10進数として解釈する)。
+    // アラビア数字表記(算用数字)。数詞の代替入力表記として1桁目〜任意桁の数字列、
+    // または"1_000"のように3桁ごとにアンダースコアで区切った数字列を受け付ける
+    // (常に10進数として解釈する)。
     fn is_arabic_numeral_match(string: &str) -> bool {
         const RE_ARABIC: Regex = Regex::compile(r"^(?:[0-9]+|[0-9]{1,3}(?:_[0-9]{3})*)$");
         if !RE_ARABIC.is_match(string) {
@@ -1549,7 +1515,7 @@ mod tests {
 
     #[test]
     fn test_eosなし1文のトークン分割が成功する() {
-        let input = "hapa □ hitu hudidi parobe me si gi";
+        let input = "hapa ta hitu hudidi parobe me si gi";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 1);
@@ -1560,31 +1526,31 @@ mod tests {
         );
         assert_eq!(
             sentences[0][1],
-            TerminalType::ModalityForce(ModalityForce::new("□", 0, 5, 0, 6))
+            TerminalType::Quantifier(Quantifier::new("ta", 0, 5, 0, 7))
         );
         assert_eq!(
             sentences[0][2],
-            TerminalType::Tense(Tense::new("hitu", 0, 7, 0, 11))
+            TerminalType::Tense(Tense::new("hitu", 0, 8, 0, 12))
         );
         assert_eq!(
             sentences[0][3],
-            TerminalType::Aspect(Aspect::new("hudidi", 0, 12, 0, 18))
+            TerminalType::Aspect(Aspect::new("hudidi", 0, 13, 0, 19))
         );
         assert_eq!(
             sentences[0][4],
-            TerminalType::BinaryPredicate(BinaryPredicate::new("parobe", 0, 19, 0, 25))
+            TerminalType::BinaryPredicate(BinaryPredicate::new("parobe", 0, 20, 0, 26))
         );
         assert_eq!(
             sentences[0][5],
-            TerminalType::Argument(Argument::new("me", 0, 26, 0, 28))
+            TerminalType::Argument(Argument::new("me", 0, 27, 0, 29))
         );
         assert_eq!(
             sentences[0][6],
-            TerminalType::CaseLabel(CaseLabel::new("si", 0, 29, 0, 31))
+            TerminalType::CaseLabel(CaseLabel::new("si", 0, 30, 0, 32))
         );
         assert_eq!(
             sentences[0][7],
-            TerminalType::Argument(Argument::new("gi", 0, 32, 0, 34))
+            TerminalType::Argument(Argument::new("gi", 0, 33, 0, 35))
         );
     }
 
@@ -1658,8 +1624,7 @@ mod tests {
 
     #[test]
     fn test_数詞_アラビア数字でも代替表記できる() {
-        // "□"がzaの代替表記であるのと同様、アラビア数字は数詞の代替入力表記になる。
-        // ただし正準形(get_string)は常に数詞の語(tu...)。
+        // アラビア数字は数詞の代替入力表記になる。ただし正準形(get_string)は常に数詞の語(tu...)。
         let n = Number::new("12345", 0, 0, 0, 0);
         assert_eq!(n.get_value(), 12345);
         assert!(!n.is_hex());

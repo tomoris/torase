@@ -358,8 +358,8 @@ pub enum ModalityExpression {
 
 #[derive(Clone, Debug)]
 pub enum ModifiedModality {
-    One(ModalityBase, ModalityForce),
-    Two(ModalityNegation, ModalityBase, ModalityForce),
+    One(ModalityBase, Quantifier),
+    Two(ModalityNegation, ModalityBase, Quantifier),
 }
 
 #[derive(Clone, Debug)]
@@ -418,14 +418,14 @@ pub enum CaseArg {
     One(CaseLabel, TypeOverrideModifier, ArgumentPhrase),
 }
 
-/// `hi`の直後の量化子宣言1つ分(`za ha`や`zi hu`)。`CaseArg`と同じく、それ自体はLL(1)の
+/// `hi`の直後の量化子宣言1つ分(`ta ha`や`to hu`)。`CaseArg`と同じく、それ自体はLL(1)の
 /// 非終端記号として登録せず、`QuantifiedVariableList`の中だけで組み立てるデータ型。
 #[derive(Clone, Debug)]
 pub enum QuantifiedVariable {
-    One(ModalityForce, Argument),
+    One(Quantifier, Argument),
 }
 
-/// `hi`の直後に並ぶ量化子宣言の可変長リスト(`za ha zi hu`等)。`OptionalCaseArgs`と同じ形。
+/// `hi`の直後に並ぶ量化子宣言の可変長リスト(`ta ha to hu`等)。`OptionalCaseArgs`と同じ形。
 #[derive(Clone, Debug)]
 pub enum QuantifiedVariableList {
     One(QuantifiedVariable, Box<QuantifiedVariableList>),
@@ -651,8 +651,8 @@ impl InterrogativeSentence {
 impl QuantifiedVariableList {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::ModalityForce => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityForce),
+            DummyTerminalType::Quantifier => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::Quantifier),
                 DummySymbolType::DummyTerminal(DummyTerminalType::Argument),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifiedVariableList),
             ])),
@@ -676,7 +676,7 @@ impl QuantifiedVariableList {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::ModalityForce(child1)),
+                    SymbolType::Terminal(TerminalType::Quantifier(child1)),
                     SymbolType::Terminal(TerminalType::Argument(child2)),
                     SymbolType::NonTerminal(NonTerminalType::QuantifiedVariableList(child3)),
                 ] => Self::One(
@@ -822,12 +822,12 @@ impl ModifiedModality {
         match current_token {
             DummyTerminalType::ModalityBase => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ModalityBase),
-                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityForce),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Quantifier),
             ])),
             DummyTerminalType::ModalityNegation => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ModalityNegation),
                 DummySymbolType::DummyTerminal(DummyTerminalType::ModalityBase),
-                DummySymbolType::DummyTerminal(DummyTerminalType::ModalityForce),
+                DummySymbolType::DummyTerminal(DummyTerminalType::Quantifier),
             ])),
             _ => Err(()),
         }
@@ -837,12 +837,12 @@ impl ModifiedModality {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
                     SymbolType::Terminal(TerminalType::ModalityBase(child1)),
-                    SymbolType::Terminal(TerminalType::ModalityForce(child2)),
+                    SymbolType::Terminal(TerminalType::Quantifier(child2)),
                 ] => Self::One(child1.clone(), child2.clone()),
                 [
                     SymbolType::Terminal(TerminalType::ModalityNegation(child1)),
                     SymbolType::Terminal(TerminalType::ModalityBase(child2)),
-                    SymbolType::Terminal(TerminalType::ModalityForce(child3)),
+                    SymbolType::Terminal(TerminalType::Quantifier(child3)),
                 ] => Self::Two(child1.clone(), child2.clone(), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -2180,7 +2180,7 @@ impl UniversalSentence {
 
 impl QuantifiedVariableList {
     /// `hi`直後に宣言された(量化力, 変数)のペアを宣言順で返す。
-    pub(crate) fn variables(&self) -> Vec<(&ModalityForce, &Argument)> {
+    pub(crate) fn variables(&self) -> Vec<(&Quantifier, &Argument)> {
         match self {
             QuantifiedVariableList::One(QuantifiedVariable::One(force, arg), rest) => {
                 let mut result = vec![(force, arg)];
@@ -2455,13 +2455,6 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let modality_force = grammar::Terminal(
-            type_name::<ModalityForce>()
-                .split("::")
-                .last()
-                .unwrap()
-                .to_string(),
-        );
         let tense = grammar::Terminal(type_name::<Tense>().split("::").last().unwrap().to_string());
         let aspect = grammar::Terminal(
             type_name::<Aspect>()
@@ -2652,7 +2645,7 @@ mod tests {
             quantified_variable_list.clone(),
             vec![
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(modality_force.clone()),
+                    grammar::Symbol::Terminal(quantifier.clone()),
                     grammar::Symbol::Terminal(argument.clone()),
                     grammar::Symbol::NonTerminal(quantified_variable_list.clone()),
                 ]),
@@ -2690,12 +2683,12 @@ mod tests {
             vec![
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(modality.clone()),
-                    grammar::Symbol::Terminal(modality_force.clone()),
+                    grammar::Symbol::Terminal(quantifier.clone()),
                 ]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(modality_negation_.clone()),
                     grammar::Symbol::Terminal(modality.clone()),
-                    grammar::Symbol::Terminal(modality_force.clone()),
+                    grammar::Symbol::Terminal(quantifier.clone()),
                 ]),
             ],
         );
@@ -2946,7 +2939,6 @@ mod tests {
                     "InterrogativeMarker" => DummyTerminalType::InterrogativeMarker,
                     "UniversalMarker" => DummyTerminalType::UniversalMarker,
                     "ModalityBase" => DummyTerminalType::ModalityBase,
-                    "ModalityForce" => DummyTerminalType::ModalityForce,
                     "Tense" => DummyTerminalType::Tense,
                     "Aspect" => DummyTerminalType::Aspect,
                     "ModalityNegation" => DummyTerminalType::ModalityNegation,
@@ -3108,7 +3100,6 @@ mod tests {
                                         }
                                         DummyTerminalType::UniversalMarker => "UniversalMarker",
                                         DummyTerminalType::ModalityBase => "ModalityBase",
-                                        DummyTerminalType::ModalityForce => "ModalityForce",
                                         DummyTerminalType::Tense => "Tense",
                                         DummyTerminalType::Aspect => "Aspect",
                                         DummyTerminalType::ModalityNegation => "ModalityNegation",

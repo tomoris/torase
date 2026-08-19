@@ -53,21 +53,21 @@
         "original_pronunciation": null,
         "terminal_type": "ModalityBase",
         "definition": null,
-        "description": "認識モダリティの基盤。量化対象は話し手が知っている事実と矛盾しない世界。 `hapa □`=確実にe、`hapa ◇`=eかもしれない。"
+        "description": "認識モダリティの基盤。量化対象は話し手が知っている事実と矛盾しない世界。 `hapa ta`=確実にe、`hapa to`=eかもしれない。"
     },
     "hapi": {
         "original_spelling": null,
         "original_pronunciation": null,
         "terminal_type": "ModalityBase",
         "definition": null,
-        "description": "義務モダリティの基盤。量化対象は法律・規則・道徳を守っている世界。 `hapi □`=eしなければならない、`hapi ◇`=eしてもよい。"
+        "description": "義務モダリティの基盤。量化対象は法律・規則・道徳を守っている世界。 `hapi ta`=eしなければならない、`hapi to`=eしてもよい。"
     },
     "hapu": {
         "original_spelling": null,
         "original_pronunciation": null,
         "terminal_type": "ModalityBase",
         "definition": null,
-        "description": "能力・状況モダリティの基盤。量化対象は現実の能力・環境条件を保持した世界。 `hapu □`=eを必ずできる、`hapu ◇`=eすることができる。"
+        "description": "能力・状況モダリティの基盤。量化対象は現実の能力・環境条件を保持した世界。 `hapu ta`=eを必ずできる、`hapu to`=eすることができる。"
     },
     "he": {
         "original_spelling": null,
@@ -186,7 +186,7 @@
         "original_pronunciation": null,
         "terminal_type": "UniversalMarker",
         "definition": null,
-        "description": "全称量化マーカー。文頭に置き、直後に`ha`/`hu`の量化子宣言(`za`=∀、`zi`=∃)を必要な数だけ並べてから平叙文を続ける。 辞書の`definition`を計画言語自身で書いて新語を既知語で定義する際、`ha`/`hu`と`hehezu`とともに使う。"
+        "description": "全称量化マーカー。文頭に置き、直後に`ha`/`hu`の量化子宣言(`ta`=∀、`to`=∃)を必要な数だけ並べてから平叙文を続ける。 辞書の`definition`を計画言語自身で書いて新語を既知語で定義する際、`ha`/`hu`と`hehezu`とともに使う。"
     },
     "hine": {
         "original_spelling": null,
@@ -487,7 +487,7 @@
         "original_pronunciation": null,
         "terminal_type": "Quantifier",
         "definition": null,
-        "description": "量化詞:すべての。"
+        "description": "量化詞:すべての。様相の必然としても使う。`hi`の量化子宣言では全称量化(∀)としても使う。"
     },
     "te": {
         "original_spelling": null,
@@ -508,21 +508,7 @@
         "original_pronunciation": null,
         "terminal_type": "Quantifier",
         "definition": null,
-        "description": "量化詞:少しの。"
-    },
-    "za": {
-        "original_spelling": null,
-        "original_pronunciation": null,
-        "terminal_type": "ModalityForce",
-        "definition": null,
-        "description": "様相の必然(□)。`hi`の量化子宣言では全称量化(∀)としても使う。 `□`とも書ける(発音は同じ`za`)。"
-    },
-    "zi": {
-        "original_spelling": null,
-        "original_pronunciation": null,
-        "terminal_type": "ModalityForce",
-        "definition": null,
-        "description": "様相の可能(◇)。`hi`の量化子宣言では存在量化(∃)としても使う。 `◇`とも書ける(発音は同じ`zi`)。"
+        "description": "量化詞:少なくとも1つは存在する。様相の可能としても使う。`hi`の量化子宣言では存在量化(∃)としても使う。"
     },
     "ba": {
         "original_spelling": null,
@@ -578,7 +564,7 @@
         "original_pronunciation": null,
         "terminal_type": "Argument",
         "definition": null,
-        "description": "定義用のスキーマ変数(x1)。 `hi`の量化子宣言(`za`/`zi`)で明示的に宣言しない限り使えない(未束縛だと型検査でエラーになる)。`me`/`be`/`ge`と同じく指示物の種類を限定しないが、定数ではなく述語論理上の変数として扱われる点が異なる。辞書の`definition`を計画言語自身で書いて新語を既知語で言い換える際に使う。"
+        "description": "定義用のスキーマ変数(x1)。 `hi`の量化子宣言(`ta`/`to`)で明示的に宣言しない限り使えない(未束縛だと型検査でエラーになる)。`me`/`be`/`ge`と同じく指示物の種類を限定しないが、定数ではなく述語論理上の変数として扱われる点が異なる。辞書の`definition`を計画言語自身で書いて新語を既知語で言い換える際に使う。"
     },
     "hu": {
         "original_spelling": null,
@@ -759,7 +745,7 @@
         "original_spelling": "thing",
         "original_pronunciation": "θɪŋ",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu disinaga sa ha si hu hehezu dasinaga sa ha si hu",
+        "definition": "hi ta ha ta hu disinaga sa ha si hu hehezu dasinaga sa ha si hu",
         "description": "x1はx2をものと定義する。 `dasinaga`/`dusinaga`と近義語。`dasinaga`の言い換え(`definition`参照)。"
     },
     "ditabare": {
@@ -773,7 +759,7 @@
         "original_spelling": "book",
         "original_pronunciation": "bʊk",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu duboka sa ha si hu hehezu homa dapapera sa ha si hu rihorada sa ha si hu",
+        "definition": "hi ta ha ta hu duboka sa ha si hu hehezu homa dapapera sa ha si hu rihorada sa ha si hu",
         "description": "x1はx2を本と定義する。"
     },
     "dumobi": {
@@ -787,7 +773,7 @@
         "original_spelling": "thing",
         "original_pronunciation": "θɪŋ",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu dusinaga sa ha si hu hehezu dasinaga sa ha si hu",
+        "definition": "hi ta ha ta hu dusinaga sa ha si hu hehezu dasinaga sa ha si hu",
         "description": "x1はx2をものと定義する。 `dasinaga`/`disinaga`と近義語。`dasinaga`の言い換え(`definition`参照)。"
     },
     "gabusunesa": {
@@ -987,7 +973,7 @@
         "original_spelling": "mountain",
         "original_pronunciation": "maʊntʌn",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu namanatana sa ha si hu hehezu homa dasinaga sa ha si hu reha sa ha si hu",
+        "definition": "hi ta ha ta hu namanatana sa ha si hu hehezu homa dasinaga sa ha si hu reha sa ha si hu",
         "description": "x1はx2を山と定義する。"
     },
     "namuna": {
@@ -1008,21 +994,21 @@
         "original_spelling": "sun",
         "original_pronunciation": "sʌn",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu nasana sa ha si hu hehezu homa nohahara sa ha si hu no resamara sa ha si hu",
+        "definition": "hi ta ha ta hu nasana sa ha si hu hehezu homa nohahara sa ha si hu no resamara sa ha si hu",
         "description": "x1はx2を太陽と定義する。"
     },
     "nasatora": {
         "original_spelling": "star",
         "original_pronunciation": "stɑːr",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu nasatora sa ha si hu hehezu homa nohahara sa ha si hu resamara sa ha si hu",
+        "definition": "hi ta ha ta hu nasatora sa ha si hu hehezu homa nohahara sa ha si hu resamara sa ha si hu",
         "description": "x1はx2を星と定義する。"
     },
     "nasi": {
         "original_spelling": "sea",
         "original_pronunciation": "siː",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu nasi sa ha si hu hehezu homa nihotara sa ha si hu no resamara sa ha si hu",
+        "definition": "hi ta ha ta hu nasi sa ha si hu hehezu homa nihotara sa ha si hu no resamara sa ha si hu",
         "description": "x1はx2を海と定義する。"
     },
     "netohana": {
@@ -1246,7 +1232,7 @@
         "original_spelling": "parent",
         "original_pronunciation": "perʌnt",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu paperanata sa ha si hu hehezu patirada sa hu si ha",
+        "definition": "hi ta ha ta hu paperanata sa ha si hu hehezu patirada sa hu si ha",
         "description": "x1(人)はx2(人)の親だ。"
     },
     "parobe": {
@@ -1384,7 +1370,7 @@
         "original_spelling": "alive",
         "original_pronunciation": "ʌlaɪv",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha piharaba sa ha hehezu hudu ne pida sa ha",
+        "definition": "hi ta ha piharaba sa ha hehezu hudu ne pida sa ha",
         "description": "x1(人)は生きている。"
     },
     "pihezisata": {
@@ -1453,7 +1439,7 @@
         "original_spelling": "problem",
         "original_pronunciation": "prɒbləm",
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu raparobarema sa ha si hu hehezu homa dasinaga sa ha si hu no reguda sa ha si hu",
+        "definition": "hi ta ha ta hu raparobarema sa ha si hu hehezu homa dasinaga sa ha si hu no reguda sa ha si hu",
         "description": "x1はx2を問題と定義する。"
     },
     "rebaraka": {
@@ -1679,7 +1665,7 @@
         "original_spelling": null,
         "original_pronunciation": null,
         "terminal_type": "BinaryPredicate",
-        "definition": "hi za ha za hu ronehasa sa ha si hu hehezu homa rihorada sa ha si hu renu sa ha si hu",
+        "definition": "hi ta ha ta hu ronehasa sa ha si hu hehezu homa rihorada sa ha si hu renu sa ha si hu",
         "description": "x1はx2をニュース/知らせと定義する。"
     },
     "rosatori": {

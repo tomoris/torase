@@ -8,8 +8,8 @@ use crate::parser::{
     QuantifiedArgument, QuantifierModifier, RetrievedArgument, S, TaEvent, UniversalSentence,
 };
 use crate::tokenizer::{
-    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, ModalityForceKind,
-    MtaEventOperatorKind, NegationKind, PostMtaEventModifierKind, PredicateOperatorKind,
+    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, MtaEventOperatorKind, NegationKind,
+    PostMtaEventModifierKind, PredicateOperatorKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -245,7 +245,7 @@ enum ArgCtx {
 #[derive(Debug, Clone, PartialEq)]
 enum QuantKind {
     Universal,   // ta  全ての
-    Existential, // epsilon / to  少しの・存在する
+    Existential, // epsilon / to  少なくとも1つは存在する
     Many,        // te  多くの
     Half,        // ti  半分の
     Count,       // number
@@ -408,9 +408,11 @@ impl InterrogativeSentence {
 }
 
 impl UniversalSentence {
-    /// hi(全称量化マーカー)。直後に宣言された量化子(za→∀, zi→∃)+変数のリストを宣言順にたどり、
-    /// 逆順に畳み込んで本文を明示的に束縛する。`ta`(すべての)が`Forall`に翻訳されるのと同じ、
-    /// 素直なASTからの翻訳(本文を後から走査して推測することはしない)。
+    /// hi(全称量化マーカー)。直後に宣言された量化子(ta→∀, to→∃)+変数のリストを宣言順にたどり、
+    /// 逆順に畳み込んで本文を明示的に束縛する。NP量化詞の`ta`(すべての)が`Forall`に翻訳される
+    /// のと同じ語を再利用する、素直なASTからの翻訳(本文を後から走査して推測することはしない)。
+    /// `te`/`ti`はここでは無効な量化子だが、argument_type_checker側で別途エラーにするため、
+    /// ここでは`to`扱い(Exists)にフォールバックしてパニックしない。
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
             UniversalSentence::One(_, quantified_variable_list, pm) => {
@@ -419,9 +421,9 @@ impl UniversalSentence {
                     body,
                     |acc, (force, arg)| {
                         let name = arg.get_string();
-                        match force.get_kind() {
-                            ModalityForceKind::Necessary => Formula::Forall(name, Box::new(acc)),
-                            ModalityForceKind::Possible => Formula::Exists(name, Box::new(acc)),
+                        match force.get_string().as_str() {
+                            "ta" => Formula::Forall(name, Box::new(acc)),
+                            _ => Formula::Exists(name, Box::new(acc)),
                         }
                     },
                 )
@@ -1238,7 +1240,7 @@ mod tests {
     #[test]
     fn test_転置_りんごは食べられない() {
         check(
-            "hapu □ pahete si ri behapare",
+            "hapu ta pahete si ri behapare",
             "∃y.∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
         );
     }

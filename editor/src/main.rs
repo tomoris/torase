@@ -275,7 +275,6 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::PostMtaEventModifier(_)
         | TerminalType::PostBinaryPredicatePhraseModifier(_)
         | TerminalType::PostArgumentPhraseModifier(_) => Some(Color::from_rgba8(60, 60, 180, 0.25)),
-        TerminalType::ModalityForce(_) => Some(Color::from_rgba8(60, 200, 200, 0.25)),
         TerminalType::Eos(_) => None,
     }
 }
