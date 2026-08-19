@@ -886,7 +886,7 @@ mod tests {
 
     #[test]
     fn test_私は少しのりんごを食べる() {
-        // ∃=to x (apple(x))
+        // ∃x (apple(x))
         let text = "pahete sa mi si to ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -894,7 +894,7 @@ mod tests {
 
     #[test]
     fn test_私は少しこのりんごを食べる() {
-        // ∃=to x (apple(x) ∧ this(x))
+        // ∃x (apple(x) ∧ this(x))
         let text = "pahete sa mi si to mo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -902,7 +902,7 @@ mod tests {
 
     #[test]
     fn test_私は少しの3つのりんごを食べる_がエラーになること() {
-        // ∀x ∃=3 (apple(x))
+        // to(数量詞)とtupo(数)は同じ項に同時指定できずパースエラーになる
         let text = "pahete sa mi si tupo to ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
@@ -922,7 +922,7 @@ mod tests {
 
     #[test]
     fn test_私は多くのりんごを食べる() {
-        // ∃=ta x (apple(x))
+        // ∃=te x (apple(x))
         let text = "pahete sa mi si te ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -930,7 +930,7 @@ mod tests {
 
     #[test]
     fn test_私は全てのりんごを食べる() {
-        // ∀x (apple(x))
+        // ∀x (apple(x) -> eat(mi, x))
         let text = "pahete sa mi si ta ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -946,7 +946,7 @@ mod tests {
 
     #[test]
     fn test_私は全ての3つのりんごを食べる_がエラーになること() {
-        // ∀x ∃=3 (apple(x))
+        // ta(数量詞)とtupo(数)は同じ項に同時指定できずパースエラーになる
         let text = "pahete sa mi si tupo ta ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
@@ -1071,8 +1071,6 @@ mod tests {
 
     #[test]
     fn test_2つの無関係な定義文をまとめて解析しても束縛が独立している() {
-        // ha/huは本物の束縛変数なので、無関係な2つの定義文を1回のdiagnose()に
-        // まとめても互いに干渉しない(定数ベースだった旧設計ではここが問題になっていた)。
         let text = "hi za ha za hu kagurita sa ha si hu hehezu kaho sa ha si hu eos hi za ha za hu guzorata sa ha si hu hehezu parobe sa ha si hu".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
