@@ -67,7 +67,7 @@ impl UniversalSentence {
     }
 }
 
-/// `hi`の量化子宣言・様相の力として使えるのは`ta`(∀/必然)・`to`(∃/可能)のみ。
+/// `ze`の量化子宣言・様相の力として使えるのは`ta`(∀/必然)・`to`(∃/可能)のみ。
 /// `te`/`ti`はNP量化詞(`ta X`等)専用で、ここでは意味を持たない。
 fn check_universal_existential_quantifier(quantifier: &Quantifier) -> TypeMismatchResult {
     let s = quantifier.get_string();
@@ -84,7 +84,7 @@ fn check_universal_existential_quantifier(quantifier: &Quantifier) -> TypeMismat
 }
 
 impl QuantifiedVariableList {
-    /// `hi`直後で宣言された変数は`ha`/`hu`(スキーマ変数)でなければならない。
+    /// `ze`直後で宣言された変数は`za`/`zi`(スキーマ変数)でなければならない。
     fn type_check(&self) -> TypeMismatchResult {
         for (force, arg) in self.variables() {
             check_universal_existential_quantifier(force)?;
@@ -93,7 +93,7 @@ impl QuantifiedVariableList {
                     range: arg.get_range(),
                     actual: arg.get_type(),
                     expected: vec![],
-                    message: "hiの量化子宣言で使える項はha/huのみです".to_string(),
+                    message: "zeの量化子宣言で使える項はza/ziのみです".to_string(),
                 });
             }
         }

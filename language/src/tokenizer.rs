@@ -422,8 +422,8 @@ pub struct InterrogativeMarker {
     range: Range,
 }
 
-/// 定義文の先頭に置く全称量化マーカー(`hi`)。`ha`/`hu`(スキーマ変数)を含む平叙文を
-/// `∀ha. ∀hu. (...)`として閉じる。詳細は`docs/language_design/morphology.md`参照。
+/// 定義文の先頭に置く全称量化マーカー(`ze`)。`za`/`zi`(スキーマ変数)を含む平叙文を
+/// `∀za. ∀zi. (...)`として閉じる。詳細は`docs/language_design/morphology.md`参照。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UniversalMarker {
     range: Range,
@@ -817,7 +817,7 @@ impl_get_range!(
 );
 
 define_fixed_token!(InterrogativeMarker, "interrogative marker", "ku");
-define_fixed_token!(UniversalMarker, "universal marker", "hi");
+define_fixed_token!(UniversalMarker, "universal marker", "ze");
 
 define_surface_token!(ModalityBase, ModalityBaseKind, "modality", {
     Hapa: "hapa",
@@ -1032,8 +1032,8 @@ define_surface_token!(Argument, ArgumentKind, "argument", {
     Gi: "gi",
     Gu: "gu",
     Ge: "ge",
-    Ha: "ha",
-    Hu: "hu",
+    Ha: "za",
+    Hu: "zi",
 });
 
 impl Argument {
@@ -1071,8 +1071,8 @@ impl Argument {
                 ArgumentType::Space,
                 ArgumentType::Time,
             ],
-            // ha/huは指示代名詞(me/be/ge)と同じく型を限定しない。ただしFOLでは定数ではなく
-            // 変数として扱われ、hi(全称量化マーカー)の付いた文でのみ`Forall`に束縛される
+            // za/ziは指示代名詞(me/be/ge)と同じく型を限定しない。ただしFOLでは定数ではなく
+            // 変数として扱われ、ze(全称量化マーカー)の付いた文でのみ`Forall`に束縛される
             // (event_semantics.rsのto_fol/free_variables、Argument::is_schema_variable参照)。
             ArgumentKind::Ha => vec![
                 ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
@@ -1093,7 +1093,7 @@ impl Argument {
         }
     }
 
-    /// `ha`/`hu`(定義文用のスキーマ変数)かどうか。`ha`/`hu`かどうかの判定はここに集約し、
+    /// `za`/`zi`(定義文用のスキーマ変数)かどうか。`za`/`zi`かどうかの判定はここに集約し、
     /// 呼び出し側(event_semantics.rs)で表層文字列を直接比較しないようにする。
     pub(crate) fn is_schema_variable(&self) -> bool {
         matches!(self.kind, ArgumentKind::Ha | ArgumentKind::Hu)

@@ -87,7 +87,7 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
             diagnostics.push(Diagnostic {
                 range: range.clone(),
                 message: format!(
-                    "unbound schema variable(s) (use hi to quantify): {}",
+                    "unbound schema variable(s) (use ze to quantify): {}",
                     free.join(", ")
                 ),
             });
@@ -959,55 +959,55 @@ mod tests {
     }
 
     #[test]
-    fn test_haとhuはhiが無いと未束縛変数エラーになる() {
-        let text = "kaho sa ha si hu".to_string();
+    fn test_zaとziはzeが無いと未束縛変数エラーになる() {
+        let text = "kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_hiとhehezuで定義文が書ける() {
-        // ∀ha.∀hu. (kagurita(ha,hu) ↔ kaho(ha,hu))
-        let text = "hi ta ha ta hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+    fn test_zeとhehezuで定義文が書ける() {
+        // ∀za.∀zi. (kagurita(za,zi) ↔ kaho(za,zi))
+        let text = "ze ta za ta zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_hiの中でも宣言した変数だけが閉じられる() {
-        // 単項述語の定義: hiの直後でhaだけ宣言する場合、Forall(hu, ...)は付かない
+    fn test_zeの中でも宣言した変数だけが閉じられる() {
+        // 単項述語の定義: zeの直後でzaだけ宣言する場合、Forall(zi, ...)は付かない
         // (pi[CV]+は生物x1のみの自動詞なのでx2は無い)。
-        let text = "hi ta ha pirana sa ha hehezu kaho sa ha si ha".to_string();
+        let text = "ze ta za pirana sa za hehezu kaho sa za si za".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_hi無しの通常の文は今まで通り通る() {
-        // 回帰確認: ha/huを使わない文はhiの有無に関わらず今まで通り。
+    fn test_ze無しの通常の文は今まで通り通る() {
+        // 回帰確認: za/ziを使わない文はzeの有無に関わらず今まで通り。
         let text = "pahete sa mi si ri behapare hehegi pahete sa ba si ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_宣言し忘れた変数はhiの中でも未束縛エラーになる() {
-        // hu用の宣言(ta hu / to hu)を忘れると、huは自由変数のまま残りエラーになる。
-        let text = "hi ta ha kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+    fn test_宣言し忘れた変数はzeの中でも未束縛エラーになる() {
+        // zi用の宣言(ta zi / to zi)を忘れると、ziは自由変数のまま残りエラーになる。
+        let text = "ze ta za kagurita sa za si zi hehezu kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_ha_hu以外を量化子宣言に使うとエラーになる() {
-        let text = "hi ta mi kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+    fn test_za_zi以外を量化子宣言に使うとエラーになる() {
+        let text = "ze ta mi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_teやtiを量化子宣言に使うとエラーになる() {
-        let text = "hi te ha to hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let text = "ze te za to zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
@@ -1016,8 +1016,8 @@ mod tests {
     fn test_taとtoでforallとexistsを使い分けられる() {
         use formal_semantics::{Formula, to_fol};
 
-        // hi ta ha to hu [本文]: haは∀、huは∃で閉じる。
-        let text = "hi ta ha to hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        // ze ta za to zi [本文]: zaは∀、ziは∃で閉じる。
+        let text = "ze ta za to zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
         let tokens = tokenizer::tokenize(&text).unwrap();
         let sentences = tokenizer::add_eos_to_last_sentence(tokens);
         let ast = parser::parse(sentences[0].clone()).unwrap();
@@ -1025,24 +1025,24 @@ mod tests {
 
         match formula {
             Formula::Forall(x1, body1) => {
-                assert_eq!(x1, "ha");
+                assert_eq!(x1, "za");
                 match *body1 {
                     Formula::Exists(x2, body2) => {
-                        assert_eq!(x2, "hu");
+                        assert_eq!(x2, "zi");
                         assert!(matches!(*body2, Formula::And(_, _)));
                     }
-                    other => panic!("expected nested Exists(hu, ...), got {other:?}"),
+                    other => panic!("expected nested Exists(zi, ...), got {other:?}"),
                 }
             }
-            other => panic!("expected Forall(ha, ...), got {other:?}"),
+            other => panic!("expected Forall(za, ...), got {other:?}"),
         }
     }
 
     #[test]
-    fn test_hiとhehezuの論理式がforallとiffの組み合わせになっている() {
+    fn test_zeとhehezuの論理式がforallとiffの組み合わせになっている() {
         use formal_semantics::{Formula, to_fol};
 
-        let text = "hi ta ha ta hu kagurita sa ha si hu hehezu kaho sa ha si hu".to_string();
+        let text = "ze ta za ta zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
         let tokens = tokenizer::tokenize(&text).unwrap();
         let sentences = tokenizer::add_eos_to_last_sentence(tokens);
         let ast = parser::parse(sentences[0].clone()).unwrap();
@@ -1050,22 +1050,22 @@ mod tests {
 
         match formula {
             Formula::Forall(x1, body1) => {
-                assert_eq!(x1, "ha");
+                assert_eq!(x1, "za");
                 match *body1 {
                     Formula::Forall(x2, body2) => {
-                        assert_eq!(x2, "hu");
+                        assert_eq!(x2, "zi");
                         assert!(matches!(*body2, Formula::And(_, _)));
                     }
-                    other => panic!("expected nested Forall(hu, ...), got {other:?}"),
+                    other => panic!("expected nested Forall(zi, ...), got {other:?}"),
                 }
             }
-            other => panic!("expected Forall(ha, ...), got {other:?}"),
+            other => panic!("expected Forall(za, ...), got {other:?}"),
         }
     }
 
     #[test]
     fn test_2つの無関係な定義文をまとめて解析しても束縛が独立している() {
-        let text = "hi ta ha ta hu kagurita sa ha si hu hehezu kaho sa ha si hu eos hi ta ha ta hu guzorata sa ha si hu hehezu parobe sa ha si hu".to_string();
+        let text = "ze ta za ta zi kagurita sa za si zi hehezu kaho sa za si zi eos ze ta za ta zi guzorata sa za si zi hehezu parobe sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

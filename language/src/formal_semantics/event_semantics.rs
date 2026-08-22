@@ -226,9 +226,9 @@ enum ArgCtx {
     /// Fresh existential variable with no restriction (from epsilon arg2).
     /// `scope()` wraps with ∃var.body.
     ExistOnly(String),
-    /// Schema variable (`ha`/`hu`). Contributes `Term::Var(name)` like `ExistOnly`, but
+    /// Schema variable (`za`/`zi`). Contributes `Term::Var(name)` like `ExistOnly`, but
     /// `scope()` is a no-op (unlike `ExistOnly`): the variable is left free here and is
-    /// closed only by an enclosing `hi`(全称量化マーカー) via `UniversalSentence::to_fol`.
+    /// closed only by an enclosing `ze`(全称量化マーカー) via `UniversalSentence::to_fol`.
     FreeVar(String),
     /// Negated argument phrase.
     Neg(Box<ArgCtx>),
@@ -408,7 +408,7 @@ impl InterrogativeSentence {
 }
 
 impl UniversalSentence {
-    /// hi(全称量化マーカー)。直後に宣言された量化子(ta→∀, to→∃)+変数のリストを宣言順にたどり、
+    /// ze(全称量化マーカー)。直後に宣言された量化子(ta→∀, to→∃)+変数のリストを宣言順にたどり、
     /// 逆順に畳み込んで本文を明示的に束縛する。NP量化詞の`ta`(すべての)が`Forall`に翻訳される
     /// のと同じ語を再利用する、素直なASTからの翻訳(本文を後から走査して推測することはしない)。
     /// `te`/`ti`はここでは無効な量化子だが、argument_type_checker側で別途エラーにするため、
@@ -432,18 +432,18 @@ impl UniversalSentence {
     }
 }
 
-/// `ha`/`hu`(定義文用のスキーマ変数)を指す名前かどうか。`free_variables`の結果から
+/// `za`/`zi`(定義文用のスキーマ変数)を指す名前かどうか。`free_variables`の結果から
 /// スキーマ変数だけを絞り込むために使う(`lib.rs`参照)。
 pub fn is_schema_variable_name(name: &str) -> bool {
-    name == "ha" || name == "hu"
+    name == "za" || name == "zi"
 }
 
 /// `formula`に含まれる、`Forall`/`Exists`/`GenQ`で束縛されていない`Term::Var`の名前を、
-/// 最初に出現した順で(重複無く)返す。`hi`マーカーの`to_fol`(上記)で使う。
+/// 最初に出現した順で(重複無く)返す。`ze`マーカーの`to_fol`(上記)で使う。
 ///
-/// 注意: `ha`/`hu`以外にも、この関数は既存の(このスキーマ変数機能とは無関係な)
+/// 注意: `za`/`zi`以外にも、この関数は既存の(このスキーマ変数機能とは無関係な)
 /// 述語生成コードに起因する未束縛変数(例: 項が省略された`ri`/`ra`によるイベント名詞化で
-/// 生じるAgent/Patientのプレースホルダ変数)も返しうる。呼び出し側で`ha`/`hu`かどうかを
+/// 生じるAgent/Patientのプレースホルダ変数)も返しうる。呼び出し側で`za`/`zi`かどうかを
 /// `is_schema_variable_name`で絞り込むこと。
 pub fn free_variables(formula: &Formula) -> Vec<String> {
     let mut bound = std::collections::HashSet::new();
@@ -769,7 +769,7 @@ fn build_event_inner(
 impl ArgumentPhrase {
     fn to_fol(&self, vg: &mut VarGen) -> ArgCtx {
         match self {
-            // Bare pronoun → individual constant, except ha/hu (schema variables) → free variable.
+            // Bare pronoun → individual constant, except za/zi (schema variables) → free variable.
             ArgumentPhrase::One(arg) if arg.is_schema_variable() => {
                 ArgCtx::FreeVar(arg.get_string())
             }

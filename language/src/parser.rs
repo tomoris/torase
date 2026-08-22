@@ -327,8 +327,8 @@ pub enum InterrogativeSentence {
     One(InterrogativeMarker, PostModifiedMtaEvent),
 }
 
-/// 定義文(全称量化された平叙文)。`ha`/`hu`(スキーマ変数)を含む平叙文を`hi`で始めることで、
-/// `∀ha. ∀hu. (...)`として閉じる。`InterrogativeSentence`(`ku`)と全く同じ構造(開始マーカーのみ、
+/// 定義文(全称量化された平叙文)。`za`/`zi`(スキーマ変数)を含む平叙文を`ze`で始めることで、
+/// `∀za. ∀zi. (...)`として閉じる。`InterrogativeSentence`(`ku`)と全く同じ構造(開始マーカーのみ、
 /// 閉じマーカー無し)。詳細は`docs/language_design/morphology.md`参照。
 #[derive(Clone, Debug)]
 pub enum UniversalSentence {
@@ -418,14 +418,14 @@ pub enum CaseArg {
     One(CaseLabel, TypeOverrideModifier, ArgumentPhrase),
 }
 
-/// `hi`の直後の量化子宣言1つ分(`ta ha`や`to hu`)。`CaseArg`と同じく、それ自体はLL(1)の
+/// `ze`の直後の量化子宣言1つ分(`ta za`や`to zi`)。`CaseArg`と同じく、それ自体はLL(1)の
 /// 非終端記号として登録せず、`QuantifiedVariableList`の中だけで組み立てるデータ型。
 #[derive(Clone, Debug)]
 pub enum QuantifiedVariable {
     One(Quantifier, Argument),
 }
 
-/// `hi`の直後に並ぶ量化子宣言の可変長リスト(`ta ha to hu`等)。`OptionalCaseArgs`と同じ形。
+/// `ze`の直後に並ぶ量化子宣言の可変長リスト(`ta za to zi`等)。`OptionalCaseArgs`と同じ形。
 #[derive(Clone, Debug)]
 pub enum QuantifiedVariableList {
     One(QuantifiedVariable, Box<QuantifiedVariableList>),
@@ -2179,7 +2179,7 @@ impl UniversalSentence {
 }
 
 impl QuantifiedVariableList {
-    /// `hi`直後に宣言された(量化力, 変数)のペアを宣言順で返す。
+    /// `ze`直後に宣言された(量化力, 変数)のペアを宣言順で返す。
     pub(crate) fn variables(&self) -> Vec<(&Quantifier, &Argument)> {
         match self {
             QuantifiedVariableList::One(QuantifiedVariable::One(force, arg), rest) => {
