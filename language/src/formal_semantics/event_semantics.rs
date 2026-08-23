@@ -516,8 +516,10 @@ impl PostModifiedMtaEvent {
                     PostMtaEventModifierKind::Hehomu => {
                         xor_formula(mta.to_fol(vg), mta2.to_fol(vg))
                     }
-                    // hezu (条件): P1ならP2する
-                    PostMtaEventModifierKind::Hezu => {
+                    // hezu (条件): P1ならP2する。henezu (反実仮想条件): もしP1だったならP2する。
+                    // 法・言説関係の違い(直説法か反実仮想か)は他の接続詞群と同様に真理条件には
+                    // 反映せず、両者とも同じ実質含意(P1→P2)に変換する。
+                    PostMtaEventModifierKind::Hezu | PostMtaEventModifierKind::Henezu => {
                         Formula::Implies(Box::new(mta.to_fol(vg)), Box::new(mta2.to_fol(vg)))
                     }
                     // hehezu (定義): P1とP2は同値(P1↔P2)。hehegi(単なる言い換え、And)とは異なり、
@@ -1136,6 +1138,16 @@ mod tests {
     fn test_接続詞_hezu_条件() {
         check(
             "pahete sa mi si ri behapare hezu pahete sa ba si ri behoranage",
+            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+        );
+    }
+
+    #[test]
+    fn test_接続詞_henezu_反実仮想条件() {
+        // henezu(反実仮想条件)はhezu(条件)と法・言説関係が異なるだけで、
+        // 真理条件(FOL)は同じ実質含意になる。
+        check(
+            "pahete sa mi si ri behapare henezu pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }

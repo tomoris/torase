@@ -160,6 +160,13 @@
         "definition": null,
         "description": "接続詞(反対の原因→結果)。P1なのにもかかわらずP2する。"
     },
+    "henezu": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "PostMtaEventModifier",
+        "definition": null,
+        "description": "接続詞(反実仮想条件)。もしP1だったならP2する。`hezu`(条件。P1の真偽を保留する直説法条件文)とは異なり、P1が実際には成り立たない(または成り立たなかった)という前提を伴う反実仮想条件文専用の接続詞。真理条件は`hezu`と同じ実質含意(P1→P2)で、法・言説関係の違いは真理条件レベルでは区別しない(他の接続詞群と同様)。それ自体は時制中立で、節内の`hita`(過去)/`hiti`(現在)と組み合わせて過去反実仮想・現在反実仮想を分析的に区別する。"
+    },
     "hesute": {
         "original_spelling": null,
         "original_pronunciation": null,

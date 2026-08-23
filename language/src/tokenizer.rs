@@ -695,6 +695,7 @@ pub enum PostMtaEventModifierKind {
     Hehiti,   // 接続詞(同時)
     Hehitu,   // 接続詞(時間後)
     Hezu,     // 接続詞(条件)
+    Henezu,   // 接続詞(反実仮想条件)
     Hehema,   // 接続詞(例示)
     Hehegi,   // 接続詞(言い換え)
     Hehenu,   // 接続詞(対比)
@@ -1362,6 +1363,7 @@ define_surface_token!(PostMtaEventModifier, PostMtaEventModifierKind, "post mta 
     Hehiti: "hehiti",
     Hehitu: "hehitu",
     Hezu: "hezu",
+    Henezu: "henezu",
     Hehema: "hehema",
     Hehegi: "hehegi",
     Hehenu: "hehenu",

@@ -383,7 +383,8 @@ ze (ta|to) za (ta|to) zi [平叙文]
 - `hehita` (時間前) - P1の前にP2する
 - `hehiti` (同時) - P1、P2を同時にする
 - `hehitu` (時間後) - P1の後にP2する
-- `hezu` (条件) - P1ならP2する
+- `hezu` (直説法条件) - もしP1ならP2する
+- `henezu` (反実仮想条件) - もしP1だったならP2する
 - `hehema` (例示) - P1例えばP2
 - `hehegi` (言い換え) - P1つまりP2
 - `hehenu` (対比) - P1、一方P2

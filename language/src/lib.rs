@@ -467,6 +467,29 @@ mod tests {
     }
 
     #[test]
+    fn test_接続詞_henezu() {
+        let text = "pahete sa mi si ri behapare henezu pahete sa ba si ri behoranage".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_henezu_過去反実仮想() {
+        let text = "hita pahete sa mi si ri behapare henezu hita pahete sa ba si ri behoranage"
+            .to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_接続詞_henezu_現在反実仮想() {
+        let text = "hiti pahete sa mi si ri behapare henezu hiti pahete sa ba si ri behoranage"
+            .to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_接続詞_hehema() {
         let text = "pahete sa mi si ri behapare hehema pahete sa ba si ri behoranage".to_string();
         let result = diagnose(text);
