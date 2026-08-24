@@ -7,6 +7,7 @@ use std::hash::Hash;
 use crate::parser::*;
 use crate::tokenizer::{
     ArgumentRetrieverKind, ArgumentType, CaseLabelKind, PhysicalEntity, Quantifier, Range,
+    RoleLabelKind,
 };
 
 pub struct TypeMismatch {
@@ -104,22 +105,33 @@ impl QuantifiedVariableList {
 impl PostModifiedMtaEvent {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
-                mta_event.type_check()?;
-                post_mta_event_expression.type_check()
+            PostModifiedMtaEvent::One(mta_event) => mta_event.type_check(),
+            PostModifiedMtaEvent::Two(_connective_head, role_arg1, role_arg2) => {
+                role_arg1.get_mta_event().type_check()?;
+                role_arg2.get_mta_event().type_check()?;
+                check_role_arg_pair(role_arg1, role_arg2)
             }
         }
     }
 }
 
-impl PostMtaEventExpression {
-    fn type_check(&self) -> TypeMismatchResult {
-        match self {
-            PostMtaEventExpression::One(_post_mta_event_modifier, mta_event) => {
-                mta_event.type_check()
-            }
-            PostMtaEventExpression::Epsilon => Ok(()),
-        }
+fn check_role_arg_pair(role_arg1: &RoleArg, role_arg2: &RoleArg) -> TypeMismatchResult {
+    let kinds = [
+        role_arg1.get_label().get_kind(),
+        role_arg2.get_label().get_kind(),
+    ];
+    let has_hesa = kinds.iter().any(|k| matches!(k, RoleLabelKind::Hesa));
+    let has_hesi = kinds.iter().any(|k| matches!(k, RoleLabelKind::Hesi));
+    if has_hesa && has_hesi {
+        Ok(())
+    } else {
+        Err(TypeMismatch {
+            range: role_arg2.get_range(),
+            actual: vec![],
+            expected: vec![],
+            message: "接続詞の2つの節はhesa/hesiちょうど1つずつで役割標識されなければなりません"
+                .to_string(),
+        })
     }
 }
 

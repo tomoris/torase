@@ -157,7 +157,7 @@ non_terminal_dispatch!(
     UniversalSentence,
     QuantifiedVariableList,
     PostModifiedMtaEvent,
-    PostMtaEventExpression,
+    RoleArg,
     ModalityExpression,
     ModifiedModality,
     TenseExpression,
@@ -242,7 +242,7 @@ pub enum NonTerminalType {
     UniversalSentence(UniversalSentence),
     QuantifiedVariableList(QuantifiedVariableList),
     PostModifiedMtaEvent(PostModifiedMtaEvent),
-    PostMtaEventExpression(PostMtaEventExpression),
+    RoleArg(RoleArg),
     ModalityExpression(ModalityExpression),
     ModifiedModality(ModifiedModality),
     TenseExpression(TenseExpression),
@@ -279,7 +279,7 @@ pub enum DummyNonTerminalType {
     UniversalSentence,
     QuantifiedVariableList,
     PostModifiedMtaEvent,
-    PostMtaEventExpression,
+    RoleArg,
     ModalityExpression,
     ModifiedModality,
     TenseExpression,
@@ -327,9 +327,6 @@ pub enum InterrogativeSentence {
     One(InterrogativeMarker, PostModifiedMtaEvent),
 }
 
-/// 定義文(全称量化された平叙文)。`za`/`zi`(スキーマ変数)を含む平叙文を`ze`で始めることで、
-/// `∀za. ∀zi. (...)`として閉じる。`InterrogativeSentence`(`ku`)と全く同じ構造(開始マーカーのみ、
-/// 閉じマーカー無し)。詳細は`docs/language_design/morphology.md`参照。
 #[derive(Clone, Debug)]
 pub enum UniversalSentence {
     One(
@@ -341,13 +338,13 @@ pub enum UniversalSentence {
 
 #[derive(Clone, Debug)]
 pub enum PostModifiedMtaEvent {
-    One(MtaEvent, PostMtaEventExpression),
+    One(MtaEvent),
+    Two(ConnectiveHead, RoleArg, RoleArg),
 }
 
 #[derive(Clone, Debug)]
-pub enum PostMtaEventExpression {
-    One(PostMtaEventModifier, MtaEvent),
-    Epsilon,
+pub enum RoleArg {
+    One(RoleLabel, Box<MtaEvent>),
 }
 
 #[derive(Clone, Debug)]
@@ -418,14 +415,11 @@ pub enum CaseArg {
     One(CaseLabel, TypeOverrideModifier, ArgumentPhrase),
 }
 
-/// `ze`の直後の量化子宣言1つ分(`ta za`や`to zi`)。`CaseArg`と同じく、それ自体はLL(1)の
-/// 非終端記号として登録せず、`QuantifiedVariableList`の中だけで組み立てるデータ型。
 #[derive(Clone, Debug)]
 pub enum QuantifiedVariable {
     One(Quantifier, Argument),
 }
 
-/// `ze`の直後に並ぶ量化子宣言の可変長リスト(`ta za to zi`等)。`OptionalCaseArgs`と同じ形。
 #[derive(Clone, Debug)]
 pub enum QuantifiedVariableList {
     One(QuantifiedVariable, Box<QuantifiedVariableList>),
@@ -467,11 +461,9 @@ pub enum ArgumentPhrase {
     ),
 }
 
-/// BinaryPredicatePhrase の否定なしバリアント（多重否定防止用）
 #[derive(Clone, Debug)]
 pub struct NonNegatedBinaryPredicatePhrase(pub BinaryPredicatePhrase);
 
-/// ArgumentPhrase の否定なしバリアント（多重否定防止用）
 #[derive(Clone, Debug)]
 pub struct NonNegatedArgumentPhrase(pub ArgumentPhrase);
 
@@ -552,7 +544,8 @@ impl S {
             | DummyTerminalType::Negation
             | DummyTerminalType::BinaryPredicate
             | DummyTerminalType::PredicateOperator
-            | DummyTerminalType::MtaEventOperator => {
+            | DummyTerminalType::MtaEventOperator
+            | DummyTerminalType::ConnectiveHead => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::DeclarativeSentence,
                 )]))
@@ -595,7 +588,8 @@ impl DeclarativeSentence {
             | DummyTerminalType::Negation
             | DummyTerminalType::BinaryPredicate
             | DummyTerminalType::PredicateOperator
-            | DummyTerminalType::MtaEventOperator => {
+            | DummyTerminalType::MtaEventOperator
+            | DummyTerminalType::ConnectiveHead => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::PostModifiedMtaEvent,
                 )]))
@@ -657,8 +651,8 @@ impl QuantifiedVariableList {
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifiedVariableList),
             ])),
             // QuantifiedVariableListはUniversalSentence内でPostModifiedMtaEventの直前にしか
-            // 現れないため、epsilonはPostModifiedMtaEvent(実質MtaEvent)のFIRST集合のみでよい
-            // (OptionalCaseArgsのように複数箇所に埋め込まれるわけではない)。
+            // 現れないため、epsilonはPostModifiedMtaEvent(実質MtaEvent、およびConnectiveHead)
+            // のFIRST集合のみでよい(OptionalCaseArgsのように複数箇所に埋め込まれるわけではない)。
             DummyTerminalType::ModalityBase
             | DummyTerminalType::Tense
             | DummyTerminalType::Aspect
@@ -668,7 +662,8 @@ impl QuantifiedVariableList {
             | DummyTerminalType::Negation
             | DummyTerminalType::BinaryPredicate
             | DummyTerminalType::PredicateOperator
-            | DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Epsilon),
+            | DummyTerminalType::MtaEventOperator
+            | DummyTerminalType::ConnectiveHead => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -732,9 +727,15 @@ impl PostModifiedMtaEvent {
             | DummyTerminalType::Negation
             | DummyTerminalType::BinaryPredicate
             | DummyTerminalType::PredicateOperator
-            | DummyTerminalType::MtaEventOperator => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::PostMtaEventExpression),
+            | DummyTerminalType::MtaEventOperator => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::MtaEvent,
+                )]))
+            }
+            DummyTerminalType::ConnectiveHead => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ConnectiveHead),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RoleArg),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RoleArg),
             ])),
             _ => Err(()),
         }
@@ -742,10 +743,14 @@ impl PostModifiedMtaEvent {
     fn new(rhs: Rhs) -> Self {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
+                [SymbolType::NonTerminal(NonTerminalType::MtaEvent(child1))] => {
+                    Self::One(child1.clone())
+                }
                 [
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::PostMtaEventExpression(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
+                    SymbolType::Terminal(TerminalType::ConnectiveHead(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::RoleArg(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::RoleArg(child3)),
+                ] => Self::Two(child1.clone(), child2.clone(), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -757,14 +762,13 @@ impl PostModifiedMtaEvent {
     }
 }
 
-impl PostMtaEventExpression {
+impl RoleArg {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::PostMtaEventModifier => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(DummyTerminalType::PostMtaEventModifier),
+            DummyTerminalType::RoleLabel => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::RoleLabel),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
             ])),
-            DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -772,14 +776,16 @@ impl PostMtaEventExpression {
         match rhs {
             Rhs::Sequence(ref symbols) => match symbols.as_slice() {
                 [
-                    SymbolType::Terminal(TerminalType::PostMtaEventModifier(child1)),
+                    SymbolType::Terminal(TerminalType::RoleLabel(child1)),
                     SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
-                ] => Self::One(child1.clone(), child2.clone()),
+                ] => Self::One(child1.clone(), Box::new(child2.clone())),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
             },
-            Rhs::Epsilon => Self::Epsilon,
+            Rhs::Epsilon => {
+                panic!("Unexpected epsilon");
+            }
         }
     }
 }
@@ -1145,6 +1151,9 @@ impl OptionalCaseArgs {
             // MtaEvent::Two (homa/homi/homu) lets an MtaEvent be immediately followed by
             // another MtaEvent, so OptionalCaseArgs must epsilon out on any token that can
             // start an MtaEvent too (same terminal set as MtaEvent::parse_table's FIRST set).
+            // RoleLabel(hesa/hesi)もFOLLOW(MtaEvent)に含まれる: RoleArg::One(RoleLabel, MtaEvent)の
+            // MtaEventが最後のシンボルであり、PostModifiedMtaEvent::Twoで2つのRoleArgが連続する
+            // ため、1つ目のRoleArg内のMtaEventの直後にRoleLabel(2つ目のRoleArgの先頭)が来うる。
             DummyTerminalType::ModalityBase
             | DummyTerminalType::Tense
             | DummyTerminalType::Aspect
@@ -1156,7 +1165,7 @@ impl OptionalCaseArgs {
             | DummyTerminalType::PredicateOperator
             | DummyTerminalType::MtaEventOperator
             | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
-            | DummyTerminalType::PostMtaEventModifier
+            | DummyTerminalType::RoleLabel
             | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
@@ -1238,8 +1247,8 @@ impl PostBinaryPredicatePhraseExpression {
             | DummyTerminalType::PredicateOperator
             | DummyTerminalType::MtaEventOperator
             | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
-            | DummyTerminalType::PostMtaEventModifier
             | DummyTerminalType::PostArgumentPhraseModifier
+            | DummyTerminalType::RoleLabel
             | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostBinaryPredicatePhraseModifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(
@@ -1609,7 +1618,7 @@ impl ArgumentRetrievalWithArgumentPhrase {
             | DummyTerminalType::PredicateOperator
             | DummyTerminalType::MtaEventOperator
             | DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
-            | DummyTerminalType::PostMtaEventModifier
+            | DummyTerminalType::RoleLabel
             | DummyTerminalType::Eos => Ok(DummyRhs::Epsilon),
             DummyTerminalType::PostArgumentPhraseModifier => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::PostArgumentPhraseModifier),
@@ -2128,14 +2137,40 @@ impl MtaEvent {
 impl PostModifiedMtaEvent {
     pub(crate) fn get_range(&self) -> Range {
         match self {
-            PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
+            PostModifiedMtaEvent::One(mta_event) => {
                 let start = mta_event.get_range().start();
-                let end = match post_mta_event_expression {
-                    PostMtaEventExpression::One(_, mta_event2) => mta_event2.get_range().end(),
-                    PostMtaEventExpression::Epsilon => mta_event.get_range().end(),
-                };
+                let end = mta_event.get_range().end();
                 Range::new(start, end)
             }
+            PostModifiedMtaEvent::Two(connective_head, _role_arg1, role_arg2) => {
+                let start = connective_head.get_range().start();
+                let end = role_arg2.get_range().end();
+                Range::new(start, end)
+            }
+        }
+    }
+}
+
+impl RoleArg {
+    pub(crate) fn get_range(&self) -> Range {
+        match self {
+            RoleArg::One(role_label, mta_event) => {
+                let start = role_label.get_range().start();
+                let end = mta_event.get_range().end();
+                Range::new(start, end)
+            }
+        }
+    }
+
+    pub fn get_label(&self) -> &RoleLabel {
+        match self {
+            RoleArg::One(role_label, _) => role_label,
+        }
+    }
+
+    pub fn get_mta_event(&self) -> &MtaEvent {
+        match self {
+            RoleArg::One(_, mta_event) => mta_event,
         }
     }
 }
@@ -2248,8 +2283,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let post_mta_event_expression = grammar::NonTerminal(
-            type_name::<PostMtaEventExpression>()
+        let role_arg = grammar::NonTerminal(
+            type_name::<RoleArg>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2512,6 +2547,13 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let role_label = grammar::Terminal(
+            type_name::<RoleLabel>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
         let type_override = grammar::Terminal(
             type_name::<TypeOverride>()
                 .split("::")
@@ -2582,8 +2624,8 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
-        let post_mta_event_modifier = grammar::Terminal(
-            type_name::<PostMtaEventModifier>()
+        let connective_head = grammar::Terminal(
+            type_name::<ConnectiveHead>()
                 .split("::")
                 .last()
                 .unwrap()
@@ -2654,20 +2696,21 @@ mod tests {
         );
         rules.insert(
             post_modified_mta_event.clone(),
-            vec![grammar::Rhs::Sequence(vec![
-                grammar::Symbol::NonTerminal(mta_event.clone()),
-                grammar::Symbol::NonTerminal(post_mta_event_expression.clone()),
-            ])],
+            vec![
+                grammar::Rhs::Sequence(vec![grammar::Symbol::NonTerminal(mta_event.clone())]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(connective_head.clone()),
+                    grammar::Symbol::NonTerminal(role_arg.clone()),
+                    grammar::Symbol::NonTerminal(role_arg.clone()),
+                ]),
+            ],
         );
         rules.insert(
-            post_mta_event_expression.clone(),
-            vec![
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(post_mta_event_modifier.clone()),
-                    grammar::Symbol::NonTerminal(mta_event.clone()),
-                ]),
-                grammar::Rhs::Epsilon,
-            ],
+            role_arg.clone(),
+            vec![grammar::Rhs::Sequence(vec![
+                grammar::Symbol::Terminal(role_label.clone()),
+                grammar::Symbol::NonTerminal(mta_event.clone()),
+            ])],
         );
         rules.insert(
             modality_expression.clone(),
@@ -2948,6 +2991,7 @@ mod tests {
                     "BinaryPredicate" => DummyTerminalType::BinaryPredicate,
                     "Argument" => DummyTerminalType::Argument,
                     "CaseLabel" => DummyTerminalType::CaseLabel,
+                    "RoleLabel" => DummyTerminalType::RoleLabel,
                     "TypeOverride" => DummyTerminalType::TypeOverride,
                     "PredicateOperator" => DummyTerminalType::PredicateOperator,
                     "ArgumentOperator" => DummyTerminalType::ArgumentOperator,
@@ -2962,7 +3006,7 @@ mod tests {
                     "MtaEventToArgumentPhraseConverterEnd" => {
                         DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
                     }
-                    "PostMtaEventModifier" => DummyTerminalType::PostMtaEventModifier,
+                    "ConnectiveHead" => DummyTerminalType::ConnectiveHead,
                     "PostBinaryPredicatePhraseModifier" => {
                         DummyTerminalType::PostBinaryPredicatePhraseModifier
                     }
@@ -2994,7 +3038,7 @@ mod tests {
             "UniversalSentence" => UniversalSentence::parse_table(tt),
             "QuantifiedVariableList" => QuantifiedVariableList::parse_table(tt),
             "PostModifiedMtaEvent" => PostModifiedMtaEvent::parse_table(tt),
-            "PostMtaEventExpression" => PostMtaEventExpression::parse_table(tt),
+            "RoleArg" => RoleArg::parse_table(tt),
             "ModalityExpression" => ModalityExpression::parse_table(tt),
             "ModifiedModality" => ModifiedModality::parse_table(tt),
             "TenseExpression" => TenseExpression::parse_table(tt),
@@ -3057,7 +3101,7 @@ mod tests {
                                                 DummyNonTerminalType::UniversalSentence => "UniversalSentence",
                                                 DummyNonTerminalType::QuantifiedVariableList => "QuantifiedVariableList",
                                                 DummyNonTerminalType::PostModifiedMtaEvent => "PostModifiedMtaEvent",
-                                                DummyNonTerminalType::PostMtaEventExpression => "PostMtaEventExpression",
+                                                DummyNonTerminalType::RoleArg => "RoleArg",
                                                 DummyNonTerminalType::ModalityExpression => "ModalityExpression",
                                                 DummyNonTerminalType::ModifiedModality => "ModifiedModality",
                                                 DummyNonTerminalType::TenseExpression => "TenseExpression",
@@ -3109,6 +3153,7 @@ mod tests {
                                         DummyTerminalType::BinaryPredicate => "BinaryPredicate",
                                         DummyTerminalType::Argument => "Argument",
                                         DummyTerminalType::CaseLabel => "CaseLabel",
+                                        DummyTerminalType::RoleLabel => "RoleLabel",
                                         DummyTerminalType::TypeOverride => "TypeOverride",
                                         DummyTerminalType::PredicateOperator => "PredicateOperator",
                                         DummyTerminalType::ArgumentOperator => "ArgumentOperator",
@@ -3123,9 +3168,7 @@ mod tests {
                                         DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => {
                                             "MtaEventToArgumentPhraseConverterEnd"
                                         }
-                                        DummyTerminalType::PostMtaEventModifier => {
-                                            "PostMtaEventModifier"
-                                        }
+                                        DummyTerminalType::ConnectiveHead => "ConnectiveHead",
                                         DummyTerminalType::PostBinaryPredicatePhraseModifier => {
                                             "PostBinaryPredicatePhraseModifier"
                                         }

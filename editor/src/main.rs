@@ -260,6 +260,7 @@ fn token_color(token: &TerminalType) -> Option<Color> {
             Some(Color::from_rgba8(210, 210, 50, 0.25))
         }
         TerminalType::CaseLabel(_) => Some(Color::from_rgba8(60, 160, 180, 0.25)),
+        TerminalType::RoleLabel(_) => Some(Color::from_rgba8(220, 170, 90, 0.25)),
         TerminalType::TypeOverride(_) => Some(Color::from_rgba8(60, 200, 120, 0.25)),
         TerminalType::PredicateOperator(_)
         | TerminalType::ArgumentOperator(_)
@@ -272,9 +273,9 @@ fn token_color(token: &TerminalType) -> Option<Color> {
         | TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => {
             Some(Color::from_rgba8(210, 60, 210, 0.25))
         }
-        TerminalType::PostMtaEventModifier(_)
-        | TerminalType::PostBinaryPredicatePhraseModifier(_)
+        TerminalType::PostBinaryPredicatePhraseModifier(_)
         | TerminalType::PostArgumentPhraseModifier(_) => Some(Color::from_rgba8(60, 60, 180, 0.25)),
+        TerminalType::ConnectiveHead(_) => Some(Color::from_rgba8(220, 140, 40, 0.25)),
         TerminalType::Eos(_) => None,
     }
 }
@@ -606,13 +607,19 @@ impl TreeViewer for PostModifiedMtaEvent {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(253, 240, 235);
         match self {
-            PostModifiedMtaEvent::One(mta_event, post_mta_event_expression) => {
+            PostModifiedMtaEvent::One(mta_event) => {
                 let category = "PostModifiedMtaEvent".to_string();
-                let mut parts = vec![mta_event.view(is_full)];
-                if is_full || !post_mta_event_expression.is_empty() {
-                    parts.push(post_mta_event_expression.view(is_full));
-                }
+                let parts = vec![mta_event.view(is_full)];
                 category_box(category, row_with_separator(parts), background)
+            }
+            PostModifiedMtaEvent::Two(connective_head, role_arg1, role_arg2) => {
+                let category = "PostModifiedMtaEvent".to_string();
+                let content = row_with_separator(vec![
+                    text(connective_head.get_string()).into(),
+                    role_arg1.view(is_full),
+                    role_arg2.view(is_full),
+                ]);
+                category_box(category, content, background)
             }
         }
     }
@@ -621,27 +628,22 @@ impl TreeViewer for PostModifiedMtaEvent {
     }
 }
 
-impl TreeViewer for PostMtaEventExpression {
+impl TreeViewer for RoleArg {
     fn view(&self, is_full: bool) -> Element<'static, Message> {
         let background = iced::Color::from_rgb8(251, 228, 218);
         match self {
-            PostMtaEventExpression::One(post_mta_event_modifier, mta_event) => {
-                let category = "PostMtaEventExpression".to_string();
+            RoleArg::One(role_label, mta_event) => {
+                let category = "RoleArg".to_string();
                 let content = row_with_separator(vec![
-                    text(post_mta_event_modifier.get_string()).into(),
+                    text(role_label.get_string()).into(),
                     mta_event.view(is_full),
                 ]);
-                category_box(category, content, background)
-            }
-            PostMtaEventExpression::Epsilon => {
-                let category = "PostMtaEventExpression".to_string();
-                let content = text("ε").into();
                 category_box(category, content, background)
             }
         }
     }
     fn is_empty(&self) -> bool {
-        matches!(self, PostMtaEventExpression::Epsilon)
+        false
     }
 }
 

@@ -195,12 +195,16 @@ impl PostModifiedMtaEvent {
     /// PostModifiedMtaEvent : t
     fn infer_type(&self) -> TCResult {
         match self {
-            PostModifiedMtaEvent::One(mta, post_expr) => {
-                let t = mta.infer_type()?;
-                if let PostMtaEventExpression::One(_modifier, mta2) = post_expr {
-                    mta2.infer_type()?;
+            PostModifiedMtaEvent::One(mta) => mta.infer_type(),
+            PostModifiedMtaEvent::Two(_head, arg1, arg2) => {
+                let m1 = arg1.get_mta_event();
+                let m2 = arg2.get_mta_event();
+                let t1 = m1.infer_type()?;
+                let t2 = m2.infer_type()?;
+                if t1 != t2 {
+                    return Err(TypeMismatch::new(m2.get_range(), t2, t1));
                 }
-                Ok(t)
+                Ok(t1)
             }
         }
     }

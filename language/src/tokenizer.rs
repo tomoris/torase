@@ -131,10 +131,14 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                     token.0, token.1, token.2, token.3, token.4,
                 ),
             ));
-        } else if PostMtaEventModifier::is_match(token.0) {
-            doc.push(TerminalType::PostMtaEventModifier(
-                PostMtaEventModifier::new(token.0, token.1, token.2, token.3, token.4),
-            ));
+        } else if ConnectiveHead::is_match(token.0) {
+            doc.push(TerminalType::ConnectiveHead(ConnectiveHead::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+        } else if RoleLabel::is_match(token.0) {
+            doc.push(TerminalType::RoleLabel(RoleLabel::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if PostBinaryPredicatePhraseModifier::is_match(token.0) {
             doc.push(TerminalType::PostBinaryPredicatePhraseModifier(
                 PostBinaryPredicatePhraseModifier::new(token.0, token.1, token.2, token.3, token.4),
@@ -263,7 +267,8 @@ pub enum TerminalType {
     Determiner(Determiner),
     MtaEventToArgumentPhraseConverter(MtaEventToArgumentPhraseConverter),
     MtaEventToArgumentPhraseConverterEnd(MtaEventToArgumentPhraseConverterEnd),
-    PostMtaEventModifier(PostMtaEventModifier),
+    ConnectiveHead(ConnectiveHead),
+    RoleLabel(RoleLabel),
     PostBinaryPredicatePhraseModifier(PostBinaryPredicatePhraseModifier),
     PostArgumentPhraseModifier(PostArgumentPhraseModifier),
     Eos(Eos),
@@ -293,7 +298,8 @@ pub enum DummyTerminalType {
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
-    PostMtaEventModifier,
+    ConnectiveHead,
+    RoleLabel,
     PostBinaryPredicatePhraseModifier,
     PostArgumentPhraseModifier,
     Eos,
@@ -327,7 +333,8 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => {
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
         }
-        TerminalType::PostMtaEventModifier(_) => DummyTerminalType::PostMtaEventModifier,
+        TerminalType::ConnectiveHead(_) => DummyTerminalType::ConnectiveHead,
+        TerminalType::RoleLabel(_) => DummyTerminalType::RoleLabel,
         TerminalType::PostBinaryPredicatePhraseModifier(_) => {
             DummyTerminalType::PostBinaryPredicatePhraseModifier
         }
@@ -367,7 +374,8 @@ impl TerminalType {
             TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
                 converter_end.range.start.clone()
             }
-            TerminalType::PostMtaEventModifier(modifier) => modifier.range.start.clone(),
+            TerminalType::ConnectiveHead(connective_head) => connective_head.range.start.clone(),
+            TerminalType::RoleLabel(role_label) => role_label.range.start.clone(),
             TerminalType::PostBinaryPredicatePhraseModifier(modifier) => {
                 modifier.range.start.clone()
             }
@@ -403,7 +411,8 @@ impl TerminalType {
             TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
                 converter_end.range.end.clone()
             }
-            TerminalType::PostMtaEventModifier(modifier) => modifier.range.end.clone(),
+            TerminalType::ConnectiveHead(connective_head) => connective_head.range.end.clone(),
+            TerminalType::RoleLabel(role_label) => role_label.range.end.clone(),
             TerminalType::PostBinaryPredicatePhraseModifier(modifier) => modifier.range.end.clone(),
             TerminalType::PostArgumentPhraseModifier(modifier) => modifier.range.end.clone(),
             TerminalType::Eos(eos) => eos.range.end.clone(),
@@ -676,30 +685,36 @@ pub struct MtaEventToArgumentPhraseConverterEnd {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PostMtaEventModifier {
+pub struct ConnectiveHead {
     range: Range,
-    kind: PostMtaEventModifierKind,
+    kind: ConnectiveHeadKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PostMtaEventModifierKind {
-    Da,       // 命題修飾句の前置詞
-    Hesute,   // 接続詞(結果 -> 原因)
-    Henesute, // 接続詞(結果 -> 反対の原因)
-    Hesuto,   // 接続詞(原因 -> 結果)
-    Henesuto, // 接続詞(反対の原因 -> 結果)
-    Hehoma,   // 接続詞(and)
-    Hehomi,   // 接続詞(or)
-    Hehomu,   // 接続詞(xor)
-    Hehita,   // 接続詞(時間前)
-    Hehiti,   // 接続詞(同時)
-    Hehitu,   // 接続詞(時間後)
-    Hezu,     // 接続詞(条件)
-    Henezu,   // 接続詞(反実仮想条件)
-    Hehema,   // 接続詞(例示)
-    Hehegi,   // 接続詞(言い換え)
-    Hehenu,   // 接続詞(対比)
-    Hehezu,   // 接続詞(定義。P↔Q)
+pub enum ConnectiveHeadKind {
+    Hesuteto,   // 接続詞(原因⇔結果)
+    Henesuteto, // 接続詞(反対の原因⇔結果)
+    Hehitatu,   // 接続詞(時間前後)
+    Hehiti,     // 接続詞(同時)
+    Hehoma,     // 接続詞(and)
+    Hehomi,     // 接続詞(or)
+    Hehomu,     // 接続詞(xor)
+    Hezu,       // 接続詞(条件)
+    Henezu,     // 接続詞(反実仮想条件)
+    Hehenu,     // 接続詞(対比)
+    Hehezu,     // 接続詞(定義。P↔Q)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RoleLabel {
+    range: Range,
+    kind: RoleLabelKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RoleLabelKind {
+    Hesa,
+    Hesi,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -804,6 +819,8 @@ impl_get_range!(
     Negation,
     BinaryPredicate,
     Argument,
+    ConnectiveHead,
+    RoleLabel,
     PredicateOperator,
     ArgumentOperator,
     MtaEventOperator,
@@ -1072,9 +1089,6 @@ impl Argument {
                 ArgumentType::Space,
                 ArgumentType::Time,
             ],
-            // za/ziは指示代名詞(me/be/ge)と同じく型を限定しない。ただしFOLでは定数ではなく
-            // 変数として扱われ、ze(全称量化マーカー)の付いた文でのみ`Forall`に束縛される
-            // (event_semantics.rsのto_fol/free_variables、Argument::is_schema_variable参照)。
             ArgumentKind::Ha => vec![
                 ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -1094,8 +1108,6 @@ impl Argument {
         }
     }
 
-    /// `za`/`zi`(定義文用のスキーマ変数)かどうか。`za`/`zi`かどうかの判定はここに集約し、
-    /// 呼び出し側(event_semantics.rs)で表層文字列を直接比較しないようにする。
     pub(crate) fn is_schema_variable(&self) -> bool {
         matches!(self.kind, ArgumentKind::Ha | ArgumentKind::Hu)
     }
@@ -1350,28 +1362,33 @@ define_fixed_token!(
     "ho"
 );
 
-define_surface_token!(PostMtaEventModifier, PostMtaEventModifierKind, "post mta event modifier", {
-    Da: "da",
-    Hesute: "hesute",
-    Henesute: "henesute",
-    Hesuto: "hesuto",
-    Henesuto: "henesuto",
+define_surface_token!(ConnectiveHead, ConnectiveHeadKind, "connective head", {
+    Hesuteto: "hesuteto",
+    Henesuteto: "henesuteto",
+    Hehitatu: "hehitatu",
+    Hehiti: "hehiti",
     Hehoma: "hehoma",
     Hehomi: "hehomi",
     Hehomu: "hehomu",
-    Hehita: "hehita",
-    Hehiti: "hehiti",
-    Hehitu: "hehitu",
     Hezu: "hezu",
     Henezu: "henezu",
-    Hehema: "hehema",
-    Hehegi: "hehegi",
     Hehenu: "hehenu",
     Hehezu: "hehezu",
 });
 
-impl PostMtaEventModifier {
-    pub fn get_kind(&self) -> &PostMtaEventModifierKind {
+impl ConnectiveHead {
+    pub fn get_kind(&self) -> &ConnectiveHeadKind {
+        &self.kind
+    }
+}
+
+define_surface_token!(RoleLabel, RoleLabelKind, "role label", {
+    Hesa: "hesa",
+    Hesi: "hesi",
+});
+
+impl RoleLabel {
+    pub fn get_kind(&self) -> &RoleLabelKind {
         &self.kind
     }
 }

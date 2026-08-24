@@ -412,93 +412,90 @@ mod tests {
 
     #[test]
     fn test_これはりんごではなくみかんだ() {
-        let text = "behoranage si me hehenu ne behapare si me".to_string();
+        // hehenu(対比)はhesa側を否定し、hesi側を肯定する(¬P ∧ Q)。
+        // hesa側(りんご)を明示的にneで否定しなくても、hehenu自体がhesa側を否定する。
+        let text = "hehenu hesa behapare si me hesi behoranage si me".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_hehoma() {
-        let text = "pahete sa mi si ri behapare hehoma pahete sa ba si ri behoranage".to_string();
+        let text = "hehoma hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_hehomi() {
-        let text = "pahete sa mi si ri behapare hehomi pahete sa ba si ri behoranage".to_string();
+        let text = "hehomi hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_hehomu() {
-        let text = "pahete sa mi si ri behapare hehomu pahete sa ba si ri behoranage".to_string();
+        let text = "hehomu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_接続詞_hehita() {
-        let text = "pahete sa mi si ri behapare hehita pahete sa ba si ri behoranage".to_string();
+    fn test_接続詞_hehitatu() {
+        // hehitatuは旧hehita/hehitu(時間後)を統合したので、hesa/hesiの順序を入れ替えても
+        // 同じ意味になることも合わせて確認する。
+        let text = "hehitatu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+
+        let text = "hehitatu hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_hehiti() {
-        let text = "pahete sa mi si ri behapare hehiti pahete sa ba si ri behoranage".to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_接続詞_hehitu() {
-        let text = "pahete sa mi si ri behapare hehitu pahete sa ba si ri behoranage".to_string();
+        let text = "hehiti hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_hezu() {
-        let text = "pahete sa mi si ri behapare hezu pahete sa ba si ri behoranage".to_string();
+        let text =
+            "hezu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_henezu() {
-        let text = "pahete sa mi si ri behapare henezu pahete sa ba si ri behoranage".to_string();
+        let text = "henezu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_henezu_過去反実仮想() {
-        let text = "hita pahete sa mi si ri behapare henezu hita pahete sa ba si ri behoranage"
-            .to_string();
+        let text =
+            "henezu hesa hita pahete sa mi si ri behapare hesi hita pahete sa ba si ri behoranage"
+                .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_接続詞_henezu_現在反実仮想() {
-        let text = "hiti pahete sa mi si ri behapare henezu hiti pahete sa ba si ri behoranage"
-            .to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_接続詞_hehema() {
-        let text = "pahete sa mi si ri behapare hehema pahete sa ba si ri behoranage".to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_接続詞_hehegi() {
-        let text = "pahete sa mi si ri behapare hehegi pahete sa ba si ri behoranage".to_string();
+        let text =
+            "henezu hesa hiti pahete sa mi si ri behapare hesi hiti pahete sa ba si ri behoranage"
+                .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -643,36 +640,40 @@ mod tests {
 
     #[test]
     fn test_私はみかんを食べない_だからみかんは食べられない_受け身の否定() {
+        // hesuto(旧・原因→結果)はhesute→hesutetoに統合されたので新構文ではhesutetoを使う。
         let text =
-            "ne pahete sa mi si ri behoranage hesuto ne pahete si ri behoranage sa mi".to_string();
+            "hesuteto hesa ne pahete sa mi si ri behoranage hesi ne pahete si ri behoranage sa mi"
+                .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_接続詞_hesute() {
-        let text = "pahete sa mi si ri behapare hesute pahete sa ba si ri behoranage".to_string();
+    fn test_接続詞_hesuteto() {
+        // hesutetoは旧hesute/hesuto(原因→結果)を統合したので、hesa/hesiの順序を入れ替えても
+        // 同じ意味になることも合わせて確認する。
+        let text = "hesuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+
+        let text = "hesuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_接続詞_henesute() {
-        let text = "pahete sa mi si ri behapare henesute pahete sa ba si ri behoranage".to_string();
+    fn test_接続詞_henesuteto() {
+        // henesutetoは旧henesute/henesuto(反対の原因→結果)を統合したので、hesa/hesiの
+        // 順序を入れ替えても同じ意味になることも合わせて確認する。
+        let text = "henesuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
-    }
 
-    #[test]
-    fn test_接続詞_hesuto() {
-        let text = "pahete sa mi si ri behapare hesuto pahete sa ba si ri behoranage".to_string();
-        let result = diagnose(text);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_接続詞_henesuto() {
-        let text = "pahete sa mi si ri behapare henesuto pahete sa ba si ri behoranage".to_string();
+        let text = "henesuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -991,7 +992,8 @@ mod tests {
     #[test]
     fn test_zeとhehezuで定義文が書ける() {
         // ∀za.∀zi. (kagurita(za,zi) ↔ kaho(za,zi))
-        let text = "ze ta za ta zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
+        let text =
+            "ze ta za ta zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -1000,7 +1002,7 @@ mod tests {
     fn test_zeの中でも宣言した変数だけが閉じられる() {
         // 単項述語の定義: zeの直後でzaだけ宣言する場合、Forall(zi, ...)は付かない
         // (pi[CV]+は生物x1のみの自動詞なのでx2は無い)。
-        let text = "ze ta za pirana sa za hehezu kaho sa za si za".to_string();
+        let text = "ze ta za hehezu hesa pirana sa za hesi kaho sa za si za".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -1008,7 +1010,8 @@ mod tests {
     #[test]
     fn test_ze無しの通常の文は今まで通り通る() {
         // 回帰確認: za/ziを使わない文はzeの有無に関わらず今まで通り。
-        let text = "pahete sa mi si ri behapare hehegi pahete sa ba si ri behoranage".to_string();
+        let text = "hehoma hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+            .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -1016,21 +1019,22 @@ mod tests {
     #[test]
     fn test_宣言し忘れた変数はzeの中でも未束縛エラーになる() {
         // zi用の宣言(ta zi / to zi)を忘れると、ziは自由変数のまま残りエラーになる。
-        let text = "ze ta za kagurita sa za si zi hehezu kaho sa za si zi".to_string();
+        let text = "ze ta za hehezu hesa kagurita sa za si zi hesi kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_za_zi以外を量化子宣言に使うとエラーになる() {
-        let text = "ze ta mi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
+        let text = "ze ta mi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_teやtiを量化子宣言に使うとエラーになる() {
-        let text = "ze te za to zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
+        let text =
+            "ze te za to zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
@@ -1040,7 +1044,8 @@ mod tests {
         use formal_semantics::{Formula, to_fol};
 
         // ze ta za to zi [本文]: zaは∀、ziは∃で閉じる。
-        let text = "ze ta za to zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
+        let text =
+            "ze ta za to zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi".to_string();
         let tokens = tokenizer::tokenize(&text).unwrap();
         let sentences = tokenizer::add_eos_to_last_sentence(tokens);
         let ast = parser::parse(sentences[0].clone()).unwrap();
@@ -1065,7 +1070,8 @@ mod tests {
     fn test_zeとhehezuの論理式がforallとiffの組み合わせになっている() {
         use formal_semantics::{Formula, to_fol};
 
-        let text = "ze ta za ta zi kagurita sa za si zi hehezu kaho sa za si zi".to_string();
+        let text =
+            "ze ta za ta zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi".to_string();
         let tokens = tokenizer::tokenize(&text).unwrap();
         let sentences = tokenizer::add_eos_to_last_sentence(tokens);
         let ast = parser::parse(sentences[0].clone()).unwrap();
@@ -1088,7 +1094,7 @@ mod tests {
 
     #[test]
     fn test_2つの無関係な定義文をまとめて解析しても束縛が独立している() {
-        let text = "ze ta za ta zi kagurita sa za si zi hehezu kaho sa za si zi eos ze ta za ta zi guzorata sa za si zi hehezu parobe sa za si zi".to_string();
+        let text = "ze ta za ta zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi eos ze ta za ta zi hehezu hesa guzorata sa za si zi hesi parobe sa za si zi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
