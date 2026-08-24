@@ -445,8 +445,6 @@ mod tests {
 
     #[test]
     fn test_接続詞_hehitatu() {
-        // hehitatuは旧hehita/hehitu(時間後)を統合したので、hesa/hesiの順序を入れ替えても
-        // 同じ意味になることも合わせて確認する。
         let text = "hehitatu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
             .to_string();
         let result = diagnose(text);
@@ -640,7 +638,6 @@ mod tests {
 
     #[test]
     fn test_私はみかんを食べない_だからみかんは食べられない_受け身の否定() {
-        // hesuto(旧・原因→結果)はhesute→hesutetoに統合されたので新構文ではhesutetoを使う。
         let text =
             "hesuteto hesa ne pahete sa mi si ri behoranage hesi ne pahete si ri behoranage sa mi"
                 .to_string();
@@ -650,8 +647,6 @@ mod tests {
 
     #[test]
     fn test_接続詞_hesuteto() {
-        // hesutetoは旧hesute/hesuto(原因→結果)を統合したので、hesa/hesiの順序を入れ替えても
-        // 同じ意味になることも合わせて確認する。
         let text = "hesuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
             .to_string();
         let result = diagnose(text);
@@ -665,8 +660,6 @@ mod tests {
 
     #[test]
     fn test_接続詞_henesuteto() {
-        // henesutetoは旧henesute/henesuto(反対の原因→結果)を統合したので、hesa/hesiの
-        // 順序を入れ替えても同じ意味になることも合わせて確認する。
         let text = "henesuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
             .to_string();
         let result = diagnose(text);
@@ -728,7 +721,6 @@ mod tests {
 
     #[test]
     fn test_私はあなたにりんごをあげる() {
-        // 所有を移す
         let text = "pamobe sa mi si ri behapare sube mi subo ba".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -1009,7 +1001,6 @@ mod tests {
 
     #[test]
     fn test_ze無しの通常の文は今まで通り通る() {
-        // 回帰確認: za/ziを使わない文はzeの有無に関わらず今まで通り。
         let text = "hehoma hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
             .to_string();
         let result = diagnose(text);

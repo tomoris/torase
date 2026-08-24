@@ -244,7 +244,6 @@ fn viewer(s: String) -> Element<'static, Message> {
     container(text(s)).style(container::bordered_box).into()
 }
 
-// トークン種別ごとの強調色（半透明）
 fn token_color(token: &TerminalType) -> Option<Color> {
     match token {
         TerminalType::BinaryPredicate(_) => Some(Color::from_rgba8(80, 180, 80, 0.25)),
@@ -280,7 +279,6 @@ fn token_color(token: &TerminalType) -> Option<Color> {
     }
 }
 
-// トークン強調と Diagnostic 波線を描画するキャンバスオーバーレイ
 struct DiagnosticOverlay {
     diagnostics: Vec<Diagnostic>,
     tokens: Vec<TerminalType>,
@@ -317,7 +315,6 @@ impl canvas::Program<Message> for DiagnosticOverlay {
         .min_bounds()
         .width;
 
-        // トークン種別ごとに背景色矩形を描画
         for token in &self.tokens {
             if let Some(color) = token_color(token) {
                 let start = token.start();
@@ -339,7 +336,6 @@ impl canvas::Program<Message> for DiagnosticOverlay {
             let start = diagnostic.range.start();
             let end = diagnostic.range.end();
 
-            // 開始行と終了行それぞれに波線を描画
             let ranges: &[(usize, usize, usize)] = if start.line() == end.line() {
                 &[(start.line(), start.character(), end.character())]
             } else {
@@ -350,7 +346,6 @@ impl canvas::Program<Message> for DiagnosticOverlay {
             };
 
             for &(line_idx, col_start, col_end) in ranges {
-                // 末尾の改行を除いた行テキストで paragraph を作成
                 let line_text = self
                     .lines
                     .get(line_idx)
