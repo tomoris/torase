@@ -551,8 +551,8 @@ enum ArgumentKind {
     Gi, // 彼、彼女
     Gu, // 彼ら
     Ge, // あれ
-    Ha, // 定義用のスキーマ変数(x1)
-    Hu, // 定義用のスキーマ変数(x2)
+    Za, // 定義用のスキーマ変数(x1)
+    Zi, // 定義用のスキーマ変数(x2)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1050,8 +1050,8 @@ define_surface_token!(Argument, ArgumentKind, "argument", {
     Gi: "gi",
     Gu: "gu",
     Ge: "ge",
-    Ha: "za",
-    Hu: "zi",
+    Za: "za",
+    Zi: "zi",
 });
 
 impl Argument {
@@ -1089,7 +1089,7 @@ impl Argument {
                 ArgumentType::Space,
                 ArgumentType::Time,
             ],
-            ArgumentKind::Ha => vec![
+            ArgumentKind::Za => vec![
                 ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
@@ -1097,7 +1097,7 @@ impl Argument {
                 ArgumentType::Space,
                 ArgumentType::Time,
             ],
-            ArgumentKind::Hu => vec![
+            ArgumentKind::Zi => vec![
                 ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
@@ -1109,7 +1109,7 @@ impl Argument {
     }
 
     pub(crate) fn is_schema_variable(&self) -> bool {
-        matches!(self.kind, ArgumentKind::Ha | ArgumentKind::Hu)
+        matches!(self.kind, ArgumentKind::Za | ArgumentKind::Zi)
     }
 }
 
