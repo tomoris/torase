@@ -1,10 +1,11 @@
 use core::panic;
 use std::mem::discriminant;
 
-use crate::regex_engine::Regex;
 use crate::types::{ArgumentType, PhysicalEntity};
+use regex_engine::Regex;
 
 mod number;
+pub(crate) mod regex_engine;
 pub use number::Number;
 
 #[derive(Debug)]

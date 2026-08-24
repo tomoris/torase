@@ -556,9 +556,10 @@ mod tests {
         )
         .unwrap();
 
-        const RE: crate::regex_engine::Regex = crate::regex_engine::Regex::compile(
-            r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$",
-        );
+        const RE: crate::tokenizer::regex_engine::Regex =
+            crate::tokenizer::regex_engine::Regex::compile(
+                r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$",
+            );
         assert!(
             RE.is_match(&result.word),
             "生成された語 {} は述語のトークン規則を満たさない",

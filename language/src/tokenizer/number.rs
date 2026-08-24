@@ -2,8 +2,8 @@
 //! 対応させる独自の位取り記数法(既定は10進、`ru`を付けると16進)。
 //! アラビア数字表記(算用数字)も代替入力として受け付ける。
 
+use super::regex_engine::Regex;
 use super::{Range, make_range};
-use crate::regex_engine::Regex;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Number {

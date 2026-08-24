@@ -2,7 +2,6 @@ pub mod argument_type_checker;
 pub mod borrowing;
 pub mod formal_semantics;
 pub mod parser;
-mod regex_engine;
 pub mod tokenizer;
 pub mod types;
 
