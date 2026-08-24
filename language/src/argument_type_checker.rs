@@ -5,10 +5,8 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::parser::*;
-use crate::tokenizer::{
-    ArgumentRetrieverKind, ArgumentType, CaseLabelKind, PhysicalEntity, Quantifier, Range,
-    RoleLabelKind,
-};
+use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind, Quantifier, Range};
+use crate::types::{ArgumentType, PhysicalEntity};
 
 pub struct TypeMismatch {
     pub range: Range,
@@ -116,13 +114,7 @@ impl PostModifiedMtaEvent {
 }
 
 fn check_role_arg_pair(role_arg1: &RoleArg, role_arg2: &RoleArg) -> TypeMismatchResult {
-    let kinds = [
-        role_arg1.get_label().get_kind(),
-        role_arg2.get_label().get_kind(),
-    ];
-    let has_hesa = kinds.iter().any(|k| matches!(k, RoleLabelKind::Hesa));
-    let has_hesi = kinds.iter().any(|k| matches!(k, RoleLabelKind::Hesi));
-    if has_hesa && has_hesi {
+    if RoleArg::resolve_hesa_hesi(role_arg1, role_arg2).is_some() {
         Ok(())
     } else {
         Err(TypeMismatch {
@@ -230,6 +222,24 @@ impl AEvent {
     }
 }
 
+fn check_case_arg_type(
+    arg: &ArgumentPhrase,
+    expected: Vec<ArgumentType>,
+    message: &str,
+) -> TypeMismatchResult {
+    let arg_type = arg.get_type();
+    if has_intersection(&expected, &arg_type) {
+        Ok(())
+    } else {
+        Err(TypeMismatch {
+            range: arg.get_range().clone(),
+            actual: arg_type,
+            expected,
+            message: message.to_string(),
+        })
+    }
+}
+
 impl Event {
     fn type_check(&self) -> TypeMismatchResult {
         let pred = self.get_pred();
@@ -238,24 +248,22 @@ impl Event {
         // 単項述語のx2スロット(項自体が存在してはいけない)を示す。seが付いていても
         // このアリティ検査だけは引き続き適用し、型不一致のみをバイパスする。
         let x2_argument_slot_absent = t2 == vec![ArgumentType::Epsilon];
-        let mut seen_adjunct_kinds: Vec<&CaseLabelKind> = Vec::new();
+        let mut seen_case_kinds: Vec<&CaseLabelKind> = Vec::new();
         for (label, is_type_overridden, arg) in self.case_args_with_override() {
             arg.type_check()?;
             let kind = label.get_kind();
-            if !matches!(kind, CaseLabelKind::Sa | CaseLabelKind::Si) {
-                if seen_adjunct_kinds.contains(&kind) {
-                    return Err(TypeMismatch {
-                        range: arg.get_range().clone(),
-                        actual: vec![],
-                        expected: vec![],
-                        message: format!(
-                            "Adjunct case label '{}' is applied more than once.",
-                            label.get_string()
-                        ),
-                    });
-                }
-                seen_adjunct_kinds.push(kind);
+            if seen_case_kinds.contains(&kind) {
+                return Err(TypeMismatch {
+                    range: arg.get_range().clone(),
+                    actual: vec![],
+                    expected: vec![],
+                    message: format!(
+                        "Case label '{}' is applied more than once.",
+                        label.get_string()
+                    ),
+                });
             }
+            seen_case_kinds.push(kind);
             let bypass_type_check = is_type_overridden
                 && !(matches!(kind, CaseLabelKind::Si) && x2_argument_slot_absent);
             if bypass_type_check {
@@ -263,92 +271,53 @@ impl Event {
             }
             match kind {
                 CaseLabelKind::Sa => {
-                    let arg_type = arg.get_type();
-                    if !has_intersection(&t1, &arg_type) {
-                        return Err(TypeMismatch {
-                            range: arg.get_range().clone(),
-                            actual: arg_type,
-                            expected: t1.clone(),
-                            message: "Event type mismatch in the first argument.".to_string(),
-                        });
-                    }
+                    check_case_arg_type(
+                        arg,
+                        t1.clone(),
+                        "Event type mismatch in the first argument.",
+                    )?;
                 }
                 CaseLabelKind::Si => {
-                    let arg_type = arg.get_type();
-                    if !has_intersection(&t2, &arg_type) {
-                        return Err(TypeMismatch {
-                            range: arg.get_range().clone(),
-                            actual: arg_type,
-                            expected: t2.clone(),
-                            message: "Event type mismatch in the second argument.".to_string(),
-                        });
-                    }
+                    check_case_arg_type(
+                        arg,
+                        t2.clone(),
+                        "Event type mismatch in the second argument.",
+                    )?;
                 }
                 CaseLabelKind::Subu | CaseLabelKind::Sube | CaseLabelKind::Subo => {
-                    let expected = vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)];
-                    let arg_type = arg.get_type();
-                    if !has_intersection(&expected, &arg_type) {
-                        return Err(TypeMismatch {
-                            range: arg.get_range().clone(),
-                            actual: arg_type,
-                            expected,
-                            message: "Event type mismatch in a biological (生物系) case argument."
-                                .to_string(),
-                        });
-                    }
+                    check_case_arg_type(
+                        arg,
+                        vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+                        "Event type mismatch in a biological (生物系) case argument.",
+                    )?;
                 }
                 CaseLabelKind::Sute | CaseLabelKind::Suto => {
-                    let expected = vec![ArgumentType::Abstraction];
-                    let arg_type = arg.get_type();
-                    if !has_intersection(&expected, &arg_type) {
-                        return Err(TypeMismatch {
-                            range: arg.get_range().clone(),
-                            actual: arg_type,
-                            expected,
-                            message: "Event type mismatch in an abstract (抽象系) case argument."
-                                .to_string(),
-                        });
-                    }
+                    check_case_arg_type(
+                        arg,
+                        vec![ArgumentType::Abstraction],
+                        "Event type mismatch in an abstract (抽象系) case argument.",
+                    )?;
                 }
                 CaseLabelKind::Sudu => {
-                    let expected = vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)];
-                    let arg_type = arg.get_type();
-                    if !has_intersection(&expected, &arg_type) {
-                        return Err(TypeMismatch {
-                            range: arg.get_range().clone(),
-                            actual: arg_type,
-                            expected,
-                            message:
-                                "Event type mismatch in an instrumental (道具系) case argument."
-                                    .to_string(),
-                        });
-                    }
+                    check_case_arg_type(
+                        arg,
+                        vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
+                        "Event type mismatch in an instrumental (道具系) case argument.",
+                    )?;
                 }
                 CaseLabelKind::Suni | CaseLabelKind::Sune | CaseLabelKind::Suno => {
-                    let expected = vec![ArgumentType::Space];
-                    let arg_type = arg.get_type();
-                    if !has_intersection(&expected, &arg_type) {
-                        return Err(TypeMismatch {
-                            range: arg.get_range().clone(),
-                            actual: arg_type,
-                            expected,
-                            message: "Event type mismatch in a spatial (空間系) case argument."
-                                .to_string(),
-                        });
-                    }
+                    check_case_arg_type(
+                        arg,
+                        vec![ArgumentType::Space],
+                        "Event type mismatch in a spatial (空間系) case argument.",
+                    )?;
                 }
                 CaseLabelKind::Sugi | CaseLabelKind::Suge | CaseLabelKind::Sugo => {
-                    let expected = vec![ArgumentType::Time];
-                    let arg_type = arg.get_type();
-                    if !has_intersection(&expected, &arg_type) {
-                        return Err(TypeMismatch {
-                            range: arg.get_range().clone(),
-                            actual: arg_type,
-                            expected,
-                            message: "Event type mismatch in a temporal (時間系) case argument."
-                                .to_string(),
-                        });
-                    }
+                    check_case_arg_type(
+                        arg,
+                        vec![ArgumentType::Time],
+                        "Event type mismatch in a temporal (時間系) case argument.",
+                    )?;
                 }
             }
         }
@@ -763,6 +732,24 @@ mod tests {
     #[test]
     fn test_同じ付加詞の格が複数回付与された場合にerr型を返す() {
         let source = "parobe sa mi si ba suni me suni ge eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_同じsaが複数回付与された場合にerr型を返す() {
+        let source = "parobe sa mi sa ba si ge eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_同じsiが複数回付与された場合にerr型を返す() {
+        let source = "parobe sa mi si ba si ge eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);

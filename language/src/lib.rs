@@ -4,6 +4,7 @@ pub mod formal_semantics;
 pub mod parser;
 mod regex_engine;
 pub mod tokenizer;
+pub mod types;
 
 use argument_type_checker::type_check as argument_type_check;
 use formal_semantics::{
@@ -11,7 +12,7 @@ use formal_semantics::{
     type_check as formal_type_check,
 };
 use parser::{Ast, parse};
-use tokenizer::{Range, add_eos_to_last_sentence, tokenize};
+use tokenizer::{Range, TerminalType, add_eos_to_last_sentence, tokenize};
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
@@ -20,18 +21,19 @@ pub struct Diagnostic {
 }
 
 pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
-    // tokenizing
     let tokenize_result = tokenize(&text);
-    if let Err(e) = tokenize_result {
-        let diagnostics = vec![Diagnostic {
+    match tokenize_result {
+        Ok(sentences) => diagnose_tokens(sentences),
+        Err(e) => Err(vec![Diagnostic {
             range: e.range,
             message: "tokenize error".to_string(),
-        }];
-        return Err(diagnostics);
+        }]),
     }
+}
 
+pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Vec<Diagnostic>> {
     // parsing
-    let sentences = add_eos_to_last_sentence(tokenize_result.unwrap());
+    let sentences = add_eos_to_last_sentence(sentences);
     let mut ast_with_ranges: Vec<(Ast, Range)> = Vec::new();
     let mut diagnostics = Vec::new();
     for sentence in sentences {
@@ -58,7 +60,10 @@ pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
         if let Err(e) = argument_type_check_result {
             let diagnostics_item = Diagnostic {
                 range: e.range,
-                message: format!("argument type error: {}", e.message),
+                message: format!(
+                    "argument type error: {} (expected: {:?}, actual: {:?})",
+                    e.message, e.expected, e.actual
+                ),
             };
             diagnostics.push(diagnostics_item);
         }
@@ -118,6 +123,18 @@ mod tests {
         let text = "pahete sa mi si ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_項の型不一致の診断メッセージに期待型と実際の型が含まれる() {
+        let text = "kahoraka sa mi si ba".to_string();
+        let diagnostics = diagnose(text).unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.message.contains("expected") && d.message.contains("actual")),
+            "diagnostics: {diagnostics:?}"
+        );
     }
 
     #[test]

@@ -1,5 +1,7 @@
 //! 型チェック済みASTをネオ・デイヴィドソン流の一階述語論理式(`Formula`)へ変換する。
 
+use std::collections::HashMap;
+
 use crate::parser::{
     AEvent, ArgumentPhrase, ArgumentRetrievalBinaryPredicate, ArgumentRetrievalWithArgumentPhrase,
     Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument, DeterminerModifier, Event,
@@ -8,8 +10,7 @@ use crate::parser::{
     QuantifierModifier, RetrievedArgument, RoleArg, S, TaEvent, UniversalSentence,
 };
 use crate::tokenizer::{
-    ArgumentOperatorKind, ArgumentRetrieverKind, CaseLabelKind, ConnectiveHeadKind,
-    MtaEventOperatorKind, NegationKind, PredicateOperatorKind, RoleLabelKind,
+    ArgumentRetrieverKind, CaseLabelKind, ConnectiveHeadKind, NegationKind, OperatorKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -149,7 +150,7 @@ enum PredCtx {
     Neg(Box<PredCtx>),
     /// P₁ di/hoba/hobi/hobu P₂ — both predicates apply to the same args.
     Coord {
-        op: PredicateOperatorKind,
+        op: OperatorKind,
         left: Box<PredCtx>,
         right: Box<PredCtx>,
     },
@@ -165,7 +166,7 @@ fn extract_pred(phrase: &PostModifiedBinaryPredicatePhrase) -> PredCtx {
             let base = extract_bp(bp);
             match post {
                 PostBinaryPredicatePhraseExpression::One(_, secondary) => PredCtx::Coord {
-                    op: PredicateOperatorKind::And,
+                    op: OperatorKind::And,
                     left: Box::new(base),
                     right: Box::new(extract_bp(secondary)),
                 },
@@ -234,7 +235,7 @@ enum ArgCtx {
     Neg(Box<ArgCtx>),
     /// Coordinated argument phrases (distributed in `build_event_inner`).
     Coord {
-        op: ArgumentOperatorKind,
+        op: OperatorKind,
         left: Box<ArgCtx>,
         right: Box<ArgCtx>,
     },
@@ -336,30 +337,30 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
         ArgCtx::Neg(inner) => *inner, // ¬¬ = identity
         // De Morgan: ¬(A∧B)=¬A∨¬B, ¬(A∨B)=¬A∧¬B (flip the connective, negate both sides).
         ArgCtx::Coord {
-            op: ArgumentOperatorKind::And,
+            op: OperatorKind::And,
             left,
             right,
         } => ArgCtx::Coord {
-            op: ArgumentOperatorKind::Or,
+            op: OperatorKind::Or,
             left: Box::new(negate_restriction(*left)),
             right: Box::new(negate_restriction(*right)),
         },
         ArgCtx::Coord {
-            op: ArgumentOperatorKind::Or,
+            op: OperatorKind::Or,
             left,
             right,
         } => ArgCtx::Coord {
-            op: ArgumentOperatorKind::And,
+            op: OperatorKind::And,
             left: Box::new(negate_restriction(*left)),
             right: Box::new(negate_restriction(*right)),
         },
         // ¬(A⊕B) ≡ (¬A)⊕B: the connective stays Xor, only one side is negated.
         ArgCtx::Coord {
-            op: ArgumentOperatorKind::Xor,
+            op: OperatorKind::Xor,
             left,
             right,
         } => ArgCtx::Coord {
-            op: ArgumentOperatorKind::Xor,
+            op: OperatorKind::Xor,
             left: Box::new(negate_restriction(*left)),
             right,
         },
@@ -490,15 +491,7 @@ fn collect_free_variables(
 /// ラベルが揃わない場合はソース順にフォールバックする(`Event::to_fol`が`sa`/`si`欠如時に
 /// `ArgCtx::ExistOnly`にフォールバックするのと同じ考え方)。
 fn resolve_role_args<'a>(arg1: &'a RoleArg, arg2: &'a RoleArg) -> (&'a RoleArg, &'a RoleArg) {
-    let is_hesa = |arg: &RoleArg| matches!(arg.get_label().get_kind(), RoleLabelKind::Hesa);
-    let is_hesi = |arg: &RoleArg| matches!(arg.get_label().get_kind(), RoleLabelKind::Hesi);
-    if is_hesa(arg1) && is_hesi(arg2) {
-        (arg1, arg2)
-    } else if is_hesa(arg2) && is_hesi(arg1) {
-        (arg2, arg1)
-    } else {
-        (arg1, arg2)
-    }
+    RoleArg::resolve_hesa_hesi(arg1, arg2).unwrap_or((arg1, arg2))
 }
 
 impl PostModifiedMtaEvent {
@@ -543,9 +536,9 @@ impl MtaEvent {
                 let f1 = m1.to_fol(vg);
                 let f2 = m2.to_fol(vg);
                 match op.get_kind() {
-                    MtaEventOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
-                    MtaEventOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
-                    MtaEventOperatorKind::Xor => xor_formula(f1, f2),
+                    OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                    OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                    OperatorKind::Xor => xor_formula(f1, f2),
                 }
             }
         }
@@ -574,83 +567,55 @@ impl AEvent {
 // Event translation
 // ---------------------------------------------------------------------------
 
+/// 宣言順が`Event::to_fol`でのスコープ順(外側→内側)になる。
+const EXTRA_ROLE_TABLE: [(CaseLabelKind, &str); 12] = [
+    (CaseLabelKind::Subu, "Comitative"),
+    (CaseLabelKind::Sube, "AnimateSource"),
+    (CaseLabelKind::Subo, "AnimateGoal"),
+    (CaseLabelKind::Sute, "Cause"),
+    (CaseLabelKind::Suto, "Purpose"),
+    (CaseLabelKind::Sudu, "Instrument"),
+    (CaseLabelKind::Suni, "Location"),
+    (CaseLabelKind::Sune, "LocationSource"),
+    (CaseLabelKind::Suno, "LocationGoal"),
+    (CaseLabelKind::Sugi, "Time"),
+    (CaseLabelKind::Suge, "TimeSource"),
+    (CaseLabelKind::Sugo, "TimeGoal"),
+];
+
 impl Event {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         let pred = extract_pred(self.get_pred());
         let case_args = self.case_args();
-        let nom = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sa));
-        let acc = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Si));
-        let comitative = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Subu));
-        let animate_source = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sube));
-        let animate_goal = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Subo));
-        let cause = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sute));
-        let purpose = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suto));
-        let instrument = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sudu));
-        let location = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suni));
-        let location_source = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sune));
-        let location_goal = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suno));
-        let time = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sugi));
-        let time_source = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Suge));
-        let time_goal = case_args
-            .iter()
-            .find(|(l, _)| matches!(l.get_kind(), CaseLabelKind::Sugo));
-        let arg2 = if let Some((_, phrase)) = acc {
+        // 格ラベルの種類ごとに引き当てる。同じ種類が複数回現れた場合は最初の1つを使う
+        // (`argument_type_checker.rs`が重複をエラーにするため、実際には型検査を通った
+        // 入力では起こらないが、`diagnose()`は型検査の結果に関わらず`to_fol`を呼ぶため
+        // この関数単体でも壊れないようにしておく)。
+        let mut by_kind: HashMap<&CaseLabelKind, &ArgumentPhrase> = HashMap::new();
+        for (label, phrase) in case_args {
+            by_kind.entry(label.get_kind()).or_insert(phrase);
+        }
+        let arg2 = if let Some(&phrase) = by_kind.get(&CaseLabelKind::Si) {
             phrase.to_fol(vg)
         } else {
             let y = vg.next();
             ArgCtx::ExistOnly(y)
         };
-        let arg1 = if let Some((_, phrase)) = nom {
+        let arg1 = if let Some(&phrase) = by_kind.get(&CaseLabelKind::Sa) {
             phrase.to_fol(vg)
         } else {
             let y = vg.next();
             ArgCtx::ExistOnly(y)
         };
-        // 随伴格・奪格・与格・原因格・目的格・具格・空間系・時間系は付加詞のため、
-        // 省略時は存在閉包を作らず式に出さない。
-        let extra_roles: Vec<(&'static str, ArgCtx)> = [
-            comitative.map(|(_, phrase)| ("Comitative", phrase.to_fol(vg))),
-            animate_source.map(|(_, phrase)| ("AnimateSource", phrase.to_fol(vg))),
-            animate_goal.map(|(_, phrase)| ("AnimateGoal", phrase.to_fol(vg))),
-            cause.map(|(_, phrase)| ("Cause", phrase.to_fol(vg))),
-            purpose.map(|(_, phrase)| ("Purpose", phrase.to_fol(vg))),
-            instrument.map(|(_, phrase)| ("Instrument", phrase.to_fol(vg))),
-            location.map(|(_, phrase)| ("Location", phrase.to_fol(vg))),
-            location_source.map(|(_, phrase)| ("LocationSource", phrase.to_fol(vg))),
-            location_goal.map(|(_, phrase)| ("LocationGoal", phrase.to_fol(vg))),
-            time.map(|(_, phrase)| ("Time", phrase.to_fol(vg))),
-            time_source.map(|(_, phrase)| ("TimeSource", phrase.to_fol(vg))),
-            time_goal.map(|(_, phrase)| ("TimeGoal", phrase.to_fol(vg))),
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
+        // 付加詞は省略時に存在閉包を作らず式に出さない。
+        let extra_roles: Vec<(&'static str, ArgCtx)> = EXTRA_ROLE_TABLE
+            .into_iter()
+            .filter_map(|(kind, role_name)| {
+                by_kind
+                    .get(&kind)
+                    .map(|&phrase| (role_name, phrase.to_fol(vg)))
+            })
+            .collect();
         build_event_inner(&pred, arg1, arg2, extra_roles, vg)
     }
 }
@@ -701,9 +666,9 @@ fn build_event_inner(
             let f1 = build_event_inner(left, arg1.clone(), arg2.clone(), extra_roles.clone(), vg);
             let f2 = build_event_inner(right, arg1, arg2, extra_roles, vg);
             match op {
-                PredicateOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
-                PredicateOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
-                PredicateOperatorKind::Xor => xor_formula(f1, f2),
+                OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                OperatorKind::Xor => xor_formula(f1, f2),
             }
         }
 
@@ -714,9 +679,9 @@ fn build_event_inner(
                 let f1 = build_event_inner(&p, *left, arg2.clone(), extra_roles.clone(), vg);
                 let f2 = build_event_inner(&p, *right, arg2, extra_roles, vg);
                 return match op {
-                    ArgumentOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
-                    ArgumentOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
-                    ArgumentOperatorKind::Xor => xor_formula(f1, f2),
+                    OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                    OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                    OperatorKind::Xor => xor_formula(f1, f2),
                 };
             }
             // Distribute over arg2 coordination.
@@ -725,9 +690,9 @@ fn build_event_inner(
                 let f1 = build_event_inner(&p, arg1.clone(), *left, extra_roles.clone(), vg);
                 let f2 = build_event_inner(&p, arg1, *right, extra_roles, vg);
                 return match op {
-                    ArgumentOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
-                    ArgumentOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
-                    ArgumentOperatorKind::Xor => xor_formula(f1, f2),
+                    OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                    OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                    OperatorKind::Xor => xor_formula(f1, f2),
                 };
             }
 
@@ -916,9 +881,9 @@ fn build_bp_restriction(phrase: &BinaryPredicatePhrase, var: &str) -> Formula {
             let f1 = build_bp_restriction(p1, var);
             let f2 = build_bp_restriction(p2, var);
             match op.get_kind() {
-                PredicateOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
-                PredicateOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
-                PredicateOperatorKind::Xor => xor_formula(f1, f2),
+                OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                OperatorKind::Xor => xor_formula(f1, f2),
             }
         }
     }
@@ -964,9 +929,9 @@ fn build_binary_restriction(pred: &PredCtx, t1: Term, t2: Term, vg: &mut VarGen)
             let f1 = build_binary_restriction(left, t1.clone(), t2.clone(), vg);
             let f2 = build_binary_restriction(right, t1, t2, vg);
             match op {
-                PredicateOperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
-                PredicateOperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
-                PredicateOperatorKind::Xor => xor_formula(f1, f2),
+                OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
+                OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
+                OperatorKind::Xor => xor_formula(f1, f2),
             }
         }
     }

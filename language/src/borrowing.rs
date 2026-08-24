@@ -128,62 +128,42 @@ pub enum EnglishConsonant {
 }
 
 impl EnglishConsonant {
-    fn substitute(self) -> char {
+    /// (採用音素への変換先, IPA表記)。
+    fn info(self) -> (char, &'static str) {
         match self {
-            Self::P => 'p',
-            Self::B => 'b',
-            Self::T => 't',
-            Self::D => 'd',
-            Self::K => 'k',
-            Self::G => 'g',
-            Self::M => 'm',
-            Self::N => 'n',
-            Self::R => 'r',
-            Self::S => 's',
-            Self::Z => 'z',
-            Self::Hh => 'h',
-            Self::F => 'h',
-            Self::V => 'b',
-            Self::Th => 's',
-            Self::Dh => 'd',
-            Self::Sh => 's',
-            Self::Zh => 'z',
-            Self::Ch => 't',
-            Self::Jh => 'd',
-            Self::L => 'r',
-            Self::W => 'h',
-            Self::Y => 'h',
-            Self::Ng => 'n',
+            Self::P => ('p', "p"),
+            Self::B => ('b', "b"),
+            Self::T => ('t', "t"),
+            Self::D => ('d', "d"),
+            Self::K => ('k', "k"),
+            Self::G => ('g', "g"),
+            Self::M => ('m', "m"),
+            Self::N => ('n', "n"),
+            Self::R => ('r', "r"),
+            Self::S => ('s', "s"),
+            Self::Z => ('z', "z"),
+            Self::Hh => ('h', "h"),
+            Self::F => ('h', "f"),
+            Self::V => ('b', "v"),
+            Self::Th => ('s', "θ"),
+            Self::Dh => ('d', "ð"),
+            Self::Sh => ('s', "ʃ"),
+            Self::Zh => ('z', "ʒ"),
+            Self::Ch => ('t', "tʃ"),
+            Self::Jh => ('d', "dʒ"),
+            Self::L => ('r', "l"),
+            Self::W => ('h', "w"),
+            Self::Y => ('h', "j"),
+            Self::Ng => ('n', "ŋ"),
         }
     }
 
+    fn substitute(self) -> char {
+        self.info().0
+    }
+
     fn ipa_label(self) -> &'static str {
-        match self {
-            Self::P => "p",
-            Self::B => "b",
-            Self::T => "t",
-            Self::D => "d",
-            Self::K => "k",
-            Self::G => "g",
-            Self::M => "m",
-            Self::N => "n",
-            Self::R => "r",
-            Self::S => "s",
-            Self::Z => "z",
-            Self::Hh => "h",
-            Self::F => "f",
-            Self::V => "v",
-            Self::Th => "θ",
-            Self::Dh => "ð",
-            Self::Sh => "ʃ",
-            Self::Zh => "ʒ",
-            Self::Ch => "tʃ",
-            Self::Jh => "dʒ",
-            Self::L => "l",
-            Self::W => "w",
-            Self::Y => "j",
-            Self::Ng => "ŋ",
-        }
+        self.info().1
     }
 }
 
@@ -212,38 +192,34 @@ pub enum EnglishVowel {
 }
 
 impl EnglishVowel {
-    fn substitute(self) -> char {
+    /// (採用音素への変換先, IPA表記)。
+    fn info(self) -> (char, &'static str) {
         match self {
-            Self::Iy | Self::Ih => 'i',
-            Self::Ey | Self::Eh => 'e',
+            Self::Iy => ('i', "iː"),
+            Self::Ih => ('i', "ɪ"),
+            Self::Ey => ('e', "eɪ"),
+            Self::Eh => ('e', "e"),
             // シュワ(ə)はストレスのない`Ah`として表す(CMU辞書でも別音素を設けない慣例に合わせる)。
-            Self::Ae | Self::Ah => 'a',
-            Self::Ao | Self::Aa | Self::Ow => 'o',
-            Self::Uw | Self::Uh => 'u',
-            Self::Ay | Self::Aw => 'a',
-            Self::Oy => 'o',
-            Self::Er => 'a',
+            Self::Ae => ('a', "æ"),
+            Self::Ah => ('a', "ʌ"),
+            Self::Ao => ('o', "ɔː"),
+            Self::Aa => ('o', "ɑː"),
+            Self::Ow => ('o', "oʊ"),
+            Self::Uw => ('u', "uː"),
+            Self::Uh => ('u', "ʊ"),
+            Self::Ay => ('a', "aɪ"),
+            Self::Aw => ('a', "aʊ"),
+            Self::Oy => ('o', "ɔɪ"),
+            Self::Er => ('a', "ɜːr"),
         }
     }
 
+    fn substitute(self) -> char {
+        self.info().0
+    }
+
     fn ipa_label(self) -> &'static str {
-        match self {
-            Self::Iy => "iː",
-            Self::Ih => "ɪ",
-            Self::Ey => "eɪ",
-            Self::Eh => "e",
-            Self::Ae => "æ",
-            Self::Ah => "ʌ",
-            Self::Ao => "ɔː",
-            Self::Aa => "ɑː",
-            Self::Ow => "oʊ",
-            Self::Uw => "uː",
-            Self::Uh => "ʊ",
-            Self::Ay => "aɪ",
-            Self::Aw => "aʊ",
-            Self::Oy => "ɔɪ",
-            Self::Er => "ɜːr",
-        }
+        self.info().1
     }
 }
 

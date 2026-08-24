@@ -2,6 +2,10 @@ use core::panic;
 use std::mem::discriminant;
 
 use crate::regex_engine::Regex;
+use crate::types::{ArgumentType, PhysicalEntity};
+
+mod number;
+pub use number::Number;
 
 #[derive(Debug)]
 pub struct IncompleteToken {
@@ -345,86 +349,59 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
     }
 }
 
-impl TerminalType {
-    pub fn start(&self) -> Position {
-        match self {
-            TerminalType::InterrogativeMarker(marker) => marker.range.start.clone(),
-            TerminalType::UniversalMarker(marker) => marker.range.start.clone(),
-            TerminalType::ModalityBase(modality) => modality.range.start.clone(),
-            TerminalType::Tense(tense) => tense.range.start.clone(),
-            TerminalType::Aspect(aspect) => aspect.range.start.clone(),
-            TerminalType::ModalityNegation(negation) => negation.range.start.clone(),
-            TerminalType::TenseNegation(negation) => negation.range.start.clone(),
-            TerminalType::AspectNegation(negation) => negation.range.start.clone(),
-            TerminalType::Negation(negation) => negation.range.start.clone(),
-            TerminalType::BinaryPredicate(predicate) => predicate.range.start.clone(),
-            TerminalType::Argument(argument) => argument.range.start.clone(),
-            TerminalType::CaseLabel(label) => label.range.start.clone(),
-            TerminalType::TypeOverride(type_override) => type_override.range.start.clone(),
-            TerminalType::PredicateOperator(operator) => operator.range.start.clone(),
-            TerminalType::ArgumentOperator(operator) => operator.range.start.clone(),
-            TerminalType::MtaEventOperator(operator) => operator.range.start.clone(),
-            TerminalType::ArgumentRetriever(retriever) => retriever.range.start.clone(),
-            TerminalType::Quantifier(quantifier) => quantifier.range.start.clone(),
-            TerminalType::Number(number) => number.range.start.clone(),
-            TerminalType::Determiner(determiner) => determiner.range.start.clone(),
-            TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
-                converter.range.start.clone()
+/// 内部の`get_range()`に委譲する`start`/`end`/`range`を型名リストから一括生成する。
+macro_rules! impl_terminal_range {
+    ($($ty:ident),+ $(,)?) => {
+        impl TerminalType {
+            pub fn start(&self) -> Position {
+                match self {
+                    $(TerminalType::$ty(inner) => inner.get_range().start(),)+
+                }
             }
-            TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
-                converter_end.range.start.clone()
+            pub fn end(&self) -> Position {
+                match self {
+                    $(TerminalType::$ty(inner) => inner.get_range().end(),)+
+                }
             }
-            TerminalType::ConnectiveHead(connective_head) => connective_head.range.start.clone(),
-            TerminalType::RoleLabel(role_label) => role_label.range.start.clone(),
-            TerminalType::PostBinaryPredicatePhraseModifier(modifier) => {
-                modifier.range.start.clone()
+            pub fn range(&self) -> Range {
+                Range {
+                    start: self.start(),
+                    end: self.end(),
+                }
             }
-            TerminalType::PostArgumentPhraseModifier(modifier) => modifier.range.start.clone(),
-            TerminalType::Eos(eos) => eos.range.start.clone(),
         }
-    }
-    pub fn end(&self) -> Position {
-        match self {
-            TerminalType::InterrogativeMarker(marker) => marker.range.end.clone(),
-            TerminalType::UniversalMarker(marker) => marker.range.end.clone(),
-            TerminalType::ModalityBase(modality) => modality.range.end.clone(),
-            TerminalType::Tense(tense) => tense.range.end.clone(),
-            TerminalType::Aspect(aspect) => aspect.range.end.clone(),
-            TerminalType::ModalityNegation(negation) => negation.range.end.clone(),
-            TerminalType::TenseNegation(negation) => negation.range.end.clone(),
-            TerminalType::AspectNegation(negation) => negation.range.end.clone(),
-            TerminalType::Negation(negation) => negation.range.end.clone(),
-            TerminalType::BinaryPredicate(predicate) => predicate.range.end.clone(),
-            TerminalType::Argument(argument) => argument.range.end.clone(),
-            TerminalType::CaseLabel(label) => label.range.end.clone(),
-            TerminalType::TypeOverride(type_override) => type_override.range.end.clone(),
-            TerminalType::PredicateOperator(operator) => operator.range.end.clone(),
-            TerminalType::ArgumentOperator(operator) => operator.range.end.clone(),
-            TerminalType::MtaEventOperator(operator) => operator.range.end.clone(),
-            TerminalType::ArgumentRetriever(retriever) => retriever.range.end.clone(),
-            TerminalType::Quantifier(quantifier) => quantifier.range.end.clone(),
-            TerminalType::Number(number) => number.range.end.clone(),
-            TerminalType::Determiner(determiner) => determiner.range.end.clone(),
-            TerminalType::MtaEventToArgumentPhraseConverter(converter) => {
-                converter.range.end.clone()
-            }
-            TerminalType::MtaEventToArgumentPhraseConverterEnd(converter_end) => {
-                converter_end.range.end.clone()
-            }
-            TerminalType::ConnectiveHead(connective_head) => connective_head.range.end.clone(),
-            TerminalType::RoleLabel(role_label) => role_label.range.end.clone(),
-            TerminalType::PostBinaryPredicatePhraseModifier(modifier) => modifier.range.end.clone(),
-            TerminalType::PostArgumentPhraseModifier(modifier) => modifier.range.end.clone(),
-            TerminalType::Eos(eos) => eos.range.end.clone(),
-        }
-    }
-    pub fn range(&self) -> Range {
-        Range {
-            start: self.start(),
-            end: self.end(),
-        }
-    }
+    };
 }
+
+impl_terminal_range!(
+    InterrogativeMarker,
+    UniversalMarker,
+    ModalityBase,
+    Tense,
+    Aspect,
+    ModalityNegation,
+    TenseNegation,
+    AspectNegation,
+    Negation,
+    BinaryPredicate,
+    Argument,
+    CaseLabel,
+    TypeOverride,
+    PredicateOperator,
+    ArgumentOperator,
+    MtaEventOperator,
+    ArgumentRetriever,
+    Quantifier,
+    Number,
+    Determiner,
+    MtaEventToArgumentPhraseConverter,
+    MtaEventToArgumentPhraseConverterEnd,
+    ConnectiveHead,
+    RoleLabel,
+    PostBinaryPredicatePhraseModifier,
+    PostArgumentPhraseModifier,
+    Eos,
+);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InterrogativeMarker {
@@ -561,7 +538,7 @@ pub struct CaseLabel {
     kind: CaseLabelKind,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum CaseLabelKind {
     Sa, // 主格
     Si, // 対格
@@ -592,40 +569,26 @@ pub struct TypeOverride {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PredicateOperator {
     range: Range,
-    kind: PredicateOperatorKind,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PredicateOperatorKind {
-    And, // hoba
-    Or,  // hobi
-    Xor, // hobu
+    kind: OperatorKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArgumentOperator {
     range: Range,
-    kind: ArgumentOperatorKind,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ArgumentOperatorKind {
-    And, // hoka
-    Or,  // hoki
-    Xor, // hoku
+    kind: OperatorKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MtaEventOperator {
     range: Range,
-    kind: MtaEventOperatorKind,
+    kind: OperatorKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum MtaEventOperatorKind {
-    And, // homa
-    Or,  // homi
-    Xor, // homu
+pub enum OperatorKind {
+    And,
+    Or,
+    Xor,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -647,18 +610,11 @@ pub struct Quantifier {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum QuantifierKind {
+pub enum QuantifierKind {
     Ta, // 全ての
     Te, // 多くの
     Ti, // 半分の
     To, // 少なくとも1つは存在する
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Number {
-    range: Range,
-    value: u64,
-    is_hex: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -819,6 +775,8 @@ impl_get_range!(
     Negation,
     BinaryPredicate,
     Argument,
+    CaseLabel,
+    TypeOverride,
     ConnectiveHead,
     RoleLabel,
     PredicateOperator,
@@ -826,12 +784,12 @@ impl_get_range!(
     MtaEventOperator,
     ArgumentRetriever,
     Quantifier,
-    Number,
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
     PostBinaryPredicatePhraseModifier,
     PostArgumentPhraseModifier,
+    Eos,
 );
 
 define_fixed_token!(InterrogativeMarker, "interrogative marker", "ku");
@@ -901,79 +859,61 @@ impl BinaryPredicate {
         }
     }
     pub(crate) fn get_argument_types(&self) -> (Vec<ArgumentType>, Vec<ArgumentType>) {
-        // 名詞的な命題
-        const B: Regex = Regex::compile(r"^(?:b)");
-        const D: Regex = Regex::compile(r"^(?:d)");
-        const N: Regex = Regex::compile(r"^(?:n)");
-        const G: Regex = Regex::compile(r"^(?:g)");
-        const M: Regex = Regex::compile(r"^(?:m)");
-        const R: Regex = Regex::compile(r"^(?:r)");
-        // 空間・時間に関する名詞的な命題
-        const ZA: Regex = Regex::compile(r"^(?:za)");
-        const ZI: Regex = Regex::compile(r"^(?:zi)");
-        const ZU: Regex = Regex::compile(r"^(?:zu)");
-        const ZE: Regex = Regex::compile(r"^(?:ze)");
-        // 動詞的な命題
-        const PA: Regex = Regex::compile(r"^(?:pa)");
-        const PE: Regex = Regex::compile(r"^(?:pe)");
-        const PI: Regex = Regex::compile(r"^(?:pi)");
-        const PO: Regex = Regex::compile(r"^(?:po)");
-        const PU: Regex = Regex::compile(r"^(?:pu)");
-        const KA: Regex = Regex::compile(r"^(?:ka)");
-        const KI: Regex = Regex::compile(r"^(?:ki)");
-        const KU: Regex = Regex::compile(r"^(?:ku)");
-
-        if B.is_match(&self.string) {
+        let s = self.string.as_str();
+        // 名詞的な命題 / 空間・時間に関する名詞的な命題 / 動詞的な命題。
+        // `BinaryPredicate::is_match`の正規表現により先頭子音は[bdgmnrpkz]に限られ、
+        // z/p/kは2文字目の母音まで見て初めて曖昧さが解消するため、それぞれ2文字で判定する。
+        if s.starts_with("b") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             )
-        } else if D.is_match(&self.string) {
+        } else if s.starts_with("d") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
             )
-        } else if N.is_match(&self.string) {
+        } else if s.starts_with("n") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::NOther)],
             )
-        } else if R.is_match(&self.string) {
+        } else if s.starts_with("r") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Abstraction],
             )
-        } else if ZA.is_match(&self.string) {
+        } else if s.starts_with("za") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Space],
             )
-        } else if ZI.is_match(&self.string) {
+        } else if s.starts_with("zi") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Time],
             )
-        } else if ZE.is_match(&self.string) {
+        } else if s.starts_with("ze") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Space],
             )
-        } else if ZU.is_match(&self.string) {
+        } else if s.starts_with("zu") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Time],
             )
-        } else if G.is_match(&self.string) || M.is_match(&self.string) {
+        } else if s.starts_with("g") || s.starts_with("m") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Abstraction],
             )
-        } else if PA.is_match(&self.string) {
+        } else if s.starts_with("pa") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
             )
-        } else if PE.is_match(&self.string) {
+        } else if s.starts_with("pe") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![
@@ -981,12 +921,12 @@ impl BinaryPredicate {
                     ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ],
             )
-        } else if PI.is_match(&self.string) {
+        } else if s.starts_with("pi") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 vec![ArgumentType::Epsilon],
             )
-        } else if PO.is_match(&self.string) {
+        } else if s.starts_with("po") {
             (
                 vec![
                     ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -997,7 +937,7 @@ impl BinaryPredicate {
                     ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
                 ],
             )
-        } else if PU.is_match(&self.string) {
+        } else if s.starts_with("pu") {
             (
                 vec![
                     ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -1005,12 +945,12 @@ impl BinaryPredicate {
                 ],
                 vec![ArgumentType::Epsilon],
             )
-        } else if KA.is_match(&self.string) {
+        } else if s.starts_with("ka") {
             (
                 vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
                 abstraction_family_types(),
             )
-        } else if KI.is_match(&self.string) {
+        } else if s.starts_with("ki") {
             (
                 vec![
                     ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
@@ -1018,7 +958,7 @@ impl BinaryPredicate {
                 ],
                 abstraction_family_types(),
             )
-        } else if KU.is_match(&self.string) {
+        } else if s.starts_with("ku") {
             (abstraction_family_types(), abstraction_family_types())
         } else {
             panic!("Invalid binary predicate surface: {}", self.string);
@@ -1138,38 +1078,38 @@ impl CaseLabel {
 
 define_fixed_token!(TypeOverride, "type override", "se");
 
-define_surface_token!(PredicateOperator, PredicateOperatorKind, "predicate operator", {
+define_surface_token!(PredicateOperator, OperatorKind, "predicate operator", {
     And: "hoba",
     Or: "hobi",
     Xor: "hobu",
 });
 
 impl PredicateOperator {
-    pub fn get_kind(&self) -> &PredicateOperatorKind {
+    pub fn get_kind(&self) -> &OperatorKind {
         &self.kind
     }
 }
 
-define_surface_token!(ArgumentOperator, ArgumentOperatorKind, "argument operator", {
+define_surface_token!(ArgumentOperator, OperatorKind, "argument operator", {
     And: "hoka",
     Or: "hoki",
     Xor: "hoku",
 });
 
 impl ArgumentOperator {
-    pub fn get_kind(&self) -> &ArgumentOperatorKind {
+    pub fn get_kind(&self) -> &OperatorKind {
         &self.kind
     }
 }
 
-define_surface_token!(MtaEventOperator, MtaEventOperatorKind, "proposition operator", {
+define_surface_token!(MtaEventOperator, OperatorKind, "proposition operator", {
     And: "homa",
     Or: "homi",
     Xor: "homu",
 });
 
 impl MtaEventOperator {
-    pub fn get_kind(&self) -> &MtaEventOperatorKind {
+    pub fn get_kind(&self) -> &OperatorKind {
         &self.kind
     }
 }
@@ -1192,155 +1132,9 @@ define_surface_token!(Quantifier, QuantifierKind, "quantifier", {
     To: "to",
 });
 
-impl Number {
-    // 数字テーブル: 子音p/k/m/s x 母音a/e/i/o で1桁(0〜15)を表す。
-    const DIGIT_CONSONANTS: [char; 4] = ['p', 'k', 'm', 's'];
-    // 桁位置テーブル: 子音d/g/z/n x 母音a/e/i/o で指数(0〜15)を表す。
-    const PLACE_CONSONANTS: [char; 4] = ['d', 'g', 'z', 'n'];
-    const VOWELS: [char; 4] = ['a', 'e', 'i', 'o'];
-
-    fn is_match(string: &str) -> bool {
-        if Self::is_arabic_numeral_match(string) {
-            return true;
-        }
-        const RE_NUMBER: Regex = Regex::compile(
-            r"^tu(?:ru)?(?:(?:[pkms][aeio][dgzn][aeio])+(?:[pkms][aeio])?|[pkms][aeio])$",
-        );
-        if !RE_NUMBER.is_match(string) {
-            return false;
-        }
-        let rest = &string[2..];
-        let explicit_hex = rest.starts_with("ru");
-        if explicit_hex {
-            return true;
-        }
-        // ruが無ければ10進数として扱うので、桁の値はすべて0〜9でなければならない
-        // (10〜15を含む桁を言いたい場合は必ずruを付ける)。
-        Self::parse_terms(rest).iter().all(|&(digit, _)| digit <= 9)
-    }
-    // アラビア数字表記(算用数字)。数詞の代替入力表記として1桁目〜任意桁の数字列、
-    // または"1_000"のように3桁ごとにアンダースコアで区切った数字列を受け付ける
-    // (常に10進数として解釈する)。
-    fn is_arabic_numeral_match(string: &str) -> bool {
-        const RE_ARABIC: Regex = Regex::compile(r"^(?:[0-9]+|[0-9]{1,3}(?:_[0-9]{3})*)$");
-        if !RE_ARABIC.is_match(string) {
-            return false;
-        }
-        let digits_only: String = string.chars().filter(|&c| c != '_').collect();
-        digits_only.parse::<u64>().is_ok()
-    }
-    fn parse_terms(rest: &str) -> Vec<(u64, u32)> {
-        let chars: Vec<char> = rest.chars().collect();
-        let mut terms: Vec<(u64, u32)> = Vec::new();
-        let mut i = 0;
-        while i < chars.len() {
-            let digit = Self::digit_from_syllable(chars[i], chars[i + 1]);
-            i += 2;
-            if i + 1 < chars.len() && Self::PLACE_CONSONANTS.contains(&chars[i]) {
-                let exponent = Self::place_from_syllable(chars[i], chars[i + 1]);
-                i += 2;
-                terms.push((digit, exponent));
-            } else {
-                terms.push((digit, 0));
-            }
-        }
-        terms
-    }
-    fn digit_from_syllable(consonant: char, vowel: char) -> u64 {
-        let row = Self::DIGIT_CONSONANTS
-            .iter()
-            .position(|&c| c == consonant)
-            .unwrap();
-        let col = Self::VOWELS.iter().position(|&v| v == vowel).unwrap();
-        (row * 4 + col) as u64
-    }
-    fn place_from_syllable(consonant: char, vowel: char) -> u32 {
-        let row = Self::PLACE_CONSONANTS
-            .iter()
-            .position(|&c| c == consonant)
-            .unwrap();
-        let col = Self::VOWELS.iter().position(|&v| v == vowel).unwrap();
-        (row * 4 + col) as u32
-    }
-    fn digit_to_syllable(digit: u64) -> String {
-        let row = (digit / 4) as usize;
-        let col = (digit % 4) as usize;
-        format!("{}{}", Self::DIGIT_CONSONANTS[row], Self::VOWELS[col])
-    }
-    fn place_to_syllable(exponent: u32) -> String {
-        let row = (exponent / 4) as usize;
-        let col = (exponent % 4) as usize;
-        format!("{}{}", Self::PLACE_CONSONANTS[row], Self::VOWELS[col])
-    }
-    fn new(
-        string: &str,
-        start_line: usize,
-        start_character: usize,
-        end_line: usize,
-        end_character: usize,
-    ) -> Self {
-        if !Self::is_match(string) {
-            panic!("Invalid number surface: {}", string);
-        }
-        let (value, is_hex) = if Self::is_arabic_numeral_match(string) {
-            let digits_only: String = string.chars().filter(|&c| c != '_').collect();
-            (digits_only.parse::<u64>().unwrap(), false)
-        } else {
-            let mut rest = &string[2..]; // "tu"を読み飛ばす
-            let is_hex = rest.starts_with("ru");
-            if is_hex {
-                rest = &rest[2..];
-            }
-            let terms = Self::parse_terms(rest);
-            let base: u64 = if is_hex { 16 } else { 10 };
-            let value = terms
-                .iter()
-                .map(|(digit, exponent)| digit * base.pow(*exponent))
-                .sum();
-            (value, is_hex)
-        };
-        Number {
-            range: make_range(start_line, start_character, end_line, end_character),
-            value,
-            is_hex,
-        }
-    }
-    pub fn get_value(&self) -> u64 {
-        self.value
-    }
-    pub fn is_hex(&self) -> bool {
-        self.is_hex
-    }
-    pub fn get_string(&self) -> String {
-        let base: u64 = if self.is_hex { 16 } else { 10 };
-        let mut digits: Vec<u64> = Vec::new();
-        if self.value == 0 {
-            digits.push(0);
-        } else {
-            let mut v = self.value;
-            while v > 0 {
-                digits.push(v % base);
-                v /= base;
-            }
-            digits.reverse();
-        }
-        let digit_count = digits.len();
-        let mut result = String::from("tu");
-        if self.is_hex {
-            result.push_str("ru");
-        }
-        for (index, &digit) in digits.iter().enumerate() {
-            let exponent = (digit_count - 1 - index) as u32;
-            if exponent == 0 {
-                if digit != 0 || digit_count == 1 {
-                    result.push_str(&Self::digit_to_syllable(digit));
-                }
-            } else if digit != 0 {
-                result.push_str(&Self::digit_to_syllable(digit));
-                result.push_str(&Self::place_to_syllable(exponent));
-            }
-        }
-        result
+impl Quantifier {
+    pub fn get_kind(&self) -> &QuantifierKind {
+        &self.kind
     }
 }
 
@@ -1457,29 +1251,6 @@ impl Position {
     pub fn character(&self) -> usize {
         self.character
     }
-    pub fn diff_length(&self, other: Position) -> usize {
-        if self.line == other.line {
-            self.character.abs_diff(other.character)
-        } else {
-            0 // 異なる行の場合は0を返す（意味のある差分を計算できないため）
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ArgumentType {
-    PhysicalEntity(PhysicalEntity),
-    Abstraction,
-    Space, // SpatialRelation, Distanceから構成
-    Time,  // TemporalRelation, Durationから構成
-    Epsilon,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PhysicalEntity {
-    BLivingThing,
-    DArtifact,
-    NOther,
 }
 
 #[cfg(test)]

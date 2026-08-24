@@ -51,8 +51,29 @@ fn parse_node(
     tokens: &Vec<TerminalType>,
     current_token_index: &mut usize,
 ) -> Result<SymbolType, IncompleteAst> {
-    let current_token = tokens.get(*current_token_index).unwrap();
-    let top_symbol = stack.pop().unwrap();
+    // スタックは`parse()`が`[Eos, S]`の2要素で初期化し、以降は「1つpopしたら
+    // その分だけpushし直す」再帰呼び出しの下でのみ操作されるため空になることはない
+    // (`stack.pop()`は理論上失敗しないが、`unwrap()`によるpanicを避けるため防御的に扱う)。
+    // 一方`tokens.get(...)`は、不正/空のトークン列を渡された場合に実際に`None`になりうる
+    // (`parse`はpub関数であり、`diagnose()`が保証するEos終端済みの入力以外でも呼ばれうる)。
+    let Some(top_symbol) = stack.pop() else {
+        return Err(IncompleteAst {
+            error_token: TerminalType::Eos(Eos::new_omitted_token()),
+            error_top: ErrorTop::DummySymbolType(DummySymbolType::DummyTerminal(
+                DummyTerminalType::Eos,
+            )),
+            error_message: "Internal parser error: symbol stack unexpectedly empty".to_string(),
+        });
+    };
+    let Some(current_token) = tokens.get(*current_token_index) else {
+        let error_message =
+            format!("Unexpected end of token stream while expecting: {top_symbol:?}");
+        return Err(IncompleteAst {
+            error_token: TerminalType::Eos(Eos::new_omitted_token()),
+            error_top: ErrorTop::DummySymbolType(top_symbol),
+            error_message,
+        });
+    };
 
     match top_symbol {
         DummySymbolType::DummyTerminal(ref terminal) => match terminal {
@@ -2173,6 +2194,21 @@ impl RoleArg {
             RoleArg::One(_, mta_event) => mta_event,
         }
     }
+
+    pub(crate) fn resolve_hesa_hesi<'a>(
+        arg1: &'a RoleArg,
+        arg2: &'a RoleArg,
+    ) -> Option<(&'a RoleArg, &'a RoleArg)> {
+        let is_hesa = |arg: &RoleArg| matches!(arg.get_label().get_kind(), RoleLabelKind::Hesa);
+        let is_hesi = |arg: &RoleArg| matches!(arg.get_label().get_kind(), RoleLabelKind::Hesi);
+        if is_hesa(arg1) && is_hesi(arg2) {
+            Some((arg1, arg2))
+        } else if is_hesa(arg2) && is_hesi(arg1) {
+            Some((arg2, arg1))
+        } else {
+            None
+        }
+    }
 }
 
 impl DeclarativeSentence {
@@ -3225,6 +3261,22 @@ mod tests {
     fn test_parse() {
         let input = "parobe sa ma si ba eos";
         let sentences = tokenize(input).unwrap();
-        let _ = parse(sentences[0].clone());
+        let result = parse(sentences[0].clone());
+        assert!(result.is_ok(), "expected parse to succeed: {result:?}");
+        let ast = result.unwrap();
+        assert!(matches!(ast.get_s(), S::One(DeclarativeSentence::One(_))));
+    }
+
+    #[test]
+    fn test_parse_空のトークン列はpanicせずerrを返す() {
+        assert!(parse(vec![]).is_err());
+    }
+
+    #[test]
+    fn test_parse_eosを欠いた不完全なトークン列はpanicせずerrを返す() {
+        // `add_eos_to_last_sentence`を経由しない、eosで終わっていない不完全な入力。
+        let input = "parobe ma si ba";
+        let sentences = tokenize(input).unwrap();
+        assert!(parse(sentences[0].clone()).is_err());
     }
 }
