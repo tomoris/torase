@@ -97,6 +97,13 @@
         "definition": null,
         "description": "接続詞(同時)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側とhesi側は同時に成り立つ(P∧Q)。"
     },
+    "hehito": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ConnectiveHead",
+        "definition": null,
+        "description": "接続詞(条件)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側が成り立つならhesi側も成り立つ(P→Q)。"
+    },
     "hehoma": {
         "original_spelling": null,
         "original_pronunciation": null,
@@ -118,6 +125,13 @@
         "definition": null,
         "description": "接続詞(xor)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側とhesi側のどちらか片方だけが成り立つ(P⊕Q)。"
     },
+    "henehito": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "ConnectiveHead",
+        "definition": null,
+        "description": "接続詞(反実仮想条件)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側が(反実仮想的に)成り立つならhesi側も成り立つ(P→Q)。`hehito`(条件。hesa側の真偽を保留する直説法条件文)とは異なり、hesa側が実際には成り立たない(または成り立たなかった)という前提を伴う反実仮想条件文専用の接続詞。真理条件は`hehito`と同じ実質含意(P→Q)で、法・言説関係の違いは真理条件レベルでは区別しない(他の接続詞群と同様)。それ自体は時制中立で、節内の`hita`(過去)/`hiti`(現在)と組み合わせて過去反実仮想・現在反実仮想を分析的に区別する。"
+    },
     "henesuteto": {
         "original_spelling": null,
         "original_pronunciation": null,
@@ -125,26 +139,12 @@
         "definition": null,
         "description": "接続詞(結果⇔反対の原因)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側とhesi側が両方成り立つことを表す、逆接的な原因を表す接続詞(『Pなのにもかかわらず(反対の原因により)Q』のように読める。旧`henesute`/`henesuto`を統合)。"
     },
-    "henezu": {
-        "original_spelling": null,
-        "original_pronunciation": null,
-        "terminal_type": "ConnectiveHead",
-        "definition": null,
-        "description": "接続詞(反実仮想条件)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側が(反実仮想的に)成り立つならhesi側も成り立つ(P→Q)。`hezu`(条件。hesa側の真偽を保留する直説法条件文)とは異なり、hesa側が実際には成り立たない(または成り立たなかった)という前提を伴う反実仮想条件文専用の接続詞。真理条件は`hezu`と同じ実質含意(P→Q)で、法・言説関係の違いは真理条件レベルでは区別しない(他の接続詞群と同様)。それ自体は時制中立で、節内の`hita`(過去)/`hiti`(現在)と組み合わせて過去反実仮想・現在反実仮想を分析的に区別する。"
-    },
     "hesuteto": {
         "original_spelling": null,
         "original_pronunciation": null,
         "terminal_type": "ConnectiveHead",
         "definition": null,
         "description": "接続詞(原因⇔結果)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側とhesi側が両方成り立つことを表す(『Pだから/なのでQ』のように読める。hesa側が原因、hesi側が結果。旧`hesute`/`hesuto`を統合)。"
-    },
-    "hezu": {
-        "original_spelling": null,
-        "original_pronunciation": null,
-        "terminal_type": "ConnectiveHead",
-        "definition": null,
-        "description": "接続詞(条件)。文頭に置き、`hesa [節] hesi [節]`の形でhesa側・hesi側それぞれの節を取る(順序は自由)。hesa側が成り立つならhesi側も成り立つ(P→Q)。"
     },
     "ze": {
         "original_spelling": null,

@@ -513,7 +513,7 @@ impl PostModifiedMtaEvent {
                     ConnectiveHeadKind::Hehenu => {
                         Formula::And(Box::new(Formula::Not(Box::new(p))), Box::new(q))
                     }
-                    ConnectiveHeadKind::Hezu | ConnectiveHeadKind::Henezu => {
+                    ConnectiveHeadKind::Hehito | ConnectiveHeadKind::Henehito => {
                         Formula::Implies(Box::new(p), Box::new(q))
                     }
                     ConnectiveHeadKind::Hehezu => Formula::And(
@@ -1101,17 +1101,17 @@ mod tests {
     }
 
     #[test]
-    fn test_接続詞_hezu_条件() {
+    fn test_接続詞_hehito_条件() {
         check(
-            "hezu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
+            "hehito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
-    fn test_接続詞_henezu_反実仮想条件() {
+    fn test_接続詞_henehito_反実仮想条件() {
         check(
-            "henezu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
+            "henehito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }

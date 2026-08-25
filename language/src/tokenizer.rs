@@ -818,8 +818,8 @@ pub enum ConnectiveHeadKind {
     Hehoma,     // 接続詞(and)
     Hehomi,     // 接続詞(or)
     Hehomu,     // 接続詞(xor)
-    Hezu,       // 接続詞(条件)
-    Henezu,     // 接続詞(反実仮想条件)
+    Hehito,     // 接続詞(条件)
+    Henehito,   // 接続詞(反実仮想条件)
     Hehenu,     // 接続詞(対比)
     Hehezu,     // 接続詞(定義。P↔Q)
 }
@@ -1380,8 +1380,8 @@ define_surface_token!(ConnectiveHead, ConnectiveHeadKind, "connective head", {
     Hehoma: "hehoma",
     Hehomi: "hehomi",
     Hehomu: "hehomu",
-    Hezu: "hezu",
-    Henezu: "henezu",
+    Hehito: "hehito",
+    Henehito: "henehito",
     Hehenu: "hehenu",
     Hehezu: "hehezu",
 });
