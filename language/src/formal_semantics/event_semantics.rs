@@ -758,6 +758,13 @@ impl ArgumentPhrase {
                     inner: Box::new(inner),
                 }
             }
+
+            // Proper noun: he<X> BODY hoho → individual constant, namespaced by the
+            // opener so a quoted name can never collide with a pronoun constant or
+            // with the same raw text quoted under a different he<X> class.
+            ArgumentPhrase::Six(opener, body, _hoho) => {
+                ArgCtx::Const(format!("{}:{}", opener.get_string(), body.get_string()))
+            }
         }
     }
 }
@@ -1227,6 +1234,14 @@ mod tests {
         check(
             "pahete sa mi si te ri behapare",
             "∃_many x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_固有名詞は開始マーカーで名前空間分けされた定項になる() {
+        check(
+            "parobe sa heba Kanye hoho si ba",
+            "∃e.(parobe(e) ∧ (Agent(e, heba:Kanye) ∧ Patient(e, ba)))",
         );
     }
 

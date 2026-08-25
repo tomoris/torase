@@ -41,11 +41,21 @@ fn make_range(
 }
 
 pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> {
-    let tokens = split_with_utf8_ranges(input);
+    let tokens = split_with_utf8_ranges(input)?;
 
     let mut doc = Vec::new();
+    // 直前が固有名詞の開始マーカーだった場合、次のトークンは無条件に生テキストとして
+    // 扱う(通常のis_matchカスケードを一切通さない)。
+    let mut expect_proper_noun_body = false;
 
     for token in &tokens {
+        if expect_proper_noun_body {
+            doc.push(TerminalType::ProperNounBody(ProperNounBody::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+            expect_proper_noun_body = false;
+            continue;
+        }
         if InterrogativeMarker::is_match(token.0) {
             doc.push(TerminalType::InterrogativeMarker(InterrogativeMarker::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -136,6 +146,15 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                     token.0, token.1, token.2, token.3, token.4,
                 ),
             ));
+        } else if ProperNounOpener::is_match(token.0) {
+            doc.push(TerminalType::ProperNounOpener(ProperNounOpener::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
+            expect_proper_noun_body = true;
+        } else if ProperNounCloser::is_match(token.0) {
+            doc.push(TerminalType::ProperNounCloser(ProperNounCloser::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if ConnectiveHead::is_match(token.0) {
             doc.push(TerminalType::ConnectiveHead(ConnectiveHead::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -205,7 +224,68 @@ pub fn add_eos_to_last_sentence(sentences: Vec<Vec<TerminalType>>) -> Vec<Vec<Te
     sentences
 }
 
-fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)> {
+type WordSpan<'a> = (&'a str, usize, usize, usize, usize);
+
+/// 固有名詞の引用区間(`he[CV] ... hoho`)の追跡状態。
+enum QuoteState {
+    None,
+    AfterOpener,
+    InQuote(usize, usize, usize),
+}
+
+struct WordBoundary<'a> {
+    word: &'a str,
+    byte_idx: usize,
+    start_row: usize,
+    start_col: usize,
+    end_row: usize,
+    end_col: usize,
+}
+
+fn handle_completed_word<'a>(
+    boundary: WordBoundary<'a>,
+    input: &'a str,
+    result: &mut Vec<WordSpan<'a>>,
+    quote_state: &mut QuoteState,
+) {
+    let WordBoundary {
+        word,
+        byte_idx,
+        start_row,
+        start_col,
+        end_row,
+        end_col,
+    } = boundary;
+
+    match *quote_state {
+        QuoteState::InQuote(quote_idx, quote_row, quote_col) => {
+            if word == "hoho" {
+                let raw = input[quote_idx..byte_idx].trim_end();
+                result.push((raw, quote_row, quote_col, start_row, start_col));
+                result.push((word, start_row, start_col, end_row, end_col));
+                *quote_state = QuoteState::None;
+            }
+        }
+        QuoteState::AfterOpener => {
+            if word == "hoho" {
+                // 開始マーカーの直後にすぐ終了マーカーが続く場合(空の固有名詞)。
+                result.push(("", start_row, start_col, start_row, start_col));
+                result.push((word, start_row, start_col, end_row, end_col));
+                *quote_state = QuoteState::None;
+            } else {
+                *quote_state = QuoteState::InQuote(byte_idx, start_row, start_col);
+            }
+        }
+        QuoteState::None => {
+            result.push((word, start_row, start_col, end_row, end_col));
+            if ProperNounOpener::is_match(word) {
+                *quote_state = QuoteState::AfterOpener;
+            }
+        }
+    }
+}
+
+fn split_with_utf8_ranges(input: &str) -> Result<Vec<WordSpan<'_>>, IncompleteToken> {
     let mut result = Vec::new();
     let mut in_word = false;
     let mut start_idx = 0;
@@ -215,10 +295,25 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
     let mut row = 0;
     let mut col = 0;
 
+    // 固有名詞の引用区間(`he[CV] ... hoho`)を追跡する状態。
+    let mut quote_state = QuoteState::None;
+
     for (i, c) in input.char_indices() {
         if c.is_whitespace() {
             if in_word {
-                result.push((&input[start_idx..i], start_row, start_col, row, col));
+                handle_completed_word(
+                    WordBoundary {
+                        word: &input[start_idx..i],
+                        byte_idx: start_idx,
+                        start_row,
+                        start_col,
+                        end_row: row,
+                        end_col: col,
+                    },
+                    input,
+                    &mut result,
+                    &mut quote_state,
+                );
                 in_word = false;
             }
 
@@ -240,10 +335,36 @@ fn split_with_utf8_ranges(input: &str) -> Vec<(&str, usize, usize, usize, usize)
     }
 
     if in_word {
-        result.push((&input[start_idx..], start_row, start_col, row, col));
+        handle_completed_word(
+            WordBoundary {
+                word: &input[start_idx..],
+                byte_idx: start_idx,
+                start_row,
+                start_col,
+                end_row: row,
+                end_col: col,
+            },
+            input,
+            &mut result,
+            &mut quote_state,
+        );
     }
 
-    result
+    if let QuoteState::InQuote(_, quote_row, quote_col) = quote_state {
+        return Err(IncompleteToken {
+            range: make_range(quote_row, quote_col, row, col),
+        });
+    }
+    if matches!(quote_state, QuoteState::AfterOpener) {
+        // 開始マーカーの直後に何も続かないまま入力が終わった場合。
+        if let Some(last) = result.last() {
+            return Err(IncompleteToken {
+                range: make_range(last.1, last.2, last.3, last.4),
+            });
+        }
+    }
+
+    Ok(result)
 }
 
 // terminal types
@@ -272,6 +393,9 @@ pub enum TerminalType {
     Determiner(Determiner),
     MtaEventToArgumentPhraseConverter(MtaEventToArgumentPhraseConverter),
     MtaEventToArgumentPhraseConverterEnd(MtaEventToArgumentPhraseConverterEnd),
+    ProperNounOpener(ProperNounOpener),
+    ProperNounBody(ProperNounBody),
+    ProperNounCloser(ProperNounCloser),
     ConnectiveHead(ConnectiveHead),
     RoleLabel(RoleLabel),
     PostBinaryPredicatePhraseModifier(PostBinaryPredicatePhraseModifier),
@@ -303,6 +427,9 @@ pub enum DummyTerminalType {
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
+    ProperNounOpener,
+    ProperNounBody,
+    ProperNounCloser,
     ConnectiveHead,
     RoleLabel,
     PostBinaryPredicatePhraseModifier,
@@ -338,6 +465,9 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => {
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
         }
+        TerminalType::ProperNounOpener(_) => DummyTerminalType::ProperNounOpener,
+        TerminalType::ProperNounBody(_) => DummyTerminalType::ProperNounBody,
+        TerminalType::ProperNounCloser(_) => DummyTerminalType::ProperNounCloser,
         TerminalType::ConnectiveHead(_) => DummyTerminalType::ConnectiveHead,
         TerminalType::RoleLabel(_) => DummyTerminalType::RoleLabel,
         TerminalType::PostBinaryPredicatePhraseModifier(_) => {
@@ -397,6 +527,9 @@ impl_terminal_range!(
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
+    ProperNounOpener,
+    ProperNounBody,
+    ProperNounCloser,
     ConnectiveHead,
     RoleLabel,
     PostBinaryPredicatePhraseModifier,
@@ -642,6 +775,35 @@ pub struct MtaEventToArgumentPhraseConverterEnd {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProperNounOpener {
+    range: Range,
+    kind: ProperNounOpenerKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ProperNounOpenerKind {
+    Heba, // 人名
+    Hebi, // 動物名
+    Heza, // 地名など空間的固有名詞
+    Hezi, // 記念日・元号など時間的固有名詞
+    Hemu, // 団体・組織・企業名
+    Heda, // 道具・乗り物などの固有名
+    Hedi, // 建造物・ランドマークの固有名
+    Hedu, // その他人工物の固有名
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProperNounBody {
+    range: Range,
+    text: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProperNounCloser {
+    range: Range,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ConnectiveHead {
     range: Range,
     kind: ConnectiveHeadKind,
@@ -788,6 +950,9 @@ impl_get_range!(
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
+    ProperNounOpener,
+    ProperNounBody,
+    ProperNounCloser,
     PostBinaryPredicatePhraseModifier,
     PostArgumentPhraseModifier,
     Eos,
@@ -1157,6 +1322,56 @@ define_fixed_token!(
     "ho"
 );
 
+define_surface_token!(ProperNounOpener, ProperNounOpenerKind, "proper noun opener", {
+    Heba: "heba",
+    Hebi: "hebi",
+    Heza: "heza",
+    Hezi: "hezi",
+    Hemu: "hemu",
+    Heda: "heda",
+    Hedi: "hedi",
+    Hedu: "hedu",
+});
+
+impl ProperNounOpener {
+    pub fn get_kind(&self) -> &ProperNounOpenerKind {
+        &self.kind
+    }
+    pub(crate) fn get_type(&self) -> ArgumentType {
+        match self.kind {
+            ProperNounOpenerKind::Heba | ProperNounOpenerKind::Hebi => {
+                ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)
+            }
+            ProperNounOpenerKind::Heda
+            | ProperNounOpenerKind::Hedi
+            | ProperNounOpenerKind::Hedu => ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+            ProperNounOpenerKind::Hemu => ArgumentType::Abstraction,
+            ProperNounOpenerKind::Heza => ArgumentType::Space,
+            ProperNounOpenerKind::Hezi => ArgumentType::Time,
+        }
+    }
+}
+
+impl ProperNounBody {
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        ProperNounBody {
+            range: make_range(start_line, start_character, end_line, end_character),
+            text: string.to_string(),
+        }
+    }
+    pub fn get_string(&self) -> String {
+        self.text.clone()
+    }
+}
+
+define_fixed_token!(ProperNounCloser, "proper noun closer", "hoho");
+
 define_surface_token!(ConnectiveHead, ConnectiveHeadKind, "connective head", {
     Hesuteto: "hesuteto",
     Henesuteto: "henesuteto",
@@ -1261,7 +1476,7 @@ mod tests {
     #[test]
     fn test_split_with_utf8_ranges() {
         let input = "binary_predicate argument accusative_preposition argument eos\nbinary_predicate argument accusative_preposition argument eos";
-        let tokens = split_with_utf8_ranges(input);
+        let tokens = split_with_utf8_ranges(input).unwrap();
         assert_eq!(tokens.len(), 10);
         assert_eq!(tokens[0], ("binary_predicate", 0, 0, 0, 16));
         assert_eq!(tokens[1], ("argument", 0, 17, 0, 25));
@@ -1273,6 +1488,81 @@ mod tests {
         assert_eq!(tokens[7], ("accusative_preposition", 1, 26, 1, 48));
         assert_eq!(tokens[8], ("argument", 1, 49, 1, 57));
         assert_eq!(tokens[9], ("eos", 1, 58, 1, 61));
+    }
+
+    #[test]
+    fn test_split_with_utf8_ranges_固有名詞の引用区間は1つのチャンクにまとまる() {
+        let input = "heba Kanye West hoho";
+        let tokens = split_with_utf8_ranges(input).unwrap();
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[0], ("heba", 0, 0, 0, 4));
+        assert_eq!(tokens[1], ("Kanye West", 0, 5, 0, 16));
+        assert_eq!(tokens[2], ("hoho", 0, 16, 0, 20));
+    }
+
+    #[test]
+    fn test_split_with_utf8_ranges_空の固有名詞も1トークンとして扱われる() {
+        let input = "heba hoho";
+        let tokens = split_with_utf8_ranges(input).unwrap();
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[1].0, "");
+    }
+
+    #[test]
+    fn test_split_with_utf8_ranges_hohoが無いと未完了トークンエラーになる() {
+        let input = "heba Kanye";
+        let result = split_with_utf8_ranges(input);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_split_with_utf8_ranges_開始マーカー直後に何も続かないと未完了トークンエラーになる() {
+        let input = "heba";
+        let result = split_with_utf8_ranges(input);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tokenize_固有名詞が正しくトークナイズされる() {
+        let input = "heba Kanye West hoho eos";
+        let sentences = tokenize(input).unwrap();
+        assert_eq!(sentences[0].len(), 4);
+        assert_eq!(
+            sentences[0][0],
+            TerminalType::ProperNounOpener(ProperNounOpener::new("heba", 0, 0, 0, 4))
+        );
+        assert_eq!(
+            sentences[0][1],
+            TerminalType::ProperNounBody(ProperNounBody::new("Kanye West", 0, 5, 0, 16))
+        );
+        assert_eq!(
+            sentences[0][2],
+            TerminalType::ProperNounCloser(ProperNounCloser::new("hoho", 0, 16, 0, 20))
+        );
+    }
+
+    #[test]
+    fn test_tokenize_固有名詞の中身が他のトークンと同じ文字列でも生テキストになる() {
+        // "mi"は代名詞、"ta"は量化詞と同じ表層形だが、引用区間の中身は無条件に
+        // ProperNounBodyとして扱われる。
+        let sentences = tokenize("heba mi hoho eos").unwrap();
+        assert_eq!(sentences[0].len(), 4);
+        assert!(
+            matches!(&sentences[0][1], TerminalType::ProperNounBody(body) if body.get_string() == "mi")
+        );
+
+        let sentences = tokenize("hedi ta hoho eos").unwrap();
+        assert_eq!(sentences[0].len(), 4);
+        assert!(
+            matches!(&sentences[0][1], TerminalType::ProperNounBody(body) if body.get_string() == "ta")
+        );
+    }
+
+    #[test]
+    fn test_tokenize_hohoが無い固有名詞はエラーになる() {
+        let input = "parobe sa heba Kanye si ba eos";
+        let result = tokenize(input);
+        assert!(result.is_err());
     }
 
     #[test]

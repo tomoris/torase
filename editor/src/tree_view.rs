@@ -566,6 +566,15 @@ impl TreeViewer for ArgumentPhrase {
                 ]);
                 category_box(category, content, background)
             }
+            ArgumentPhrase::Six(proper_noun_opener, proper_noun_body, proper_noun_closer) => {
+                let category = "ArgumentPhrase".to_string();
+                let content = row_with_separator(vec![
+                    text(proper_noun_opener.get_string()).into(),
+                    text(proper_noun_body.get_string()).into(),
+                    text(proper_noun_closer.get_string()).into(),
+                ]);
+                category_box(category, content, background)
+            }
         }
     }
     fn is_empty(&self) -> bool {

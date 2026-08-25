@@ -480,6 +480,7 @@ pub enum ArgumentPhrase {
         Box<MtaEvent>,
         MtaEventToArgumentPhraseConverterEnd,
     ),
+    Six(ProperNounOpener, ProperNounBody, ProperNounCloser),
 }
 
 #[derive(Clone, Debug)]
@@ -1258,6 +1259,7 @@ impl PostBinaryPredicatePhraseExpression {
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
             | DummyTerminalType::Tense
             | DummyTerminalType::Aspect
@@ -1384,6 +1386,11 @@ impl ArgumentPhrase {
                     DummyTerminalType::MtaEventToArgumentPhraseConverterEnd,
                 ),
             ])),
+            DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounOpener),
+                DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounBody),
+                DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounCloser),
+            ])),
             _ => Err(()),
         }
     }
@@ -1414,6 +1421,11 @@ impl ArgumentPhrase {
                         child3,
                     )),
                 ] => Self::Five(child1.clone(), Box::new(child2.clone()), child3.clone()),
+                [
+                    SymbolType::Terminal(TerminalType::ProperNounOpener(child1)),
+                    SymbolType::Terminal(TerminalType::ProperNounBody(child2)),
+                    SymbolType::Terminal(TerminalType::ProperNounCloser(child3)),
+                ] => Self::Six(child1.clone(), child2.clone(), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1475,6 +1487,11 @@ impl NonNegatedArgumentPhrase {
                 DummySymbolType::DummyTerminal(
                     DummyTerminalType::MtaEventToArgumentPhraseConverterEnd,
                 ),
+            ])),
+            DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounOpener),
+                DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounBody),
+                DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounCloser),
             ])),
             _ => Err(()),
         }
@@ -1629,6 +1646,7 @@ impl ArgumentRetrievalWithArgumentPhrase {
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
             | DummyTerminalType::Tense
             | DummyTerminalType::Aspect
@@ -1770,7 +1788,8 @@ impl TypeOverrideModifier {
             | DummyTerminalType::Number
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
-            | DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Epsilon),
+            | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
     }
@@ -1970,6 +1989,11 @@ impl ArgumentPhrase {
             ) => {
                 let start = mta_event_to_argument_phrase_converter.get_range().start();
                 let end = mta_event_to_argument_phrase_converter_end.get_range().end();
+                Range::new(start, end)
+            }
+            ArgumentPhrase::Six(opener, _, closer) => {
+                let start = opener.get_range().start();
+                let end = closer.get_range().end();
                 Range::new(start, end)
             }
         }
@@ -2660,6 +2684,27 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let proper_noun_opener = grammar::Terminal(
+            type_name::<ProperNounOpener>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let proper_noun_body = grammar::Terminal(
+            type_name::<ProperNounBody>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
+        let proper_noun_closer = grammar::Terminal(
+            type_name::<ProperNounCloser>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
         let connective_head = grammar::Terminal(
             type_name::<ConnectiveHead>()
                 .split("::")
@@ -2916,6 +2961,11 @@ mod tests {
                     grammar::Symbol::NonTerminal(mta_event.clone()),
                     grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter_end.clone()),
                 ]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(proper_noun_opener.clone()),
+                    grammar::Symbol::Terminal(proper_noun_body.clone()),
+                    grammar::Symbol::Terminal(proper_noun_closer.clone()),
+                ]),
             ],
         );
         rules.insert(
@@ -2934,6 +2984,11 @@ mod tests {
                     grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter.clone()),
                     grammar::Symbol::NonTerminal(mta_event.clone()),
                     grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter_end.clone()),
+                ]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(proper_noun_opener.clone()),
+                    grammar::Symbol::Terminal(proper_noun_body.clone()),
+                    grammar::Symbol::Terminal(proper_noun_closer.clone()),
                 ]),
             ],
         );
@@ -3042,6 +3097,9 @@ mod tests {
                     "MtaEventToArgumentPhraseConverterEnd" => {
                         DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
                     }
+                    "ProperNounOpener" => DummyTerminalType::ProperNounOpener,
+                    "ProperNounBody" => DummyTerminalType::ProperNounBody,
+                    "ProperNounCloser" => DummyTerminalType::ProperNounCloser,
                     "ConnectiveHead" => DummyTerminalType::ConnectiveHead,
                     "PostBinaryPredicatePhraseModifier" => {
                         DummyTerminalType::PostBinaryPredicatePhraseModifier
@@ -3204,6 +3262,9 @@ mod tests {
                                         DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => {
                                             "MtaEventToArgumentPhraseConverterEnd"
                                         }
+                                        DummyTerminalType::ProperNounOpener => "ProperNounOpener",
+                                        DummyTerminalType::ProperNounBody => "ProperNounBody",
+                                        DummyTerminalType::ProperNounCloser => "ProperNounCloser",
                                         DummyTerminalType::ConnectiveHead => "ConnectiveHead",
                                         DummyTerminalType::PostBinaryPredicatePhraseModifier => {
                                             "PostBinaryPredicatePhraseModifier"
@@ -3265,6 +3326,18 @@ mod tests {
         assert!(result.is_ok(), "expected parse to succeed: {result:?}");
         let ast = result.unwrap();
         assert!(matches!(ast.get_s(), S::One(DeclarativeSentence::One(_))));
+    }
+
+    #[test]
+    fn test_parse_固有名詞がargumentphrase_sixとしてパースできる() {
+        let input = "parobe sa heba Kanye hoho si ba eos";
+        let sentences = tokenize(input).unwrap();
+        let result = parse(sentences[0].clone());
+        assert!(result.is_ok(), "expected parse to succeed: {result:?}");
+        let ast = result.unwrap();
+        // 深いASTの形を辿るのではなく、ArgumentPhrase::Sixが実際に生成されたことを
+        // デバッグ表示から確認する(パース自体が成功することは上のassertで検証済み)。
+        assert!(format!("{:?}", ast.get_s()).contains("Six("));
     }
 
     #[test]

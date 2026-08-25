@@ -126,6 +126,14 @@ impl LexicalType for crate::tokenizer::MtaEventToArgumentPhraseConverter {
     }
 }
 
+impl LexicalType for crate::tokenizer::ProperNounOpener {
+    /// Proper noun (he<X> … hoho): a quoted individual constant, lifted to a
+    /// generalized quantifier just like an ordinary argument/pronoun.
+    fn lexical_type(&self) -> Type {
+        Type::gq()
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Helper: function application type check
 // ---------------------------------------------------------------------------
@@ -388,6 +396,9 @@ impl ArgumentPhrase {
                 let event_type = mta_event.infer_type()?;
                 apply(conv_type, event_type, conv.get_range())
             }
+
+            // Proper noun he<X> … hoho: an opaque quoted individual, lifted to GQ.
+            ArgumentPhrase::Six(opener, _body, _closer) => Ok(opener.lexical_type()),
         }
     }
 }

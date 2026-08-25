@@ -431,6 +431,7 @@ impl ArgumentPhrase {
                 mta_event,
                 _mta_event_to_argument_phrase_converter_end,
             ) => mta_event.type_check(),
+            ArgumentPhrase::Six(_opener, _body, _closer) => Ok(()),
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
@@ -442,6 +443,7 @@ impl ArgumentPhrase {
             ArgumentPhrase::Five(_, _, _) => {
                 vec![ArgumentType::Abstraction]
             }
+            ArgumentPhrase::Six(opener, _, _) => vec![opener.get_type()],
         }
     }
 }
@@ -768,6 +770,62 @@ mod tests {
     #[test]
     fn test_時間格の型が間違っている場合にerr型を返す() {
         let source = "parobe sa mi si ba sugi mi eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_固有名詞_hebaが生物系の格を直接満たす() {
+        let source = "parobe sa heba Kanye hoho si ba eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_固有名詞_hebaが人工物専用の格では失敗する() {
+        let source = "parobe sa mi si ba sudu heba Kanye hoho eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_固有名詞_heda_hedi_heduが道具系の格を直接満たす() {
+        for opener in ["heda", "hedi", "hedu"] {
+            let source = format!("parobe sa mi si ba sudu {opener} Ford hoho eos");
+            let tokens = tokenizer::tokenize(&source).unwrap()[0].clone();
+            let ast = parser::parse(tokens).unwrap();
+            let type_checked = type_check(&ast);
+            assert!(type_checked.is_ok(), "opener {opener} should satisfy sudu");
+        }
+    }
+
+    #[test]
+    fn test_固有名詞_hezaがza系述語を経由せず空間格を直接満たす() {
+        let source = "parobe sa mi si ba suni heza Tokyo hoho eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_固有名詞_heziがzi系述語を経由せず時間格を直接満たす() {
+        let source = "parobe sa mi si ba sugi hezi Reiwa hoho eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_固有名詞_hezaは生物系の格では失敗する() {
+        let source = "parobe sa heza Tokyo hoho si ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);

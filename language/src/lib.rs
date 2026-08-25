@@ -144,6 +144,20 @@ mod tests {
     }
 
     #[test]
+    fn test_固有名詞を含む文が診断を通る() {
+        let text = "parobe sa heba Kanye hoho si ba".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok(), "expected diagnose to succeed: {result:?}");
+    }
+
+    #[test]
+    fn test_閉じマーカーの無い固有名詞はトークナイズエラーになる() {
+        let text = "parobe sa heba Kanye si ba".to_string();
+        let diagnostics = diagnose(text).unwrap_err();
+        assert!(diagnostics.iter().any(|d| d.message == "tokenize error"));
+    }
+
+    #[test]
     fn test_彼はりんごを食べている() {
         let text = "hudida pahete sa gi si ri behapare".to_string();
         let result = diagnose(text);

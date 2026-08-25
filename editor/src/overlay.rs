@@ -47,6 +47,10 @@ pub(crate) fn token_color(token: &TerminalType) -> Option<Color> {
         | TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => {
             Some(Color::from_rgba8(210, 60, 210, 0.25))
         }
+        TerminalType::ProperNounOpener(_) | TerminalType::ProperNounCloser(_) => {
+            Some(Color::from_rgba8(210, 60, 210, 0.25))
+        }
+        TerminalType::ProperNounBody(_) => Some(Color::from_rgba8(140, 140, 140, 0.25)),
         TerminalType::PostBinaryPredicatePhraseModifier(_)
         | TerminalType::PostArgumentPhraseModifier(_) => Some(Color::from_rgba8(60, 60, 180, 0.25)),
         TerminalType::ConnectiveHead(_) => Some(Color::from_rgba8(220, 140, 40, 0.25)),
