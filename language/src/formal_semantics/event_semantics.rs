@@ -504,7 +504,7 @@ impl PostModifiedMtaEvent {
                 let q = q_arg.get_mta_event().to_fol(vg);
                 match head.get_kind() {
                     ConnectiveHeadKind::Hesuteto
-                    | ConnectiveHeadKind::Henesuteto
+                    | ConnectiveHeadKind::Henosuteto
                     | ConnectiveHeadKind::Hehoma
                     | ConnectiveHeadKind::Hehitatu
                     | ConnectiveHeadKind::Hehiti => Formula::And(Box::new(p), Box::new(q)),
@@ -513,7 +513,7 @@ impl PostModifiedMtaEvent {
                     ConnectiveHeadKind::Hehenu => {
                         Formula::And(Box::new(Formula::Not(Box::new(p))), Box::new(q))
                     }
-                    ConnectiveHeadKind::Hehito | ConnectiveHeadKind::Henehito => {
+                    ConnectiveHeadKind::Hehito | ConnectiveHeadKind::Henohito => {
                         Formula::Implies(Box::new(p), Box::new(q))
                     }
                     ConnectiveHeadKind::Hehezu => Formula::And(
@@ -1029,9 +1029,9 @@ mod tests {
     }
 
     #[test]
-    fn test_接続詞_henesuteto_結果から反対の原因() {
+    fn test_接続詞_henosuteto_結果から反対の原因() {
         check(
-            "henesuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
+            "henosuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
@@ -1045,9 +1045,9 @@ mod tests {
     }
 
     #[test]
-    fn test_接続詞_henesuteto_役割の順序を入れ替えても同じ論理式になる() {
+    fn test_接続詞_henosuteto_役割の順序を入れ替えても同じ論理式になる() {
         check(
-            "henesuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare",
+            "henosuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
@@ -1109,9 +1109,9 @@ mod tests {
     }
 
     #[test]
-    fn test_接続詞_henehito_反実仮想条件() {
+    fn test_接続詞_henohito_反実仮想条件() {
         check(
-            "henehito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
+            "henohito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
             "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }

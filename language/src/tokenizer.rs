@@ -812,14 +812,14 @@ pub struct ConnectiveHead {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ConnectiveHeadKind {
     Hesuteto,   // 接続詞(原因⇔結果)
-    Henesuteto, // 接続詞(反対の原因⇔結果)
+    Henosuteto, // 接続詞(反対の原因⇔結果)
     Hehitatu,   // 接続詞(時間前後)
     Hehiti,     // 接続詞(同時)
     Hehoma,     // 接続詞(and)
     Hehomi,     // 接続詞(or)
     Hehomu,     // 接続詞(xor)
     Hehito,     // 接続詞(条件)
-    Henehito,   // 接続詞(反実仮想条件)
+    Henohito,   // 接続詞(反実仮想条件)
     Hehenu,     // 接続詞(対比)
     Hehezu,     // 接続詞(定義。P↔Q)
 }
@@ -1374,14 +1374,14 @@ define_fixed_token!(ProperNounCloser, "proper noun closer", "hoho");
 
 define_surface_token!(ConnectiveHead, ConnectiveHeadKind, "connective head", {
     Hesuteto: "hesuteto",
-    Henesuteto: "henesuteto",
+    Henosuteto: "henosuteto",
     Hehitatu: "hehitatu",
     Hehiti: "hehiti",
     Hehoma: "hehoma",
     Hehomi: "hehomi",
     Hehomu: "hehomu",
     Hehito: "hehito",
-    Henehito: "henehito",
+    Henohito: "henohito",
     Hehenu: "hehenu",
     Hehezu: "hehezu",
 });

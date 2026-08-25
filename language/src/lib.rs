@@ -503,26 +503,26 @@ mod tests {
     }
 
     #[test]
-    fn test_接続詞_henehito() {
-        let text = "henehito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+    fn test_接続詞_henohito() {
+        let text = "henohito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_接続詞_henehito_過去反実仮想() {
+    fn test_接続詞_henohito_過去反実仮想() {
         let text =
-            "henehito hesa hita pahete sa mi si ri behapare hesi hita pahete sa ba si ri behoranage"
+            "henohito hesa hita pahete sa mi si ri behapare hesi hita pahete sa ba si ri behoranage"
                 .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn test_接続詞_henehito_現在反実仮想() {
+    fn test_接続詞_henohito_現在反実仮想() {
         let text =
-            "henehito hesa hiti pahete sa mi si ri behapare hesi hiti pahete sa ba si ri behoranage"
+            "henohito hesa hiti pahete sa mi si ri behapare hesi hiti pahete sa ba si ri behoranage"
                 .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -689,13 +689,13 @@ mod tests {
     }
 
     #[test]
-    fn test_接続詞_henesuteto() {
-        let text = "henesuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
+    fn test_接続詞_henosuteto() {
+        let text = "henosuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
 
-        let text = "henesuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare"
+        let text = "henosuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());

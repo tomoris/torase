@@ -380,14 +380,14 @@ ze (ta|to) za (ta|to) zi [平叙文]
 ```
 
 - `hesuteto` (原因⇔結果) - `hesa`側が原因、`hesi`側が結果
-- `henesuteto` (結果⇔反対の原因) - 逆接的な原因を表す(Pなのにもかかわらず(反対の原因により)Q)
+- `henosuteto` (結果⇔反対の原因) - 逆接的な原因を表す(Pなのにもかかわらず(反対の原因により)Q)
 - `hehoma` (and) - `hesa`側と`hesi`側が両方成り立つ
 - `hehomi` (or) - `hesa`側と`hesi`側のどちらかが成り立つ
 - `hehomu` (xor) - `hesa`側と`hesi`側のどちらか片方だけが成り立つ
 - `hehitatu` (時間の前後) - `hesa`側が前、`hesi`側が後の時間関係
 - `hehiti` (同時) - `hesa`側と`hesi`側が同時に成り立つ
 - `hehito` (直説法条件) - `hesa`側が成り立つなら`hesi`側も成り立つ(P→Q)
-- `henehito` (反実仮想条件) - もし`hesa`側が成り立っていたなら`hesi`側も成り立つ
+- `henohito` (反実仮想条件) - もし`hesa`側が成り立っていたなら`hesi`側も成り立つ
 - `hehenu` (対比) - `hesa`側は成り立たないが、`hesi`側は成り立つ
 - `hehezu` (定義) - `hesa`側と`hesi`側は同値(P↔Q)。単なる連言(論理式ではP∧Q)とは異なり、辞書の定義文を書くための専用の接続詞。`ze`(全称量化マーカー)・`za`/`zi`(定義用のスキーマ変数)と組み合わせて使う(「項」の節を参照)。
 
