@@ -227,14 +227,10 @@ ze (ta|to) za (ta|to) zi [平叙文]
   - `homa` (and)
   - `homi` (or)
   - `homu` (xor)
-- 述語
+- 述語・項
   - `hoba` (and)
   - `hobi` (or)
   - `hobu` (xor)
-- 項
-  - `hoka` (and)
-  - `hoki` (or)
-  - `hoku` (xor)
 
 ### 量化詞
 

@@ -36,9 +36,9 @@ pub(crate) fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::CaseLabel(_) => Some(Color::from_rgba8(60, 160, 180, 0.25)),
         TerminalType::RoleLabel(_) => Some(Color::from_rgba8(220, 170, 90, 0.25)),
         TerminalType::TypeOverride(_) => Some(Color::from_rgba8(60, 200, 120, 0.25)),
-        TerminalType::PredicateOperator(_)
-        | TerminalType::ArgumentOperator(_)
-        | TerminalType::MtaEventOperator(_) => Some(Color::from_rgba8(130, 130, 130, 0.25)),
+        TerminalType::PhraseOperator(_) | TerminalType::MtaEventOperator(_) => {
+            Some(Color::from_rgba8(130, 130, 130, 0.25))
+        }
         TerminalType::ArgumentRetriever(_) => Some(Color::from_rgba8(160, 60, 160, 0.25)),
         TerminalType::Quantifier(_) => Some(Color::from_rgba8(60, 170, 170, 0.25)),
         TerminalType::Number(_) => Some(Color::from_rgba8(120, 120, 210, 0.25)),

@@ -739,7 +739,7 @@ impl ArgumentPhrase {
             // Negated argument phrase.
             ArgumentPhrase::Two(_neg, inner) => ArgCtx::Neg(Box::new(inner.to_fol(vg))),
 
-            // Coordinated argument phrases (hoka/hoki/hoku arg1 arg2).
+            // Coordinated argument phrases (hoba/hobi/hobu arg1 arg2).
             ArgumentPhrase::Three(op, left, right) => ArgCtx::Coord {
                 op: op.get_kind().clone(),
                 left: Box::new(left.to_fol(vg)),

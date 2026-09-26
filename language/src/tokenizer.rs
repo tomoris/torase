@@ -108,12 +108,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Argument(Argument::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
-        } else if PredicateOperator::is_match(token.0) {
-            doc.push(TerminalType::PredicateOperator(PredicateOperator::new(
-                token.0, token.1, token.2, token.3, token.4,
-            )));
-        } else if ArgumentOperator::is_match(token.0) {
-            doc.push(TerminalType::ArgumentOperator(ArgumentOperator::new(
+        } else if PhraseOperator::is_match(token.0) {
+            doc.push(TerminalType::PhraseOperator(PhraseOperator::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
         } else if MtaEventOperator::is_match(token.0) {
@@ -384,8 +380,7 @@ pub enum TerminalType {
     Argument(Argument),
     CaseLabel(CaseLabel),
     TypeOverride(TypeOverride),
-    PredicateOperator(PredicateOperator),
-    ArgumentOperator(ArgumentOperator),
+    PhraseOperator(PhraseOperator),
     MtaEventOperator(MtaEventOperator),
     ArgumentRetriever(ArgumentRetriever),
     Quantifier(Quantifier),
@@ -418,8 +413,7 @@ pub enum DummyTerminalType {
     Argument,
     CaseLabel,
     TypeOverride,
-    PredicateOperator,
-    ArgumentOperator,
+    PhraseOperator,
     MtaEventOperator,
     ArgumentRetriever,
     Quantifier,
@@ -452,8 +446,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::Argument(_) => DummyTerminalType::Argument,
         TerminalType::CaseLabel(_) => DummyTerminalType::CaseLabel,
         TerminalType::TypeOverride(_) => DummyTerminalType::TypeOverride,
-        TerminalType::PredicateOperator(_) => DummyTerminalType::PredicateOperator,
-        TerminalType::ArgumentOperator(_) => DummyTerminalType::ArgumentOperator,
+        TerminalType::PhraseOperator(_) => DummyTerminalType::PhraseOperator,
         TerminalType::MtaEventOperator(_) => DummyTerminalType::MtaEventOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
@@ -518,8 +511,7 @@ impl_terminal_range!(
     Argument,
     CaseLabel,
     TypeOverride,
-    PredicateOperator,
-    ArgumentOperator,
+    PhraseOperator,
     MtaEventOperator,
     ArgumentRetriever,
     Quantifier,
@@ -701,13 +693,7 @@ pub struct TypeOverride {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PredicateOperator {
-    range: Range,
-    kind: OperatorKind,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ArgumentOperator {
+pub struct PhraseOperator {
     range: Range,
     kind: OperatorKind,
 }
@@ -942,8 +928,7 @@ impl_get_range!(
     TypeOverride,
     ConnectiveHead,
     RoleLabel,
-    PredicateOperator,
-    ArgumentOperator,
+    PhraseOperator,
     MtaEventOperator,
     ArgumentRetriever,
     Quantifier,
@@ -1244,25 +1229,13 @@ impl CaseLabel {
 
 define_fixed_token!(TypeOverride, "type override", "se");
 
-define_surface_token!(PredicateOperator, OperatorKind, "predicate operator", {
+define_surface_token!(PhraseOperator, OperatorKind, "phrase operator", {
     And: "hoba",
     Or: "hobi",
     Xor: "hobu",
 });
 
-impl PredicateOperator {
-    pub fn get_kind(&self) -> &OperatorKind {
-        &self.kind
-    }
-}
-
-define_surface_token!(ArgumentOperator, OperatorKind, "argument operator", {
-    And: "hoka",
-    Or: "hoki",
-    Xor: "hoku",
-});
-
-impl ArgumentOperator {
+impl PhraseOperator {
     pub fn get_kind(&self) -> &OperatorKind {
         &self.kind
     }

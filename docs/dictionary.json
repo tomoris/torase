@@ -191,44 +191,23 @@
     "hoba": {
         "original_spelling": null,
         "original_pronunciation": null,
-        "terminal_type": "PredicateOperator",
+        "terminal_type": "PhraseOperator",
         "definition": null,
-        "description": "述語のand。"
+        "description": "述語・項のand。"
     },
     "hobi": {
         "original_spelling": null,
         "original_pronunciation": null,
-        "terminal_type": "PredicateOperator",
+        "terminal_type": "PhraseOperator",
         "definition": null,
-        "description": "述語のor。"
+        "description": "述語・項のor。"
     },
     "hobu": {
         "original_spelling": null,
         "original_pronunciation": null,
-        "terminal_type": "PredicateOperator",
+        "terminal_type": "PhraseOperator",
         "definition": null,
-        "description": "述語のxor。"
-    },
-    "hoka": {
-        "original_spelling": null,
-        "original_pronunciation": null,
-        "terminal_type": "ArgumentOperator",
-        "definition": null,
-        "description": "項のand。"
-    },
-    "hoki": {
-        "original_spelling": null,
-        "original_pronunciation": null,
-        "terminal_type": "ArgumentOperator",
-        "definition": null,
-        "description": "項のor。"
-    },
-    "hoku": {
-        "original_spelling": null,
-        "original_pronunciation": null,
-        "terminal_type": "ArgumentOperator",
-        "definition": null,
-        "description": "項のxor。"
+        "description": "述語・項のxor。"
     },
     "homa": {
         "original_spelling": null,
@@ -648,7 +627,7 @@
         "original_pronunciation": "θɪŋ",
         "terminal_type": "BinaryPredicate",
         "definition": null,
-        "description": "x1はx2をものと定義する。 `disinaga`/`dusinaga`と近義語。「何もない」のような強調に`hoki`(or)で並べて使う用例がある。"
+        "description": "x1はx2をものと定義する。 `disinaga`/`dusinaga`と近義語。「何もない」のような強調に`hobi`(or)で並べて使う用例がある。"
     },
     "daterebisina": {
         "original_spelling": "television",
