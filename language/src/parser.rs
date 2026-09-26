@@ -515,6 +515,11 @@ pub enum ArgumentRetrievalBinaryPredicate {
         PostModifiedBinaryPredicatePhrase,
         ArgumentRetrievalWithArgumentPhrase,
     ),
+    Two(
+        MtaEventToArgumentPhraseConverter,
+        Box<MtaEvent>,
+        MtaEventToArgumentPhraseConverterEnd,
+    ),
 }
 
 #[derive(Clone, Debug)]
@@ -1629,6 +1634,15 @@ impl ArgumentRetrievalBinaryPredicate {
                     DummyNonTerminalType::ArgumentRetrievalWithArgumentPhrase,
                 ),
             ])),
+            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(
+                    DummyTerminalType::MtaEventToArgumentPhraseConverter,
+                ),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
+                DummySymbolType::DummyTerminal(
+                    DummyTerminalType::MtaEventToArgumentPhraseConverterEnd,
+                ),
+            ])),
             _ => Err(()),
         }
     }
@@ -1643,6 +1657,13 @@ impl ArgumentRetrievalBinaryPredicate {
                         child2,
                     )),
                 ] => Self::One(child1.clone(), child2.clone()),
+                [
+                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)),
+                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
+                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverterEnd(
+                        child3,
+                    )),
+                ] => Self::Two(child1.clone(), Box::new(child2.clone()), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1999,6 +2020,15 @@ impl ArgumentRetrievalBinaryPredicate {
                 let end = post_modified_binary_predicate_phrase.get_range().end();
                 Range::new(start, end)
             }
+            ArgumentRetrievalBinaryPredicate::Two(
+                mta_event_to_argument_phrase_converter,
+                _,
+                mta_event_to_argument_phrase_converter_end,
+            ) => {
+                let start = mta_event_to_argument_phrase_converter.get_range().start();
+                let end = mta_event_to_argument_phrase_converter_end.get_range().end();
+                Range::new(start, end)
+            }
         }
     }
 }
@@ -2097,6 +2127,20 @@ impl AspectExpression {
         match self {
             AspectExpression::One(modified_aspect) => Some(modified_aspect.get_range()),
             AspectExpression::Epsilon => None,
+        }
+    }
+}
+
+impl MtaEvent {
+    /// 等位接続(`homa`/`homi`/`homu`)の両辺を含め、この節に直接属するEventをすべて返す。
+    pub fn events(&self) -> Vec<&Event> {
+        match self {
+            MtaEvent::One(_, TaEvent::One(_, AEvent::One(_, event))) => vec![event],
+            MtaEvent::Two(_, m1, m2) => {
+                let mut result = m1.events();
+                result.extend(m2.events());
+                result
+            }
         }
     }
 }
@@ -3059,10 +3103,17 @@ mod tests {
         );
         rules.insert(
             argument_retrieval_binary_predicate.clone(),
-            vec![grammar::Rhs::Sequence(vec![
-                grammar::Symbol::NonTerminal(post_modified_binary_predicate_phrase.clone()),
-                grammar::Symbol::NonTerminal(argument_retrieval_with_argument_phrase.clone()),
-            ])],
+            vec![
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::NonTerminal(post_modified_binary_predicate_phrase.clone()),
+                    grammar::Symbol::NonTerminal(argument_retrieval_with_argument_phrase.clone()),
+                ]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter.clone()),
+                    grammar::Symbol::NonTerminal(mta_event.clone()),
+                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter_end.clone()),
+                ]),
+            ],
         );
         rules.insert(
             argument_retrieval_with_argument_phrase.clone(),

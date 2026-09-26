@@ -602,11 +602,11 @@ fn resolve_role_args<'a>(arg1: &'a RoleArg, arg2: &'a RoleArg) -> (&'a RoleArg, 
 impl PostModifiedMtaEvent {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            PostModifiedMtaEvent::One(mta) => mta.to_fol(vg),
+            PostModifiedMtaEvent::One(mta) => mta.to_fol(None, vg),
             PostModifiedMtaEvent::Two(head, arg1, arg2) => {
                 let (p_arg, q_arg) = resolve_role_args(arg1, arg2);
-                let p = p_arg.get_mta_event().to_fol(vg);
-                let q = q_arg.get_mta_event().to_fol(vg);
+                let p = p_arg.get_mta_event().to_fol(None, vg);
+                let q = q_arg.get_mta_event().to_fol(None, vg);
                 match head.get_kind() {
                     ConnectiveHeadKind::Hesuteto
                     | ConnectiveHeadKind::Henosuteto
@@ -631,11 +631,15 @@ impl PostModifiedMtaEvent {
     }
 }
 
+/// 項抽出の空所: 抽出される格と、そこに入る(外側で量化される)変数名。
+type Gap<'a> = Option<(&'a CaseLabelKind, &'a str)>;
+
 impl MtaEvent {
-    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+    /// `gap`は節からの項抽出(`ri he … ho`など)のとき、節内の全Eventで共有される空所。
+    fn to_fol(&self, gap: Gap<'_>, vg: &mut VarGen) -> Formula {
         match self {
             MtaEvent::One(mod_expr, ta) => {
-                let body = ta.to_fol(vg);
+                let body = ta.to_fol(gap, vg);
                 match mod_expr {
                     ModalityExpression::Epsilon => body,
                     ModalityExpression::One(ModifiedModality::One(base, force)) => {
@@ -648,8 +652,8 @@ impl MtaEvent {
             }
             // homa/homi/homu: proposition-level and/or/xor.
             MtaEvent::Two(op, m1, m2) => {
-                let f1 = m1.to_fol(vg);
-                let f2 = m2.to_fol(vg);
+                let f1 = m1.to_fol(gap, vg);
+                let f2 = m2.to_fol(gap, vg);
                 match op.get_kind() {
                     OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                     OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -695,9 +699,9 @@ fn aspect_spec(expr: &AspectExpression) -> Option<(&AspectKind, bool)> {
 }
 
 impl TaEvent {
-    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+    fn to_fol(&self, gap: Gap<'_>, vg: &mut VarGen) -> Formula {
         match self {
-            TaEvent::One(tense_expr, a) => a.to_fol(tense_spec(tense_expr), vg),
+            TaEvent::One(tense_expr, a) => a.to_fol(tense_spec(tense_expr), gap, vg),
         }
     }
 }
@@ -706,7 +710,7 @@ impl AEvent {
     /// アスペクトが無ければテンスはイベント時`τ(e)`と発話時`t0`を直接関係づける。
     /// アスペクトがあれば参照時`tR`を導入し、テンスは`tR`と`t0`を、アスペクトは`tR`とイベントを
     /// 関係づける。`hine`はテンスの関係だけを否定し、`hune`は参照時におけるアスペクト命題全体を否定する。
-    fn to_fol(&self, tense: TenseSpec<'_>, vg: &mut VarGen) -> Formula {
+    fn to_fol(&self, tense: TenseSpec<'_>, gap: Gap<'_>, vg: &mut VarGen) -> Formula {
         match self {
             AEvent::One(asp_expr, event) => match aspect_spec(asp_expr) {
                 None => {
@@ -717,11 +721,11 @@ impl AEvent {
                         }),
                         None => EventFrame::Plain,
                     };
-                    event.to_fol(&frame, vg)
+                    event.to_fol(&frame, gap, vg)
                 }
                 Some((aspect, aspect_negated)) => {
                     let r = vg.next_ref_time();
-                    let mut body = aspect_formula(aspect, &r, event, vg);
+                    let mut body = aspect_formula(aspect, &r, event, gap, vg);
                     if aspect_negated {
                         body = Formula::Not(Box::new(body));
                     }
@@ -736,7 +740,13 @@ impl AEvent {
     }
 }
 
-fn aspect_formula(aspect: &AspectKind, r: &str, event: &Event, vg: &mut VarGen) -> Formula {
+fn aspect_formula(
+    aspect: &AspectKind,
+    r: &str,
+    event: &Event,
+    gap: Gap<'_>,
+    vg: &mut VarGen,
+) -> Formula {
     let overlap = |point| {
         EventFrame::Single(TimeCond::Overlap {
             r: r.to_string(),
@@ -744,11 +754,13 @@ fn aspect_formula(aspect: &AspectKind, r: &str, event: &Event, vg: &mut VarGen) 
         })
     };
     match aspect {
-        AspectKind::Huda => Formula::Not(Box::new(
-            event.to_fol(&EventFrame::Single(TimeCond::BegunBy(r.to_string())), vg),
-        )),
-        AspectKind::Hude => event.to_fol(&overlap(EventPoint::Begin), vg),
-        AspectKind::Hudida => event.to_fol(&overlap(EventPoint::Whole), vg),
+        AspectKind::Huda => Formula::Not(Box::new(event.to_fol(
+            &EventFrame::Single(TimeCond::BegunBy(r.to_string())),
+            gap,
+            vg,
+        ))),
+        AspectKind::Hude => event.to_fol(&overlap(EventPoint::Begin), gap, vg),
+        AspectKind::Hudida => event.to_fol(&overlap(EventPoint::Whole), gap, vg),
         AspectKind::Hudidi => {
             let s = vg.next_occasion();
             let frame = EventFrame::Single(TimeCond::Overlap {
@@ -756,7 +768,7 @@ fn aspect_formula(aspect: &AspectKind, r: &str, event: &Event, vg: &mut VarGen) 
                 point: EventPoint::Whole,
             });
             let occasion = time_rel(SUBINTERVAL, Term::Var(s.clone()), Term::Var(r.to_string()));
-            let body = event.to_fol(&frame, vg);
+            let body = event.to_fol(&frame, gap, vg);
             Formula::GenQ(
                 GenQKind::Habitual,
                 s,
@@ -768,10 +780,15 @@ fn aspect_formula(aspect: &AspectKind, r: &str, event: &Event, vg: &mut VarGen) 
                 r: r.to_string(),
                 point: EventPoint::Whole,
             }),
+            gap,
             vg,
         ),
-        AspectKind::Hudo => event.to_fol(&overlap(EventPoint::End), vg),
-        AspectKind::Hudu => event.to_fol(&EventFrame::Single(TimeCond::Perfect(r.to_string())), vg),
+        AspectKind::Hudo => event.to_fol(&overlap(EventPoint::End), gap, vg),
+        AspectKind::Hudu => event.to_fol(
+            &EventFrame::Single(TimeCond::Perfect(r.to_string())),
+            gap,
+            vg,
+        ),
     }
 }
 
@@ -921,7 +938,7 @@ fn role_name(kind: &CaseLabelKind) -> &'static str {
 }
 
 impl Event {
-    fn to_fol(&self, frame: &EventFrame, vg: &mut VarGen) -> Formula {
+    fn to_fol(&self, frame: &EventFrame, gap: Gap<'_>, vg: &mut VarGen) -> Formula {
         let pred = extract_pred(self.get_pred());
         let case_args = self.case_args();
         // 格ラベルの種類ごとに引き当てる。同じ種類が複数回現れた場合は最初の1つを使う
@@ -932,26 +949,17 @@ impl Event {
         for (label, phrase) in case_args {
             by_kind.entry(label.get_kind()).or_insert(phrase);
         }
-        let arg2 = if let Some(&phrase) = by_kind.get(&CaseLabelKind::Si) {
-            phrase.to_fol(vg)
-        } else {
-            let y = vg.next();
-            ArgCtx::ExistOnly(y)
+        // 空所の格は節内に書かれていても(型エラー)空所を優先する。
+        let arg_of = |kind: &CaseLabelKind, vg: &mut VarGen| match gap {
+            Some((gap_kind, var)) if gap_kind == kind => Some(ArgCtx::FreeVar(var.to_string())),
+            _ => by_kind.get(kind).map(|&phrase| phrase.to_fol(vg)),
         };
-        let arg1 = if let Some(&phrase) = by_kind.get(&CaseLabelKind::Sa) {
-            phrase.to_fol(vg)
-        } else {
-            let y = vg.next();
-            ArgCtx::ExistOnly(y)
-        };
+        let arg2 = arg_of(&CaseLabelKind::Si, vg).unwrap_or_else(|| ArgCtx::ExistOnly(vg.next()));
+        let arg1 = arg_of(&CaseLabelKind::Sa, vg).unwrap_or_else(|| ArgCtx::ExistOnly(vg.next()));
         // 付加詞は省略時に存在閉包を作らず式に出さない。
         let extra_roles: Vec<(&'static str, ArgCtx)> = EXTRA_ROLE_TABLE
             .into_iter()
-            .filter_map(|(kind, role_name)| {
-                by_kind
-                    .get(&kind)
-                    .map(|&phrase| (role_name, phrase.to_fol(vg)))
-            })
+            .filter_map(|(kind, role_name)| arg_of(&kind, vg).map(|ctx| (role_name, ctx)))
             .collect();
         build_event_inner(&pred, arg1, arg2, extra_roles, frame, vg)
     }
@@ -1130,7 +1138,7 @@ impl ArgumentPhrase {
             // Event nominalization: he MtaEvent ho.
             ArgumentPhrase::Five(_he, mta_event, _ho) => {
                 let var = vg.next();
-                let inner = mta_event.to_fol(vg);
+                let inner = mta_event.to_fol(None, vg);
                 ArgCtx::Nominal {
                     var,
                     inner: Box::new(inner),
@@ -1201,33 +1209,35 @@ impl DeterminedArgument {
 
 impl RetrievedArgument {
     fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
-        let x = Term::Var(var.to_string());
-        let (base, with_arg) = match self {
-            RetrievedArgument::One(
-                _retriever,
-                ArgumentRetrievalBinaryPredicate::One(pred, with_arg),
-            ) => (build_restriction(pred, var), with_arg),
-            RetrievedArgument::Two(
-                _ru,
-                label,
-                ArgumentRetrievalBinaryPredicate::One(pred, with_arg),
-            ) => {
-                let base = build_role_restriction(
-                    &extract_pred(pred),
-                    role_name(label.get_kind()),
-                    x.clone(),
-                    vg,
-                );
-                (base, with_arg)
-            }
+        let (gap_kind, body) = match self {
+            RetrievedArgument::One(retriever, body) => (retriever.gap_case(), body),
+            RetrievedArgument::Two(_ru, label, body) => (label.get_kind().clone(), body),
         };
-        match with_arg {
-            ArgumentRetrievalWithArgumentPhrase::Epsilon => base,
-            // du: 関係を指定しない「〜の」。
-            ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
-                let extra_ctx = extra_arg.to_fol(vg);
-                let of_atom = Formula::Atom("Of".to_string(), vec![x, extra_ctx.term()]);
-                Formula::And(Box::new(base), Box::new(extra_ctx.scope(of_atom)))
+        let x = Term::Var(var.to_string());
+        match body {
+            // 節からの抽出: 節内のEventの空所の格に`var`を入れる。
+            ArgumentRetrievalBinaryPredicate::Two(_he, mta_event, _ho) => {
+                mta_event.to_fol(Some((&gap_kind, var)), vg)
+            }
+            ArgumentRetrievalBinaryPredicate::One(pred, with_arg) => {
+                let base = match self {
+                    RetrievedArgument::One(..) => build_restriction(pred, var),
+                    RetrievedArgument::Two(..) => build_role_restriction(
+                        &extract_pred(pred),
+                        role_name(&gap_kind),
+                        x.clone(),
+                        vg,
+                    ),
+                };
+                match with_arg {
+                    ArgumentRetrievalWithArgumentPhrase::Epsilon => base,
+                    // du: 関係を指定しない「〜の」。
+                    ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
+                        let extra_ctx = extra_arg.to_fol(vg);
+                        let of_atom = Formula::Atom("Of".to_string(), vec![x, extra_ctx.term()]);
+                        Formula::And(Box::new(base), Box::new(extra_ctx.scope(of_atom)))
+                    }
+                }
             }
         }
     }
@@ -1637,6 +1647,46 @@ mod tests {
         check(
             "pahete sa mi si ri behapare sudu ru sudu pahete du mi",
             "∃y.((∃e.(pahete(e) ∧ Instrument(e, y)) ∧ Of(y, mi)) ∧ ∃x.(behapare(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ Instrument(e1, y))))",
+        );
+    }
+
+    #[test]
+    fn test_節からの抽出_ri_私が食べる物をあなたは愛する() {
+        check(
+            "parobe sa ba si ri he pahete sa mi ho",
+            "∃x.(∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))))",
+        );
+    }
+
+    #[test]
+    fn test_節からの抽出_ru_私がりんごを食べた場所で食べる() {
+        check(
+            "pahete sa ba suni ru suni he hita pahete sa mi si ri behapare ho",
+            "∃y.(∃z.(behapare(z) ∧ ∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, z))) ∧ Location(e, y)) ∧ τ(e) < t0)) ∧ ∃x.∃e1.((pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))) ∧ Location(e1, y)))",
+        );
+    }
+
+    #[test]
+    fn test_節からの抽出_ra_りんごを食べている者を愛する() {
+        check(
+            "parobe sa mi si ra he hudida pahete si ri behapare ho",
+            "∃x.(∃tR.∃y.(behapare(y) ∧ ∃e.((pahete(e) ∧ (Agent(e, x) ∧ Patient(e, y))) ∧ tR * τ(e))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
+        );
+    }
+
+    #[test]
+    fn test_節からの抽出_等位接続の両方のeventに空所が入る() {
+        check(
+            "parobe sa mi si ri he homa pahete sa mi parobe sa ba ho",
+            "∃x.((∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x)))) ∧ ∃e2.(parobe(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))))",
+        );
+    }
+
+    #[test]
+    fn test_節からの抽出_入れ子の名詞化には空所が伝わらない() {
+        check(
+            "parobe sa mi si ra he karobe si he pahete si ri behapare ho ho",
+            "∃x.(∃y.(∃x1.∃z.(behapare(z) ∧ ∃e.(pahete(e) ∧ (Agent(e, x1) ∧ Patient(e, z)))) ∧ ∃e1.(karobe(e1) ∧ (Agent(e1, x) ∧ Patient(e1, y)))) ∧ ∃e2.(parobe(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))))",
         );
     }
 

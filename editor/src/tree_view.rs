@@ -697,6 +697,19 @@ impl TreeViewer for ArgumentRetrievalBinaryPredicate {
                 }
                 category_box(category, row_with_separator(parts), background)
             }
+            ArgumentRetrievalBinaryPredicate::Two(
+                mta_event_to_argument_phrase_converter,
+                mta_event,
+                mta_event_to_argument_phrase_converter_end,
+            ) => {
+                let category = "ArgumentRetrievalBinaryPredicate".to_string();
+                let content = row_with_separator(vec![
+                    text(mta_event_to_argument_phrase_converter.get_string()).into(),
+                    mta_event.view(is_full),
+                    text(mta_event_to_argument_phrase_converter_end.get_string()).into(),
+                ]);
+                category_box(category, content, background)
+            }
         }
     }
     fn is_empty(&self) -> bool {

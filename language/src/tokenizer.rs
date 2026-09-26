@@ -1294,6 +1294,13 @@ impl ArgumentRetriever {
     pub fn get_kind(&self) -> &ArgumentRetrieverKind {
         &self.kind
     }
+    /// 抽出される項に対応する格。
+    pub fn gap_case(&self) -> CaseLabelKind {
+        match self.kind {
+            ArgumentRetrieverKind::Nominative => CaseLabelKind::Sa,
+            ArgumentRetrieverKind::Accusative => CaseLabelKind::Si,
+        }
+    }
 }
 
 define_fixed_token!(AdjunctArgumentRetriever, "adjunct argument retriever", "ru");

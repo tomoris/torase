@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::parser::*;
-use crate::tokenizer::{ArgumentRetrieverKind, CaseLabelKind, Quantifier, Range};
+use crate::tokenizer::{CaseLabelKind, Quantifier, Range};
 use crate::types::{ArgumentType, PhysicalEntity};
 
 pub struct TypeMismatch {
@@ -482,8 +482,8 @@ impl DeterminedArgument {
 impl RetrievedArgument {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            RetrievedArgument::One(_argument_retriever, argument_retrieval_binary_predicate) => {
-                argument_retrieval_binary_predicate.type_check()
+            RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
+                argument_retrieval_binary_predicate.type_check(&argument_retriever.gap_case())
             }
             RetrievedArgument::Two(_ru, case_label, argument_retrieval_binary_predicate) => {
                 if adjunct_case_type(case_label.get_kind()).is_none() {
@@ -497,14 +497,14 @@ impl RetrievedArgument {
                         ),
                     });
                 }
-                argument_retrieval_binary_predicate.type_check()
+                argument_retrieval_binary_predicate.type_check(case_label.get_kind())
             }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
             RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
-                argument_retrieval_binary_predicate.get_type(argument_retriever.get_kind())
+                argument_retrieval_binary_predicate.get_type(&argument_retriever.gap_case())
             }
             RetrievedArgument::Two(_ru, case_label, _argument_retrieval_binary_predicate) => {
                 adjunct_case_type(case_label.get_kind())
@@ -516,7 +516,8 @@ impl RetrievedArgument {
 }
 
 impl ArgumentRetrievalBinaryPredicate {
-    fn type_check(&self) -> TypeMismatchResult {
+    /// `gap`は抽出される格。節の形(`he … ho`)では、節内のEventがこの格を明示してはいけない。
+    fn type_check(&self, gap: &CaseLabelKind) -> TypeMismatchResult {
         match self {
             ArgumentRetrievalBinaryPredicate::One(
                 post_modified_binary_predicate_phrase,
@@ -525,20 +526,60 @@ impl ArgumentRetrievalBinaryPredicate {
                 post_modified_binary_predicate_phrase.type_check()?;
                 argument_retrieval_with_argument_phrase.type_check()
             }
+            ArgumentRetrievalBinaryPredicate::Two(_he, mta_event, _ho) => {
+                mta_event.type_check()?;
+                for event in mta_event.events() {
+                    if let Some((label, _)) = event
+                        .case_args()
+                        .into_iter()
+                        .find(|(label, _)| label.get_kind() == gap)
+                    {
+                        return Err(TypeMismatch {
+                            range: label.get_range(),
+                            actual: vec![],
+                            expected: vec![],
+                            message: format!(
+                                "Case label '{}' is the retrieved gap and must be omitted in the clause.",
+                                label.get_string()
+                            ),
+                        });
+                    }
+                    let (_, t2) = event.get_pred().get_argument_types();
+                    if matches!(gap, CaseLabelKind::Si) && t2 == vec![ArgumentType::Epsilon] {
+                        return Err(TypeMismatch {
+                            range: event.get_range(),
+                            actual: vec![],
+                            expected: vec![],
+                            message: "Cannot retrieve the second argument of a unary predicate."
+                                .to_string(),
+                        });
+                    }
+                }
+                Ok(())
+            }
         }
     }
-    fn get_type(&self, kind: &ArgumentRetrieverKind) -> Vec<ArgumentType> {
+    /// `ra`/`ri`で抽出した項の型。`gap`は`sa`か`si`。
+    fn get_type(&self, gap: &CaseLabelKind) -> Vec<ArgumentType> {
+        let slot_type = |pred: &PostModifiedBinaryPredicatePhrase| {
+            let (t1, t2) = pred.get_argument_types();
+            match gap {
+                CaseLabelKind::Sa => t1,
+                _ => t2,
+            }
+        };
         match self {
             ArgumentRetrievalBinaryPredicate::One(
                 post_modified_binary_predicate_phrase,
                 _argument_retrieval_with_argument_phrase,
-            ) => {
-                let (t1, t2) = post_modified_binary_predicate_phrase.get_argument_types();
-                match kind {
-                    ArgumentRetrieverKind::Nominative => t1,
-                    ArgumentRetrieverKind::Accusative => t2,
-                }
-            }
+            ) => slot_type(post_modified_binary_predicate_phrase),
+            // 等位接続された全Eventに同じ項が入るため、各述語の型の共通部分をとる。
+            ArgumentRetrievalBinaryPredicate::Two(_he, mta_event, _ho) => mta_event
+                .events()
+                .into_iter()
+                .map(|event| slot_type(event.get_pred()))
+                .reduce(|acc, t| acc.into_iter().filter(|x| t.contains(x)).collect())
+                .unwrap_or_default(),
         }
     }
 }
@@ -644,6 +685,29 @@ mod tests {
     #[test]
     fn test_ruで抽出した項の型が合わない場合にerr型を返す() {
         assert!(check("parobe sa mi si ru suni pahete eos").is_err());
+    }
+
+    #[test]
+    fn test_節からの抽出の型検査が成功する() {
+        assert!(check("pahete sa mi si ri he pahete sa ba ho eos").is_ok());
+        assert!(check("pahete sa mi si ri behapare suni ru suni he pahete sa ba ho eos").is_ok());
+        assert!(check("parobe sa mi si ri he homa pahete sa mi parobe sa ba ho eos").is_ok());
+    }
+
+    #[test]
+    fn test_節からの抽出で空所の格が埋まっている場合にerr型を返す() {
+        assert!(check("parobe sa mi si ri he pahete sa mi si ri behapare ho eos").is_err());
+        assert!(check("pahete sa mi suni ru suni he pahete suni me ho eos").is_err());
+    }
+
+    #[test]
+    fn test_節からの抽出で単項述語の第二項を抽出するとerr型を返す() {
+        assert!(check("parobe sa mi si ri he pisarepa sa ba ho eos").is_err());
+    }
+
+    #[test]
+    fn test_節からの抽出で抽出した項の型が合わない場合にerr型を返す() {
+        assert!(check("parobe sa mi si ru suni he pahete sa ba ho eos").is_err());
     }
 
     #[test]
