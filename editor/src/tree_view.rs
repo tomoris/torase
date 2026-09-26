@@ -662,6 +662,19 @@ impl TreeViewer for RetrievedArgument {
                 ]);
                 category_box(category, content, background)
             }
+            RetrievedArgument::Two(
+                adjunct_argument_retriever,
+                case_label,
+                argument_retrieval_binary_predicate,
+            ) => {
+                let category = "RetrievedArgument".to_string();
+                let content = row_with_separator(vec![
+                    text(adjunct_argument_retriever.get_string()).into(),
+                    text(case_label.get_string()).into(),
+                    argument_retrieval_binary_predicate.view(is_full),
+                ]);
+                category_box(category, content, background)
+            }
         }
     }
     fn is_empty(&self) -> bool {

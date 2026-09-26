@@ -502,6 +502,11 @@ pub enum DeterminedArgument {
 #[derive(Clone, Debug)]
 pub enum RetrievedArgument {
     One(ArgumentRetriever, ArgumentRetrievalBinaryPredicate),
+    Two(
+        AdjunctArgumentRetriever,
+        CaseLabel,
+        ArgumentRetrievalBinaryPredicate,
+    ),
 }
 
 #[derive(Clone, Debug)]
@@ -1257,6 +1262,7 @@ impl PostBinaryPredicatePhraseExpression {
             | DummyTerminalType::Number
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::AdjunctArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
             | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
@@ -1371,7 +1377,8 @@ impl ArgumentPhrase {
             DummyTerminalType::Quantifier
             | DummyTerminalType::Number
             | DummyTerminalType::Determiner
-            | DummyTerminalType::ArgumentRetriever => {
+            | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::AdjunctArgumentRetriever => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::QuantifiedArgument,
                 )]))
@@ -1473,7 +1480,8 @@ impl NonNegatedArgumentPhrase {
             DummyTerminalType::Quantifier
             | DummyTerminalType::Number
             | DummyTerminalType::Determiner
-            | DummyTerminalType::ArgumentRetriever => {
+            | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::AdjunctArgumentRetriever => {
                 Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyNonTerminal(
                     DummyNonTerminalType::QuantifiedArgument,
                 )]))
@@ -1506,7 +1514,8 @@ impl QuantifiedArgument {
             DummyTerminalType::Quantifier
             | DummyTerminalType::Number
             | DummyTerminalType::Determiner
-            | DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Sequence(vec![
+            | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::AdjunctArgumentRetriever => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::QuantifierModifier),
                 DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminedArgument),
             ])),
@@ -1534,12 +1543,12 @@ impl QuantifiedArgument {
 impl DeterminedArgument {
     fn parse_table(current_token: DummyTerminalType) -> Result<DummyRhs, ()> {
         match current_token {
-            DummyTerminalType::Determiner | DummyTerminalType::ArgumentRetriever => {
-                Ok(DummyRhs::Sequence(vec![
-                    DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
-                    DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RetrievedArgument),
-                ]))
-            }
+            DummyTerminalType::Determiner
+            | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::AdjunctArgumentRetriever => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::DeterminerModifier),
+                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::RetrievedArgument),
+            ])),
             _ => Err(()),
         }
     }
@@ -1570,6 +1579,13 @@ impl RetrievedArgument {
                     DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
                 ),
             ])),
+            DummyTerminalType::AdjunctArgumentRetriever => Ok(DummyRhs::Sequence(vec![
+                DummySymbolType::DummyTerminal(DummyTerminalType::AdjunctArgumentRetriever),
+                DummySymbolType::DummyTerminal(DummyTerminalType::CaseLabel),
+                DummySymbolType::DummyNonTerminal(
+                    DummyNonTerminalType::ArgumentRetrievalBinaryPredicate,
+                ),
+            ])),
             _ => Err(()),
         }
     }
@@ -1582,6 +1598,13 @@ impl RetrievedArgument {
                         child2,
                     )),
                 ] => Self::One(child1.clone(), child2.clone()),
+                [
+                    SymbolType::Terminal(TerminalType::AdjunctArgumentRetriever(child1)),
+                    SymbolType::Terminal(TerminalType::CaseLabel(child2)),
+                    SymbolType::NonTerminal(NonTerminalType::ArgumentRetrievalBinaryPredicate(
+                        child3,
+                    )),
+                ] => Self::Two(child1.clone(), child2.clone(), child3.clone()),
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1643,6 +1666,7 @@ impl ArgumentRetrievalWithArgumentPhrase {
             | DummyTerminalType::Number
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::AdjunctArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
             | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
@@ -1694,7 +1718,9 @@ impl QuantifierModifier {
                 )]))
             }
             DummyTerminalType::Determiner => Ok(DummyRhs::Epsilon),
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentRetriever | DummyTerminalType::AdjunctArgumentRetriever => {
+                Ok(DummyRhs::Epsilon)
+            }
             _ => Err(()),
         }
     }
@@ -1750,7 +1776,9 @@ impl DeterminerModifier {
                     DummyTerminalType::Determiner,
                 )]))
             }
-            DummyTerminalType::ArgumentRetriever => Ok(DummyRhs::Epsilon),
+            DummyTerminalType::ArgumentRetriever | DummyTerminalType::AdjunctArgumentRetriever => {
+                Ok(DummyRhs::Epsilon)
+            }
             _ => Err(()),
         }
     }
@@ -1786,6 +1814,7 @@ impl TypeOverrideModifier {
             | DummyTerminalType::Number
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
+            | DummyTerminalType::AdjunctArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
             | DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Epsilon),
             _ => Err(()),
@@ -1924,6 +1953,15 @@ impl RetrievedArgument {
         match self {
             RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
                 let start = argument_retriever.get_range().start();
+                let end = argument_retrieval_binary_predicate.get_range().end();
+                Range::new(start, end)
+            }
+            RetrievedArgument::Two(
+                adjunct_argument_retriever,
+                _case_label,
+                argument_retrieval_binary_predicate,
+            ) => {
+                let start = adjunct_argument_retriever.get_range().start();
                 let end = argument_retrieval_binary_predicate.get_range().end();
                 Range::new(start, end)
             }
@@ -2641,6 +2679,13 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let adjunct_argument_retriever = grammar::Terminal(
+            type_name::<AdjunctArgumentRetriever>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
         let quantifier = grammar::Terminal(
             type_name::<Quantifier>()
                 .split("::")
@@ -3000,10 +3045,17 @@ mod tests {
         );
         rules.insert(
             retrieved_argument.clone(),
-            vec![grammar::Rhs::Sequence(vec![
-                grammar::Symbol::Terminal(argument_retriever.clone()),
-                grammar::Symbol::NonTerminal(argument_retrieval_binary_predicate.clone()),
-            ])],
+            vec![
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(argument_retriever.clone()),
+                    grammar::Symbol::NonTerminal(argument_retrieval_binary_predicate.clone()),
+                ]),
+                grammar::Rhs::Sequence(vec![
+                    grammar::Symbol::Terminal(adjunct_argument_retriever.clone()),
+                    grammar::Symbol::Terminal(case_label.clone()),
+                    grammar::Symbol::NonTerminal(argument_retrieval_binary_predicate.clone()),
+                ]),
+            ],
         );
         rules.insert(
             argument_retrieval_binary_predicate.clone(),
@@ -3079,6 +3131,7 @@ mod tests {
                     "PhraseOperator" => DummyTerminalType::PhraseOperator,
                     "MtaEventOperator" => DummyTerminalType::MtaEventOperator,
                     "ArgumentRetriever" => DummyTerminalType::ArgumentRetriever,
+                    "AdjunctArgumentRetriever" => DummyTerminalType::AdjunctArgumentRetriever,
                     "Quantifier" => DummyTerminalType::Quantifier,
                     "Determiner" => DummyTerminalType::Determiner,
                     "Number" => DummyTerminalType::Number,
@@ -3243,6 +3296,9 @@ mod tests {
                                         DummyTerminalType::PhraseOperator => "PhraseOperator",
                                         DummyTerminalType::MtaEventOperator => "MtaEventOperator",
                                         DummyTerminalType::ArgumentRetriever => "ArgumentRetriever",
+                                        DummyTerminalType::AdjunctArgumentRetriever => {
+                                            "AdjunctArgumentRetriever"
+                                        }
                                         DummyTerminalType::Quantifier => "Quantifier",
                                         DummyTerminalType::Number => "Number",
                                         DummyTerminalType::Determiner => "Determiner",

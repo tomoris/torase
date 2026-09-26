@@ -120,6 +120,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::ArgumentRetriever(ArgumentRetriever::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
+        } else if AdjunctArgumentRetriever::is_match(token.0) {
+            doc.push(TerminalType::AdjunctArgumentRetriever(
+                AdjunctArgumentRetriever::new(token.0, token.1, token.2, token.3, token.4),
+            ));
         } else if Quantifier::is_match(token.0) {
             doc.push(TerminalType::Quantifier(Quantifier::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -383,6 +387,7 @@ pub enum TerminalType {
     PhraseOperator(PhraseOperator),
     MtaEventOperator(MtaEventOperator),
     ArgumentRetriever(ArgumentRetriever),
+    AdjunctArgumentRetriever(AdjunctArgumentRetriever),
     Quantifier(Quantifier),
     Number(Number),
     Determiner(Determiner),
@@ -416,6 +421,7 @@ pub enum DummyTerminalType {
     PhraseOperator,
     MtaEventOperator,
     ArgumentRetriever,
+    AdjunctArgumentRetriever,
     Quantifier,
     Number,
     Determiner,
@@ -449,6 +455,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::PhraseOperator(_) => DummyTerminalType::PhraseOperator,
         TerminalType::MtaEventOperator(_) => DummyTerminalType::MtaEventOperator,
         TerminalType::ArgumentRetriever(_) => DummyTerminalType::ArgumentRetriever,
+        TerminalType::AdjunctArgumentRetriever(_) => DummyTerminalType::AdjunctArgumentRetriever,
         TerminalType::Quantifier(_) => DummyTerminalType::Quantifier,
         TerminalType::Number(_) => DummyTerminalType::Number,
         TerminalType::Determiner(_) => DummyTerminalType::Determiner,
@@ -514,6 +521,7 @@ impl_terminal_range!(
     PhraseOperator,
     MtaEventOperator,
     ArgumentRetriever,
+    AdjunctArgumentRetriever,
     Quantifier,
     Number,
     Determiner,
@@ -724,6 +732,11 @@ pub enum ArgumentRetrieverKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdjunctArgumentRetriever {
+    range: Range,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quantifier {
     range: Range,
     kind: QuantifierKind,
@@ -931,6 +944,7 @@ impl_get_range!(
     PhraseOperator,
     MtaEventOperator,
     ArgumentRetriever,
+    AdjunctArgumentRetriever,
     Quantifier,
     Determiner,
     MtaEventToArgumentPhraseConverter,
@@ -1281,6 +1295,8 @@ impl ArgumentRetriever {
         &self.kind
     }
 }
+
+define_fixed_token!(AdjunctArgumentRetriever, "adjunct argument retriever", "ru");
 
 define_surface_token!(Quantifier, QuantifierKind, "quantifier", {
     Ta: "ta",

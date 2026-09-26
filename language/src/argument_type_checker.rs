@@ -240,6 +240,33 @@ fn check_case_arg_type(
     }
 }
 
+/// 付加詞格の項の型と、型不一致時のメッセージ。`sa`/`si`は述語ごとに型が決まるため`None`。
+fn adjunct_case_type(kind: &CaseLabelKind) -> Option<(Vec<ArgumentType>, &'static str)> {
+    match kind {
+        CaseLabelKind::Sa | CaseLabelKind::Si => None,
+        CaseLabelKind::Subu | CaseLabelKind::Sube | CaseLabelKind::Subo => Some((
+            vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
+            "Event type mismatch in a biological (生物系) case argument.",
+        )),
+        CaseLabelKind::Sute | CaseLabelKind::Suto => Some((
+            vec![ArgumentType::Abstraction],
+            "Event type mismatch in an abstract (抽象系) case argument.",
+        )),
+        CaseLabelKind::Sudu => Some((
+            vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
+            "Event type mismatch in an instrumental (道具系) case argument.",
+        )),
+        CaseLabelKind::Suni | CaseLabelKind::Sune | CaseLabelKind::Suno => Some((
+            vec![ArgumentType::Space],
+            "Event type mismatch in a spatial (空間系) case argument.",
+        )),
+        CaseLabelKind::Sugi | CaseLabelKind::Suge | CaseLabelKind::Sugo => Some((
+            vec![ArgumentType::Time],
+            "Event type mismatch in a temporal (時間系) case argument.",
+        )),
+    }
+}
+
 impl Event {
     fn type_check(&self) -> TypeMismatchResult {
         let pred = self.get_pred();
@@ -284,40 +311,10 @@ impl Event {
                         "Event type mismatch in the second argument.",
                     )?;
                 }
-                CaseLabelKind::Subu | CaseLabelKind::Sube | CaseLabelKind::Subo => {
-                    check_case_arg_type(
-                        arg,
-                        vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
-                        "Event type mismatch in a biological (生物系) case argument.",
-                    )?;
-                }
-                CaseLabelKind::Sute | CaseLabelKind::Suto => {
-                    check_case_arg_type(
-                        arg,
-                        vec![ArgumentType::Abstraction],
-                        "Event type mismatch in an abstract (抽象系) case argument.",
-                    )?;
-                }
-                CaseLabelKind::Sudu => {
-                    check_case_arg_type(
-                        arg,
-                        vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
-                        "Event type mismatch in an instrumental (道具系) case argument.",
-                    )?;
-                }
-                CaseLabelKind::Suni | CaseLabelKind::Sune | CaseLabelKind::Suno => {
-                    check_case_arg_type(
-                        arg,
-                        vec![ArgumentType::Space],
-                        "Event type mismatch in a spatial (空間系) case argument.",
-                    )?;
-                }
-                CaseLabelKind::Sugi | CaseLabelKind::Suge | CaseLabelKind::Sugo => {
-                    check_case_arg_type(
-                        arg,
-                        vec![ArgumentType::Time],
-                        "Event type mismatch in a temporal (時間系) case argument.",
-                    )?;
+                _ => {
+                    if let Some((expected, message)) = adjunct_case_type(kind) {
+                        check_case_arg_type(arg, expected, message)?;
+                    }
                 }
             }
         }
@@ -488,12 +485,31 @@ impl RetrievedArgument {
             RetrievedArgument::One(_argument_retriever, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.type_check()
             }
+            RetrievedArgument::Two(_ru, case_label, argument_retrieval_binary_predicate) => {
+                if adjunct_case_type(case_label.get_kind()).is_none() {
+                    return Err(TypeMismatch {
+                        range: case_label.get_range(),
+                        actual: vec![],
+                        expected: vec![],
+                        message: format!(
+                            "'ru {}' is not allowed; use 'ra' or 'ri' to retrieve the first or second argument.",
+                            case_label.get_string()
+                        ),
+                    });
+                }
+                argument_retrieval_binary_predicate.type_check()
+            }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
             RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
                 argument_retrieval_binary_predicate.get_type(argument_retriever.get_kind())
+            }
+            RetrievedArgument::Two(_ru, case_label, _argument_retrieval_binary_predicate) => {
+                adjunct_case_type(case_label.get_kind())
+                    .map(|(t, _)| t)
+                    .unwrap_or_default()
             }
         }
     }
@@ -611,6 +627,29 @@ mod tests {
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
         assert!(type_checked.is_ok());
+    }
+
+    fn check(source: &str) -> TypeMismatchResult {
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        type_check(&ast)
+    }
+
+    #[test]
+    fn test_ruで抽出した付加詞の項は格の型を持つ() {
+        assert!(check("pahete sa mi si ri behapare suni ru suni pahete eos").is_ok());
+        assert!(check("pahete sa mi si ri behapare sudu ru sudu pahete du mi eos").is_ok());
+    }
+
+    #[test]
+    fn test_ruで抽出した項の型が合わない場合にerr型を返す() {
+        assert!(check("parobe sa mi si ru suni pahete eos").is_err());
+    }
+
+    #[test]
+    fn test_ru_sa_ru_siはerr型を返す() {
+        assert!(check("parobe sa mi si ru sa pahete eos").is_err());
+        assert!(check("pahete sa mi si ru si pahete eos").is_err());
     }
 
     #[test]

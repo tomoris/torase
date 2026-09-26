@@ -39,7 +39,9 @@ pub(crate) fn token_color(token: &TerminalType) -> Option<Color> {
         TerminalType::PhraseOperator(_) | TerminalType::MtaEventOperator(_) => {
             Some(Color::from_rgba8(130, 130, 130, 0.25))
         }
-        TerminalType::ArgumentRetriever(_) => Some(Color::from_rgba8(160, 60, 160, 0.25)),
+        TerminalType::ArgumentRetriever(_) | TerminalType::AdjunctArgumentRetriever(_) => {
+            Some(Color::from_rgba8(160, 60, 160, 0.25))
+        }
         TerminalType::Quantifier(_) => Some(Color::from_rgba8(60, 170, 170, 0.25)),
         TerminalType::Number(_) => Some(Color::from_rgba8(120, 120, 210, 0.25)),
         TerminalType::Determiner(_) => Some(Color::from_rgba8(170, 120, 60, 0.25)),

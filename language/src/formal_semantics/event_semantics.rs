@@ -11,8 +11,8 @@ use crate::parser::{
     QuantifierModifier, RetrievedArgument, RoleArg, S, TaEvent, TenseExpression, UniversalSentence,
 };
 use crate::tokenizer::{
-    ArgumentRetrieverKind, AspectKind, CaseLabelKind, ConnectiveHeadKind, ModalityBaseKind,
-    NegationKind, OperatorKind, QuantifierKind, TenseKind,
+    AspectKind, CaseLabelKind, ConnectiveHeadKind, ModalityBaseKind, NegationKind, OperatorKind,
+    QuantifierKind, TenseKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -908,6 +908,18 @@ const EXTRA_ROLE_TABLE: [(CaseLabelKind, &str); 12] = [
     (CaseLabelKind::Sugo, "TimeGoal"),
 ];
 
+fn role_name(kind: &CaseLabelKind) -> &'static str {
+    match kind {
+        CaseLabelKind::Sa => "Agent",
+        CaseLabelKind::Si => "Patient",
+        _ => EXTRA_ROLE_TABLE
+            .iter()
+            .find(|(k, _)| k == kind)
+            .map(|(_, name)| *name)
+            .unwrap(),
+    }
+}
+
 impl Event {
     fn to_fol(&self, frame: &EventFrame, vg: &mut VarGen) -> Formula {
         let pred = extract_pred(self.get_pred());
@@ -1189,46 +1201,33 @@ impl DeterminedArgument {
 
 impl RetrievedArgument {
     fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
-        match self {
-            RetrievedArgument::One(retriever, pred) => pred.to_fol(retriever.get_kind(), var, vg),
-        }
-    }
-}
-
-impl ArgumentRetrievalBinaryPredicate {
-    fn to_fol(&self, kind: &ArgumentRetrieverKind, var: &str, vg: &mut VarGen) -> Formula {
-        match self {
-            ArgumentRetrievalBinaryPredicate::One(pred_phrase, with_arg) => {
-                match with_arg {
-                    ArgumentRetrievalWithArgumentPhrase::Epsilon => {
-                        build_restriction(pred_phrase, var)
-                    }
-                    ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
-                        let pred_ctx = extract_pred(pred_phrase);
-                        let extra_ctx = extra_arg.to_fol(vg);
-                        let extra_term = extra_ctx.term();
-                        match kind {
-                            ArgumentRetrieverKind::Nominative => {
-                                // ra: var は主格（第1引数）、extra は対格（第2引数）
-                                build_binary_restriction(
-                                    &pred_ctx,
-                                    Term::Var(var.to_string()),
-                                    extra_term,
-                                    vg,
-                                )
-                            }
-                            ArgumentRetrieverKind::Accusative => {
-                                // ri: extra は主格（第1引数）、var は対格（第2引数）
-                                build_binary_restriction(
-                                    &pred_ctx,
-                                    extra_term,
-                                    Term::Var(var.to_string()),
-                                    vg,
-                                )
-                            }
-                        }
-                    }
-                }
+        let x = Term::Var(var.to_string());
+        let (base, with_arg) = match self {
+            RetrievedArgument::One(
+                _retriever,
+                ArgumentRetrievalBinaryPredicate::One(pred, with_arg),
+            ) => (build_restriction(pred, var), with_arg),
+            RetrievedArgument::Two(
+                _ru,
+                label,
+                ArgumentRetrievalBinaryPredicate::One(pred, with_arg),
+            ) => {
+                let base = build_role_restriction(
+                    &extract_pred(pred),
+                    role_name(label.get_kind()),
+                    x.clone(),
+                    vg,
+                );
+                (base, with_arg)
+            }
+        };
+        match with_arg {
+            ArgumentRetrievalWithArgumentPhrase::Epsilon => base,
+            // du: 関係を指定しない「〜の」。
+            ArgumentRetrievalWithArgumentPhrase::One(_du, extra_arg) => {
+                let extra_ctx = extra_arg.to_fol(vg);
+                let of_atom = Formula::Atom("Of".to_string(), vec![x, extra_ctx.term()]);
+                Formula::And(Box::new(base), Box::new(extra_ctx.scope(of_atom)))
             }
         }
     }
@@ -1280,27 +1279,25 @@ fn rename_formula_atoms(f: Formula) -> Formula {
     }
 }
 
-fn build_binary_restriction(pred: &PredCtx, t1: Term, t2: Term, vg: &mut VarGen) -> Formula {
+/// `ru`で抽出した付加詞の項`x`を制限する式 `∃e.(P(e) ∧ Role(e, x))`。
+fn build_role_restriction(pred: &PredCtx, role: &str, x: Term, vg: &mut VarGen) -> Formula {
     match pred {
         PredCtx::Simple(name) => {
             let e = vg.next_event();
             let ev = Term::Var(e.clone());
-            let pred_atom = Formula::Atom(name.clone(), vec![ev.clone()]);
-            let agent_atom = Formula::Atom("Agent".to_string(), vec![ev.clone(), t1]);
-            let patient_atom = Formula::Atom("Patient".to_string(), vec![ev, t2]);
             Formula::Exists(
                 e,
                 Box::new(Formula::And(
-                    Box::new(pred_atom),
-                    Box::new(Formula::And(Box::new(agent_atom), Box::new(patient_atom))),
+                    Box::new(Formula::Atom(name.clone(), vec![ev.clone()])),
+                    Box::new(Formula::Atom(role.to_string(), vec![ev, x])),
                 )),
             )
         }
-        PredCtx::Neg(inner) => Formula::Not(Box::new(build_binary_restriction(inner, t1, t2, vg))),
-        PredCtx::Antonym(inner) => build_binary_restriction(&antonym_rename(inner), t1, t2, vg),
+        PredCtx::Neg(inner) => Formula::Not(Box::new(build_role_restriction(inner, role, x, vg))),
+        PredCtx::Antonym(inner) => build_role_restriction(&antonym_rename(inner), role, x, vg),
         PredCtx::Coord { op, left, right } => {
-            let f1 = build_binary_restriction(left, t1.clone(), t2.clone(), vg);
-            let f2 = build_binary_restriction(right, t1, t2, vg);
+            let f1 = build_role_restriction(left, role, x.clone(), vg);
+            let f2 = build_role_restriction(right, role, x, vg);
             match op {
                 OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                 OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -1612,10 +1609,42 @@ mod tests {
     }
 
     #[test]
-    fn test_関係節_私はあなたをパートナーとする人を愛している() {
+    fn test_du_私はあなたのパートナーを愛している() {
         check(
             "parobe sa mi si ri paparatanera du ba",
-            "∃x.(∃e.(paparatanera(e) ∧ (Agent(e, ba) ∧ Patient(e, x))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
+            "∃x.((paparatanera(x) ∧ Of(x, ba)) ∧ ∃e.(parobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_du_量化された項の制限部が残る_床の上() {
+        check(
+            "pahete sa mi si ri behapare suni ri zahatano du ri diharora",
+            "∃y.((zahatano(y) ∧ ∃z.(diharora(z) ∧ Of(y, z))) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, y))))",
+        );
+    }
+
+    #[test]
+    fn test_ru_私は食べる場所でりんごを食べる() {
+        check(
+            "pahete sa mi si ri behapare suni ru suni pahete",
+            "∃y.(∃e.(pahete(e) ∧ Location(e, y)) ∧ ∃x.(behapare(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ Location(e1, y))))",
+        );
+    }
+
+    #[test]
+    fn test_ru_duを付けると関係を添える() {
+        check(
+            "pahete sa mi si ri behapare sudu ru sudu pahete du mi",
+            "∃y.((∃e.(pahete(e) ∧ Instrument(e, y)) ∧ Of(y, mi)) ∧ ∃x.(behapare(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ Instrument(e1, y))))",
+        );
+    }
+
+    #[test]
+    fn test_ru_否定と等位接続は述語ごとに分配される() {
+        check(
+            "pahete sa mi si ri behapare suni ru suni hoba pahete ne parobe",
+            "∃y.((∃e.(pahete(e) ∧ Location(e, y)) ∧ ¬∃e1.(parobe(e1) ∧ Location(e1, y))) ∧ ∃x.(behapare(x) ∧ ∃e2.((pahete(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))) ∧ Location(e2, y))))",
         );
     }
 
