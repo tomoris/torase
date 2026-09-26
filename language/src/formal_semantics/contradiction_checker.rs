@@ -6,10 +6,15 @@
 //! 1. Converting each formula to CNF via Skolemization (handles ∀/∃/¬/∧/∨/→).
 //! 2. Running binary resolution with Robinson unification until the empty
 //!    clause (⊥) is derived or no new clause can be generated.
+//!
+//! Modal operators are handled by the standard translation: every atom gets an
+//! extra world argument, `□_b φ` at `w` becomes `∀v.(R_b(w, v) ⇒ φ@v)` and
+//! `◇_b φ` becomes `∃v.(R_b(w, v) ∧ φ@v)`, evaluated from the actual world `w0`.
+//! The accessibility relations get the frame conditions in [`frame_axioms`].
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use super::event_semantics::{Formula, Term as FolTerm};
+use super::event_semantics::{Formula, ModalBase, ModalForce, Term as FolTerm};
 
 // ---------------------------------------------------------------------------
 // Term
@@ -243,6 +248,10 @@ impl CnfBuilder {
                 .cloned()
                 .unwrap_or_else(|| Term::Const(v.clone())),
             FolTerm::Const(c) => Term::Const(c.clone()),
+            FolTerm::Func(f, args) => Term::Func(
+                f.clone(),
+                args.iter().map(|a| self.convert_fol_term(a, env)).collect(),
+            ),
         }
     }
 
@@ -251,20 +260,23 @@ impl CnfBuilder {
     /// - `positive`: `true` = formula in positive position, `false` = negated.
     /// - `universals`: resolution `Term::Var`s for in-scope ∀-variables (Skolem dependencies).
     /// - `env`: maps FOL bound variable names to resolution Terms.
+    /// - `world`: the possible world the formula is evaluated at.
     fn build_clauses(
         &mut self,
         formula: &Formula,
         positive: bool,
         universals: &[Term],
         env: &HashMap<String, Term>,
+        world: &Term,
     ) -> Vec<Clause> {
         match formula {
             // ---- Atom ----
             Formula::Atom(pred, fol_args) => {
-                let args = fol_args
+                let mut args: Vec<Term> = fol_args
                     .iter()
                     .map(|t| self.convert_fol_term(t, env))
                     .collect();
+                args.push(world.clone());
                 vec![vec![Literal {
                     pred: pred.clone(),
                     args,
@@ -273,19 +285,19 @@ impl CnfBuilder {
             }
 
             // ---- Negation: flip polarity ----
-            Formula::Not(phi) => self.build_clauses(phi, !positive, universals, env),
+            Formula::Not(phi) => self.build_clauses(phi, !positive, universals, env, world),
 
             // ---- Conjunction ----
             Formula::And(l, r) => {
                 if positive {
                     // (A ∧ B)⁺  →  clauses(A) ++ clauses(B)
-                    let mut cs = self.build_clauses(l, true, universals, env);
-                    cs.extend(self.build_clauses(r, true, universals, env));
+                    let mut cs = self.build_clauses(l, true, universals, env, world);
+                    cs.extend(self.build_clauses(r, true, universals, env, world));
                     cs
                 } else {
                     // ¬(A ∧ B)  =  ¬A ∨ ¬B
-                    let left = self.build_clauses(l, false, universals, env);
-                    let right = self.build_clauses(r, false, universals, env);
+                    let left = self.build_clauses(l, false, universals, env, world);
+                    let right = self.build_clauses(r, false, universals, env, world);
                     cross_or(left, right)
                 }
             }
@@ -294,13 +306,13 @@ impl CnfBuilder {
             Formula::Or(l, r) => {
                 if positive {
                     // A ∨ B: distribute into CNF via cross-product
-                    let left = self.build_clauses(l, true, universals, env);
-                    let right = self.build_clauses(r, true, universals, env);
+                    let left = self.build_clauses(l, true, universals, env, world);
+                    let right = self.build_clauses(r, true, universals, env, world);
                     cross_or(left, right)
                 } else {
                     // ¬(A ∨ B)  =  ¬A ∧ ¬B
-                    let mut cs = self.build_clauses(l, false, universals, env);
-                    cs.extend(self.build_clauses(r, false, universals, env));
+                    let mut cs = self.build_clauses(l, false, universals, env, world);
+                    cs.extend(self.build_clauses(r, false, universals, env, world));
                     cs
                 }
             }
@@ -308,13 +320,13 @@ impl CnfBuilder {
             // ---- Implication: A → B  =  ¬A ∨ B ----
             Formula::Implies(l, r) => {
                 if positive {
-                    let left = self.build_clauses(l, false, universals, env);
-                    let right = self.build_clauses(r, true, universals, env);
+                    let left = self.build_clauses(l, false, universals, env, world);
+                    let right = self.build_clauses(r, true, universals, env, world);
                     cross_or(left, right)
                 } else {
                     // ¬(A → B)  =  A ∧ ¬B
-                    let mut cs = self.build_clauses(l, true, universals, env);
-                    cs.extend(self.build_clauses(r, false, universals, env));
+                    let mut cs = self.build_clauses(l, true, universals, env, world);
+                    cs.extend(self.build_clauses(r, false, universals, env, world));
                     cs
                 }
             }
@@ -328,13 +340,13 @@ impl CnfBuilder {
                     new_env.insert(x.clone(), v.clone());
                     let mut new_univ = universals.to_vec();
                     new_univ.push(v);
-                    self.build_clauses(phi, true, &new_univ, &new_env)
+                    self.build_clauses(phi, true, &new_univ, &new_env, world)
                 } else {
                     // ¬∀x.φ  =  ∃x.¬φ  →  Skolemize x
                     let sk = self.skolem(universals);
                     let mut new_env = env.clone();
                     new_env.insert(x.clone(), sk);
-                    self.build_clauses(phi, false, universals, &new_env)
+                    self.build_clauses(phi, false, universals, &new_env, world)
                 }
             }
 
@@ -345,7 +357,7 @@ impl CnfBuilder {
                     let sk = self.skolem(universals);
                     let mut new_env = env.clone();
                     new_env.insert(x.clone(), sk);
-                    self.build_clauses(phi, true, universals, &new_env)
+                    self.build_clauses(phi, true, universals, &new_env, world)
                 } else {
                     // ¬∃x.φ  =  ∀x.¬φ  →  fresh variable
                     let v = Term::Var(self.fresh("u"));
@@ -353,28 +365,76 @@ impl CnfBuilder {
                     new_env.insert(x.clone(), v.clone());
                     let mut new_univ = universals.to_vec();
                     new_univ.push(v);
-                    self.build_clauses(phi, false, &new_univ, &new_env)
+                    self.build_clauses(phi, false, &new_univ, &new_env, world)
                 }
             }
 
-            // ---- Generalized quantifier: treat as Exists ----
+            // ---- Generalized quantifier ----
+            // "many/half/habitually x. φ" entails ∃x.φ, but its negation does not entail
+            // ∀x.¬φ, so a negated GenQ is weakened to ⊤ (no clauses).
             Formula::GenQ(_, x, phi) => {
                 if positive {
                     let sk = self.skolem(universals);
                     let mut new_env = env.clone();
                     new_env.insert(x.clone(), sk);
-                    self.build_clauses(phi, true, universals, &new_env)
+                    self.build_clauses(phi, true, universals, &new_env, world)
                 } else {
+                    Vec::new()
+                }
+            }
+
+            // ---- Modal operator (standard translation) ----
+            Formula::Modal(force, base, phi) => {
+                let universal = matches!(
+                    (force, positive),
+                    (ModalForce::Necessity, true) | (ModalForce::Possibility, false)
+                );
+                if universal {
+                    // □φ / ¬◇φ  →  ∀v.(¬R(w, v) ∨ φ@v)
                     let v = Term::Var(self.fresh("u"));
-                    let mut new_env = env.clone();
-                    new_env.insert(x.clone(), v.clone());
                     let mut new_univ = universals.to_vec();
-                    new_univ.push(v);
-                    self.build_clauses(phi, false, &new_univ, &new_env)
+                    new_univ.push(v.clone());
+                    let not_access = vec![vec![accessibility(*base, world, &v, false)]];
+                    let body = self.build_clauses(phi, positive, &new_univ, env, &v);
+                    cross_or(not_access, body)
+                } else {
+                    // ◇φ / ¬□φ  →  R(w, sk) ∧ φ@sk
+                    let v = self.skolem(universals);
+                    let mut cs = vec![vec![accessibility(*base, world, &v, true)]];
+                    cs.extend(self.build_clauses(phi, positive, universals, env, &v));
+                    cs
                 }
             }
         }
     }
+}
+
+fn accessibility(base: ModalBase, from: &Term, to: &Term, positive: bool) -> Literal {
+    Literal {
+        pred: format!("R_{}", base.label()),
+        args: vec![from.clone(), to.clone()],
+        positive,
+    }
+}
+
+const ACTUAL_WORLD: &str = "w0";
+
+/// Frame conditions on the accessibility relations:
+/// - epistemic / circumstantial: reflexive (T) — the actual world is compatible with what
+///   the speaker knows and with the actual circumstances.
+/// - deontic: serial (D) — some world obeys the rules, but the actual one need not.
+fn frame_axioms() -> Vec<Clause> {
+    let w = Term::Var("fw".to_string());
+    vec![
+        vec![accessibility(ModalBase::Epistemic, &w, &w, true)],
+        vec![accessibility(ModalBase::Circumstantial, &w, &w, true)],
+        vec![accessibility(
+            ModalBase::Deontic,
+            &w,
+            &Term::Func("sk_deon".to_string(), vec![w.clone()]),
+            true,
+        )],
+    ]
 }
 
 /// Cross-product of two clause sets: each pair is merged into one clause.
@@ -514,10 +574,11 @@ fn resolution(initial: Vec<Clause>) -> bool {
 /// (logically contradictory).
 fn is_contradictory(formulas: &[Formula]) -> bool {
     let mut builder = CnfBuilder::new();
-    let mut all_clauses: Vec<Clause> = Vec::new();
+    let mut all_clauses: Vec<Clause> = frame_axioms();
+    let actual = Term::Const(ACTUAL_WORLD.to_string());
 
     for formula in formulas {
-        let clauses = builder.build_clauses(formula, true, &[], &HashMap::new());
+        let clauses = builder.build_clauses(formula, true, &[], &HashMap::new(), &actual);
         all_clauses.extend(clauses);
     }
 

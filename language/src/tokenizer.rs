@@ -548,7 +548,7 @@ pub struct ModalityBase {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum ModalityBaseKind {
+pub enum ModalityBaseKind {
     Hapa, // 認識
     Hapi, // 義務
     Hapu, // 能力・状況
@@ -561,7 +561,7 @@ pub struct Tense {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum TenseKind {
+pub enum TenseKind {
     Hita, // 過去
     Hiti, // 現在
     Hitu, // 未来
@@ -574,7 +574,7 @@ pub struct Aspect {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum AspectKind {
+pub enum AspectKind {
     Huda,   // 未然
     Hude,   // 開始
     Hudida, // 進行
@@ -984,6 +984,24 @@ define_surface_token!(Negation, NegationKind, "negation", {
     Ne: "ne",
     No: "no",
 });
+
+impl ModalityBase {
+    pub fn get_kind(&self) -> &ModalityBaseKind {
+        &self.kind
+    }
+}
+
+impl Tense {
+    pub fn get_kind(&self) -> &TenseKind {
+        &self.kind
+    }
+}
+
+impl Aspect {
+    pub fn get_kind(&self) -> &AspectKind {
+        &self.kind
+    }
+}
 
 impl Negation {
     pub fn get_kind(&self) -> &NegationKind {

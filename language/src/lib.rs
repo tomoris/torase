@@ -1104,4 +1104,83 @@ mod tests {
         let result = diagnose(text);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_認識的必然は現実世界でも成り立つので否定と矛盾する() {
+        let text =
+            "hapa ta pahete sa mi si ri behapare eos ne pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        let diagnostics = result.unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message == "contradiction error")
+        );
+    }
+
+    #[test]
+    fn test_能力的可能は現実世界での否定と矛盾しない() {
+        let text =
+            "hapu to pahete sa mi si ri behapare eos ne pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_義務的必然は現実世界での違反と矛盾しない() {
+        let text =
+            "hapi ta pahete sa mi si ri behapare eos ne pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_義務的必然と義務的可能の否定は矛盾する() {
+        let text =
+            "hapi ta pahete sa mi si ri behapare eos hane hapi to pahete sa mi si ri behapare"
+                .to_string();
+        let result = diagnose(text);
+        let diagnostics = result.unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message == "contradiction error")
+        );
+    }
+
+    #[test]
+    fn test_過去の出来事と過去に出来事が無いことは矛盾する() {
+        let text =
+            "hita pahete sa mi si ri behapare eos hita ne pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        let diagnostics = result.unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message == "contradiction error")
+        );
+    }
+
+    #[test]
+    fn test_テンス省略の出来事と過去に出来事が無いことは矛盾しない() {
+        let text =
+            "pahete sa mi si ri behapare eos hita ne pahete sa mi si ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_多くの否定は存在と矛盾しない() {
+        let text = "pahete sa mi si ri behapare eos ne pahete sa mi si te ri behapare".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_習慣の否定は1回の出来事と矛盾しない() {
+        let text = "hita pahete sa mi si ri behapare eos hune hudidi pahete sa mi si ri behapare"
+            .to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok());
+    }
 }

@@ -4,24 +4,28 @@ use std::collections::HashMap;
 
 use crate::parser::{
     AEvent, ArgumentPhrase, ArgumentRetrievalBinaryPredicate, ArgumentRetrievalWithArgumentPhrase,
-    Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument, DeterminerModifier, Event,
-    InterrogativeSentence, MtaEvent, PostBinaryPredicatePhraseExpression,
+    AspectExpression, Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument,
+    DeterminerModifier, Event, InterrogativeSentence, ModalityExpression, ModifiedAspect,
+    ModifiedModality, ModifiedTense, MtaEvent, PostBinaryPredicatePhraseExpression,
     PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent, QuantifiedArgument,
-    QuantifierModifier, RetrievedArgument, RoleArg, S, TaEvent, UniversalSentence,
+    QuantifierModifier, RetrievedArgument, RoleArg, S, TaEvent, TenseExpression, UniversalSentence,
 };
 use crate::tokenizer::{
-    ArgumentRetrieverKind, CaseLabelKind, ConnectiveHeadKind, NegationKind, OperatorKind,
+    ArgumentRetrieverKind, AspectKind, CaseLabelKind, ConnectiveHeadKind, ModalityBaseKind,
+    NegationKind, OperatorKind, QuantifierKind, TenseKind,
 };
 
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
 
-/// A first-order term: either a bound variable or an individual constant.
+/// A first-order term: a bound variable, an individual constant, or a function application
+/// (used for time terms such as `τ(e)` and `max(tR)`).
 #[derive(Debug, Clone)]
 pub enum Term {
     Var(String),
     Const(String),
+    Func(String, Vec<Term>),
 }
 
 /// A first-order formula extended with generalized quantifiers for `te`/`ti`/`number`.
@@ -41,16 +45,53 @@ pub enum Formula {
     Forall(String, Box<Formula>),
     /// ∃x. φ
     Exists(String, Box<Formula>),
-    /// Generalized quantifier (te 多くの / ti 半分の / number 数量)
+    /// Generalized quantifier (te 多くの / ti 半分の / number 数量 / 習慣相)
     GenQ(GenQKind, String, Box<Formula>),
+    /// □_b φ / ◇_b φ
+    Modal(ModalForce, ModalBase, Box<Formula>),
 }
 
 /// Kinds of generalized quantifiers that cannot be expressed with ∀/∃.
 #[derive(Debug, Clone)]
 pub enum GenQKind {
-    Many,  // te  多くの
-    Half,  // ti  半分の
-    Count, // number  数量
+    Many,     // te  多くの
+    Half,     // ti  半分の
+    Count,    // number  数量
+    Habitual, // hudidi  習慣相(参照時の中の多くの機会)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ModalForce {
+    Necessity,   // ta  必然 □
+    Possibility, // to  可能 ◇
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ModalBase {
+    Epistemic,      // hapa  認識
+    Deontic,        // hapi  義務
+    Circumstantial, // hapu  能力・状況
+}
+
+impl ModalBase {
+    pub fn label(&self) -> &'static str {
+        match self {
+            ModalBase::Epistemic => "epi",
+            ModalBase::Deontic => "deon",
+            ModalBase::Circumstantial => "cir",
+        }
+    }
+}
+
+/// 中置表示する時間関係の述語名。
+const LT: &str = "<";
+const LE: &str = "≤";
+const OVERLAP: &str = "*";
+const SUBINTERVAL: &str = "⊆";
+const EQ: &str = "=";
+
+fn is_infix(pred: &str) -> bool {
+    matches!(pred, LT | LE | OVERLAP | SUBINTERVAL | EQ)
 }
 
 // ---------------------------------------------------------------------------
@@ -61,6 +102,14 @@ impl std::fmt::Display for Term {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Term::Var(v) | Term::Const(v) => write!(f, "{v}"),
+            Term::Func(name, args) => {
+                let s = args
+                    .iter()
+                    .map(|t| t.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{name}({s})")
+            }
         }
     }
 }
@@ -71,6 +120,7 @@ impl std::fmt::Display for GenQKind {
             GenQKind::Many => write!(f, "∃_many"),
             GenQKind::Half => write!(f, "∃_half"),
             GenQKind::Count => write!(f, "∃_#"),
+            GenQKind::Habitual => write!(f, "Hab"),
         }
     }
 }
@@ -78,6 +128,9 @@ impl std::fmt::Display for GenQKind {
 impl std::fmt::Display for Formula {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Formula::Atom(p, args) if is_infix(p) && args.len() == 2 => {
+                write!(f, "{} {p} {}", args[0], args[1])
+            }
             Formula::Atom(p, args) => {
                 let s = args
                     .iter()
@@ -90,13 +143,23 @@ impl std::fmt::Display for Formula {
                     write!(f, "{p}({s})")
                 }
             }
-            Formula::Not(phi) => write!(f, "¬{phi}"),
+            Formula::Not(phi) => match phi.as_ref() {
+                Formula::Atom(p, _) if is_infix(p) => write!(f, "¬({phi})"),
+                _ => write!(f, "¬{phi}"),
+            },
             Formula::And(l, r) => write!(f, "({l} ∧ {r})"),
             Formula::Or(l, r) => write!(f, "({l} ∨ {r})"),
             Formula::Implies(l, r) => write!(f, "({l} ⇒ {r})"),
             Formula::Forall(x, phi) => write!(f, "∀{x}.{phi}"),
             Formula::Exists(x, phi) => write!(f, "∃{x}.{phi}"),
             Formula::GenQ(k, x, phi) => write!(f, "{k} {x}.{phi}"),
+            Formula::Modal(force, base, phi) => {
+                let op = match force {
+                    ModalForce::Necessity => "□",
+                    ModalForce::Possibility => "◇",
+                };
+                write!(f, "{op}_{} {phi}", base.label())
+            }
         }
     }
 }
@@ -108,11 +171,38 @@ impl std::fmt::Display for Formula {
 struct VarGen {
     obj: usize,
     evt: usize,
+    ref_time: usize,
+    occasion: usize,
 }
 
 impl VarGen {
     fn new() -> Self {
-        VarGen { obj: 0, evt: 0 }
+        VarGen {
+            obj: 0,
+            evt: 0,
+            ref_time: 0,
+            occasion: 0,
+        }
+    }
+
+    fn next_ref_time(&mut self) -> String {
+        let n = self.ref_time;
+        self.ref_time += 1;
+        if n == 0 {
+            "tR".to_string()
+        } else {
+            format!("tR{n}")
+        }
+    }
+
+    fn next_occasion(&mut self) -> String {
+        let n = self.occasion;
+        self.occasion += 1;
+        if n == 0 {
+            "s".to_string()
+        } else {
+            format!("s{n}")
+        }
     }
 
     fn next(&mut self) -> String {
@@ -379,7 +469,7 @@ pub fn to_fol(ast: &Ast) -> Formula {
 }
 
 // ---------------------------------------------------------------------------
-// AST traversal — pass-through layers (modality / tense / aspect ignored)
+// AST traversal
 // ---------------------------------------------------------------------------
 
 impl S {
@@ -461,15 +551,10 @@ fn collect_free_variables(
     match formula {
         Formula::Atom(_, args) => {
             for term in args {
-                if let Term::Var(name) = term
-                    && !bound.contains(name)
-                    && !free.contains(name)
-                {
-                    free.push(name.clone());
-                }
+                collect_free_term_variables(term, bound, free);
             }
         }
-        Formula::Not(phi) => collect_free_variables(phi, bound, free),
+        Formula::Not(phi) | Formula::Modal(_, _, phi) => collect_free_variables(phi, bound, free),
         Formula::And(l, r) | Formula::Or(l, r) | Formula::Implies(l, r) => {
             collect_free_variables(l, bound, free);
             collect_free_variables(r, bound, free);
@@ -479,6 +564,26 @@ fn collect_free_variables(
             collect_free_variables(phi, bound, free);
             if newly_bound {
                 bound.remove(x);
+            }
+        }
+    }
+}
+
+fn collect_free_term_variables(
+    term: &Term,
+    bound: &std::collections::HashSet<String>,
+    free: &mut Vec<String>,
+) {
+    match term {
+        Term::Var(name) => {
+            if !bound.contains(name) && !free.contains(name) {
+                free.push(name.clone());
+            }
+        }
+        Term::Const(_) => {}
+        Term::Func(_, args) => {
+            for arg in args {
+                collect_free_term_variables(arg, bound, free);
             }
         }
     }
@@ -529,8 +634,18 @@ impl PostModifiedMtaEvent {
 impl MtaEvent {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            // ModalityBase is ignored.
-            MtaEvent::One(_mod_expr, ta) => ta.to_fol(vg),
+            MtaEvent::One(mod_expr, ta) => {
+                let body = ta.to_fol(vg);
+                match mod_expr {
+                    ModalityExpression::Epsilon => body,
+                    ModalityExpression::One(ModifiedModality::One(base, force)) => {
+                        modal(base.get_kind(), force.get_kind(), body)
+                    }
+                    ModalityExpression::One(ModifiedModality::Two(_, base, force)) => {
+                        Formula::Not(Box::new(modal(base.get_kind(), force.get_kind(), body)))
+                    }
+                }
+            }
             // homa/homi/homu: proposition-level and/or/xor.
             MtaEvent::Two(op, m1, m2) => {
                 let f1 = m1.to_fol(vg);
@@ -545,22 +660,232 @@ impl MtaEvent {
     }
 }
 
+/// 量化力`ta`は必然(□)、それ以外は可能(◇)。`te`/`ti`は型検査でエラーになるので、
+/// ここではパニックせず`to`扱いにフォールバックする。
+fn modal(base: &ModalityBaseKind, force: &QuantifierKind, body: Formula) -> Formula {
+    let base = match base {
+        ModalityBaseKind::Hapa => ModalBase::Epistemic,
+        ModalityBaseKind::Hapi => ModalBase::Deontic,
+        ModalityBaseKind::Hapu => ModalBase::Circumstantial,
+    };
+    let force = match force {
+        QuantifierKind::Ta => ModalForce::Necessity,
+        _ => ModalForce::Possibility,
+    };
+    Formula::Modal(force, base, Box::new(body))
+}
+
+/// `(テンス, 否定されているか)`
+type TenseSpec<'a> = Option<(&'a TenseKind, bool)>;
+
+fn tense_spec(expr: &TenseExpression) -> TenseSpec<'_> {
+    match expr {
+        TenseExpression::One(ModifiedTense::One(t)) => Some((t.get_kind(), false)),
+        TenseExpression::One(ModifiedTense::Two(_, t)) => Some((t.get_kind(), true)),
+        TenseExpression::Epsilon => None,
+    }
+}
+
+fn aspect_spec(expr: &AspectExpression) -> Option<(&AspectKind, bool)> {
+    match expr {
+        AspectExpression::One(ModifiedAspect::One(a)) => Some((a.get_kind(), false)),
+        AspectExpression::One(ModifiedAspect::Two(_, a)) => Some((a.get_kind(), true)),
+        AspectExpression::Epsilon => None,
+    }
+}
+
 impl TaEvent {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            // Tense is ignored.
-            TaEvent::One(_tense_expr, a) => a.to_fol(vg),
+            TaEvent::One(tense_expr, a) => a.to_fol(tense_spec(tense_expr), vg),
         }
     }
 }
 
 impl AEvent {
-    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+    /// アスペクトが無ければテンスはイベント時`τ(e)`と発話時`t0`を直接関係づける。
+    /// アスペクトがあれば参照時`tR`を導入し、テンスは`tR`と`t0`を、アスペクトは`tR`とイベントを
+    /// 関係づける。`hine`はテンスの関係だけを否定し、`hune`は参照時におけるアスペクト命題全体を否定する。
+    fn to_fol(&self, tense: TenseSpec<'_>, vg: &mut VarGen) -> Formula {
         match self {
-            // Aspect is ignored.
-            AEvent::One(_asp_expr, event) => event.to_fol(vg),
+            AEvent::One(asp_expr, event) => match aspect_spec(asp_expr) {
+                None => {
+                    let frame = match tense {
+                        Some((kind, negated)) => EventFrame::Single(TimeCond::Tense {
+                            kind: kind.clone(),
+                            negated,
+                        }),
+                        None => EventFrame::Plain,
+                    };
+                    event.to_fol(&frame, vg)
+                }
+                Some((aspect, aspect_negated)) => {
+                    let r = vg.next_ref_time();
+                    let mut body = aspect_formula(aspect, &r, event, vg);
+                    if aspect_negated {
+                        body = Formula::Not(Box::new(body));
+                    }
+                    if let Some((kind, negated)) = tense {
+                        let cond = negate_if(ref_tense_cond(kind, &r), negated);
+                        body = Formula::And(Box::new(cond), Box::new(body));
+                    }
+                    Formula::Exists(r, Box::new(body))
+                }
+            },
         }
     }
+}
+
+fn aspect_formula(aspect: &AspectKind, r: &str, event: &Event, vg: &mut VarGen) -> Formula {
+    let overlap = |point| {
+        EventFrame::Single(TimeCond::Overlap {
+            r: r.to_string(),
+            point,
+        })
+    };
+    match aspect {
+        AspectKind::Huda => Formula::Not(Box::new(
+            event.to_fol(&EventFrame::Single(TimeCond::BegunBy(r.to_string())), vg),
+        )),
+        AspectKind::Hude => event.to_fol(&overlap(EventPoint::Begin), vg),
+        AspectKind::Hudida => event.to_fol(&overlap(EventPoint::Whole), vg),
+        AspectKind::Hudidi => {
+            let s = vg.next_occasion();
+            let frame = EventFrame::Single(TimeCond::Overlap {
+                r: s.clone(),
+                point: EventPoint::Whole,
+            });
+            let occasion = time_rel(SUBINTERVAL, Term::Var(s.clone()), Term::Var(r.to_string()));
+            let body = event.to_fol(&frame, vg);
+            Formula::GenQ(
+                GenQKind::Habitual,
+                s,
+                Box::new(Formula::And(Box::new(occasion), Box::new(body))),
+            )
+        }
+        AspectKind::Hudidu => event.to_fol(
+            &EventFrame::Iterative(TimeCond::Overlap {
+                r: r.to_string(),
+                point: EventPoint::Whole,
+            }),
+            vg,
+        ),
+        AspectKind::Hudo => event.to_fol(&overlap(EventPoint::End), vg),
+        AspectKind::Hudu => event.to_fol(&EventFrame::Single(TimeCond::Perfect(r.to_string())), vg),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Time
+// ---------------------------------------------------------------------------
+
+/// 発話時。
+const SPEECH_TIME: &str = "t0";
+
+fn t0() -> Term {
+    Term::Const(SPEECH_TIME.to_string())
+}
+
+fn time_fn(name: &str, arg: Term) -> Term {
+    Term::Func(name.to_string(), vec![arg])
+}
+
+fn time_rel(pred: &str, a: Term, b: Term) -> Formula {
+    Formula::Atom(pred.to_string(), vec![a, b])
+}
+
+fn negate_if(f: Formula, negated: bool) -> Formula {
+    if negated {
+        Formula::Not(Box::new(f))
+    } else {
+        f
+    }
+}
+
+/// アスペクトがあるときの、参照時`tR`と発話時の関係。
+fn ref_tense_cond(kind: &TenseKind, r: &str) -> Formula {
+    let r = Term::Var(r.to_string());
+    match kind {
+        TenseKind::Hita => time_rel(LT, time_fn("max", r), t0()),
+        TenseKind::Hiti => time_rel(OVERLAP, r, t0()),
+        TenseKind::Hitu => time_rel(LT, t0(), time_fn("min", r)),
+    }
+}
+
+#[derive(Debug, Clone)]
+enum EventPoint {
+    Begin,
+    Whole,
+    End,
+}
+
+impl EventPoint {
+    fn of(&self, e: &Term) -> Term {
+        let name = match self {
+            EventPoint::Begin => "τ_begin",
+            EventPoint::Whole => "τ",
+            EventPoint::End => "τ_end",
+        };
+        time_fn(name, e.clone())
+    }
+}
+
+/// イベント変数に課す時間の条件。
+#[derive(Debug, Clone)]
+enum TimeCond {
+    /// アスペクト無しのテンス: `τ(e)`と`t0`の関係(`negated`なら関係の否定)
+    Tense { kind: TenseKind, negated: bool },
+    /// `tR * τ_point(e)`
+    Overlap { r: String, point: EventPoint },
+    /// 未然の否定対象: `τ_begin(e) ≤ max(tR)`
+    BegunBy(String),
+    /// 事後: `τ_end(e) ≤ min(tR) ∧ ResultState(e, tR)`
+    Perfect(String),
+}
+
+impl TimeCond {
+    fn apply(&self, e: &Term) -> Formula {
+        match self {
+            TimeCond::Tense { kind, negated } => {
+                let te = EventPoint::Whole.of(e);
+                let rel = match kind {
+                    TenseKind::Hita => time_rel(LT, te, t0()),
+                    TenseKind::Hiti => time_rel(OVERLAP, te, t0()),
+                    TenseKind::Hitu => time_rel(LT, t0(), te),
+                };
+                negate_if(rel, *negated)
+            }
+            TimeCond::Overlap { r, point } => time_rel(OVERLAP, Term::Var(r.clone()), point.of(e)),
+            TimeCond::BegunBy(r) => time_rel(
+                LE,
+                EventPoint::Begin.of(e),
+                time_fn("max", Term::Var(r.clone())),
+            ),
+            TimeCond::Perfect(r) => Formula::And(
+                Box::new(time_rel(
+                    LE,
+                    EventPoint::End.of(e),
+                    time_fn("min", Term::Var(r.clone())),
+                )),
+                Box::new(Formula::Atom(
+                    "ResultState".to_string(),
+                    vec![e.clone(), Term::Var(r.clone())],
+                )),
+            ),
+        }
+    }
+}
+
+/// `build_event_inner`の基底ケースでイベント変数をどう導入するか。
+#[derive(Debug, Clone)]
+enum EventFrame {
+    /// `∃e.body(e)`
+    Plain,
+    /// `∃e.(body(e) ∧ cond(e))`
+    Single(TimeCond),
+    /// 反復: 項を共有する2つの異なるイベント
+    /// `∃e.∃e'.(((body(e) ∧ body(e')) ∧ ¬(e = e')) ∧ (cond(e) ∧ cond(e')))`
+    Iterative(TimeCond),
 }
 
 // ---------------------------------------------------------------------------
@@ -584,7 +909,7 @@ const EXTRA_ROLE_TABLE: [(CaseLabelKind, &str); 12] = [
 ];
 
 impl Event {
-    fn to_fol(&self, vg: &mut VarGen) -> Formula {
+    fn to_fol(&self, frame: &EventFrame, vg: &mut VarGen) -> Formula {
         let pred = extract_pred(self.get_pred());
         let case_args = self.case_args();
         // 格ラベルの種類ごとに引き当てる。同じ種類が複数回現れた場合は最初の1つを使う
@@ -616,7 +941,7 @@ impl Event {
                     .map(|&phrase| (role_name, phrase.to_fol(vg)))
             })
             .collect();
-        build_event_inner(&pred, arg1, arg2, extra_roles, vg)
+        build_event_inner(&pred, arg1, arg2, extra_roles, frame, vg)
     }
 }
 
@@ -641,6 +966,7 @@ fn build_event_inner(
     arg1: ArgCtx,
     arg2: ArgCtx,
     extra_roles: Vec<(&'static str, ArgCtx)>,
+    frame: &EventFrame,
     vg: &mut VarGen,
 ) -> Formula {
     match pred {
@@ -651,6 +977,7 @@ fn build_event_inner(
                 arg1,
                 arg2,
                 extra_roles,
+                frame,
                 vg,
             )))
         }
@@ -658,13 +985,20 @@ fn build_event_inner(
         PredCtx::Antonym(inner) => {
             // no P: derive a fresh, independent atom "P@anti" and compile it exactly
             // like an ordinary predicate (no `Not`, no asserted relationship to P).
-            build_event_inner(&antonym_rename(inner), arg1, arg2, extra_roles, vg)
+            build_event_inner(&antonym_rename(inner), arg1, arg2, extra_roles, frame, vg)
         }
 
         PredCtx::Coord { op, left, right } => {
             // P di Q / P hoba|hobi|hobu Q: both predicates apply to the same args.
-            let f1 = build_event_inner(left, arg1.clone(), arg2.clone(), extra_roles.clone(), vg);
-            let f2 = build_event_inner(right, arg1, arg2, extra_roles, vg);
+            let f1 = build_event_inner(
+                left,
+                arg1.clone(),
+                arg2.clone(),
+                extra_roles.clone(),
+                frame,
+                vg,
+            );
+            let f2 = build_event_inner(right, arg1, arg2, extra_roles, frame, vg);
             match op {
                 OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                 OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -676,8 +1010,8 @@ fn build_event_inner(
             // Distribute over arg1 coordination.
             if let ArgCtx::Coord { op, left, right } = arg1 {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, *left, arg2.clone(), extra_roles.clone(), vg);
-                let f2 = build_event_inner(&p, *right, arg2, extra_roles, vg);
+                let f1 = build_event_inner(&p, *left, arg2.clone(), extra_roles.clone(), frame, vg);
+                let f2 = build_event_inner(&p, *right, arg2, extra_roles, frame, vg);
                 return match op {
                     OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                     OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -687,8 +1021,8 @@ fn build_event_inner(
             // Distribute over arg2 coordination.
             if let ArgCtx::Coord { op, left, right } = arg2 {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, arg1.clone(), *left, extra_roles.clone(), vg);
-                let f2 = build_event_inner(&p, arg1, *right, extra_roles, vg);
+                let f1 = build_event_inner(&p, arg1.clone(), *left, extra_roles.clone(), frame, vg);
+                let f2 = build_event_inner(&p, arg1, *right, extra_roles, frame, vg);
                 return match op {
                     OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                     OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -699,20 +1033,52 @@ fn build_event_inner(
             // Base case: ∃e.(pred(e) ∧ Agent(e, t1) ∧ Patient(e, t2) ∧ <extra_roles>)
             let t1 = arg1.term();
             let t2 = arg2.term();
+            let event_body = |ev: &Term| {
+                let pred_atom = Formula::Atom(name.clone(), vec![ev.clone()]);
+                let agent_atom = Formula::Atom("Agent".to_string(), vec![ev.clone(), t1.clone()]);
+                let patient_atom =
+                    Formula::Atom("Patient".to_string(), vec![ev.clone(), t2.clone()]);
+                let mut body = Formula::And(
+                    Box::new(pred_atom),
+                    Box::new(Formula::And(Box::new(agent_atom), Box::new(patient_atom))),
+                );
+                for (role_name, ctx) in &extra_roles {
+                    let role_atom =
+                        Formula::Atom(role_name.to_string(), vec![ev.clone(), ctx.term()]);
+                    body = Formula::And(Box::new(body), Box::new(role_atom));
+                }
+                body
+            };
             let e = vg.next_event();
             let ev = Term::Var(e.clone());
-            let pred_atom = Formula::Atom(name.clone(), vec![ev.clone()]);
-            let agent_atom = Formula::Atom("Agent".to_string(), vec![ev.clone(), t1]);
-            let patient_atom = Formula::Atom("Patient".to_string(), vec![ev.clone(), t2]);
-            let mut event_body = Formula::And(
-                Box::new(pred_atom),
-                Box::new(Formula::And(Box::new(agent_atom), Box::new(patient_atom))),
-            );
-            for (role_name, ctx) in &extra_roles {
-                let role_atom = Formula::Atom(role_name.to_string(), vec![ev.clone(), ctx.term()]);
-                event_body = Formula::And(Box::new(event_body), Box::new(role_atom));
-            }
-            let event_formula = Formula::Exists(e, Box::new(event_body));
+            let event_formula = match frame {
+                EventFrame::Plain => Formula::Exists(e, Box::new(event_body(&ev))),
+                EventFrame::Single(cond) => Formula::Exists(
+                    e,
+                    Box::new(Formula::And(
+                        Box::new(event_body(&ev)),
+                        Box::new(cond.apply(&ev)),
+                    )),
+                ),
+                EventFrame::Iterative(cond) => {
+                    let e2 = vg.next_event();
+                    let ev2 = Term::Var(e2.clone());
+                    let bodies =
+                        Formula::And(Box::new(event_body(&ev)), Box::new(event_body(&ev2)));
+                    let distinct = Formula::Not(Box::new(time_rel(EQ, ev.clone(), ev2.clone())));
+                    let conds = Formula::And(Box::new(cond.apply(&ev)), Box::new(cond.apply(&ev2)));
+                    Formula::Exists(
+                        e,
+                        Box::new(Formula::Exists(
+                            e2,
+                            Box::new(Formula::And(
+                                Box::new(Formula::And(Box::new(bodies), Box::new(distinct))),
+                                Box::new(conds),
+                            )),
+                        )),
+                    )
+                }
+            };
             // arg2 scopes innermost, extra_roles in between, arg1 scopes outermost.
             let mut f = arg2.scope(event_formula);
             for (_, ctx) in extra_roles.into_iter().rev() {
@@ -1201,7 +1567,7 @@ mod tests {
     fn test_転置_りんごは食べられない() {
         check(
             "hapu ta pahete si ri behapare",
-            "∃y.∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
+            "□_cir ∃y.∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
         );
     }
 
@@ -1250,6 +1616,134 @@ mod tests {
         check(
             "parobe sa mi si ri paparatanera du ba",
             "∃x.(∃e.(paparatanera(e) ∧ (Agent(e, ba) ∧ Patient(e, x))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
+        );
+    }
+
+    #[test]
+    fn test_テンス_過去() {
+        check(
+            "hita pahete sa mi si ri behapare",
+            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ(e) < t0))",
+        );
+    }
+
+    #[test]
+    fn test_テンス_現在() {
+        check(
+            "hiti pahete sa mi si ri behapare",
+            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ(e) * t0))",
+        );
+    }
+
+    #[test]
+    fn test_テンス_未来() {
+        check(
+            "hitu pahete sa mi si ri behapare",
+            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ t0 < τ(e)))",
+        );
+    }
+
+    #[test]
+    fn test_テンス否定_hineは時間関係だけを否定する() {
+        check(
+            "hine hita pahete sa mi si ri behapare",
+            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ ¬(τ(e) < t0)))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_未然() {
+        check(
+            "hita huda pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ ¬∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ_begin(e) ≤ max(tR))))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_開始() {
+        check(
+            "hita hude pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ_begin(e))))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_進行() {
+        check(
+            "hita hudida pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e))))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_習慣() {
+        check(
+            "hita hudidi pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ Hab s.(s ⊆ tR ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ s * τ(e)))))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_反復() {
+        check(
+            "hita hudidu pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.∃e1.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x)))) ∧ ¬(e = e1)) ∧ (tR * τ(e) ∧ tR * τ(e1)))))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_終了() {
+        check(
+            "hita hudo pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ_end(e))))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_事後() {
+        check(
+            "hita hudu pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (τ_end(e) ≤ min(tR) ∧ ResultState(e, tR)))))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト否定_huneは参照時のアスペクト命題を否定する() {
+        check(
+            "hune hudida pahete sa mi si ri behapare",
+            "∃tR.¬∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e)))",
+        );
+    }
+
+    #[test]
+    fn test_アスペクト_述語の等位接続は参照時を共有する() {
+        check(
+            "hita hudida hoba pahete pahete sa mi si ri behapare",
+            "∃tR.(max(tR) < t0 ∧ (∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e))) ∧ ∃x.(behapare(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ tR * τ(e1)))))",
+        );
+    }
+
+    #[test]
+    fn test_モダリティ_認識的必然_未来事後() {
+        check(
+            "hapa ta hitu hudu pahete sa mi si ri behapare",
+            "□_epi ∃tR.(t0 < min(tR) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (τ_end(e) ≤ min(tR) ∧ ResultState(e, tR)))))",
+        );
+    }
+
+    #[test]
+    fn test_モダリティ_能力可能() {
+        check(
+            "hapu to pahete sa mi si ri behapare",
+            "◇_cir ∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_モダリティ否定_haneは様相演算子を否定する() {
+        check(
+            "hane hapi to pahete sa mi si ri behapare",
+            "¬◇_deon ∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
