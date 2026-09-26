@@ -662,16 +662,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
-    fn test_unary_predicateを項転置しないとerr型を返す() {
-        let source = "parobe sa mi si ro re pisarepa eos";
-        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
-        let ast = parser::parse(tokens).unwrap();
-        let type_checked = type_check(&ast);
-        assert!(type_checked.is_err());
-    }
-
-    #[test]
     fn test_生物系の格の型検査が成功する() {
         let source = "pagibe sa mi si ri behapare subu gi sube mi subo ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();

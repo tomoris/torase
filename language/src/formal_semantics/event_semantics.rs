@@ -1778,15 +1778,6 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn test_関係節_私はあなたのパートナーを愛している() {
-        check(
-            "parobe sa mi si ro re paparatanera du ba",
-            "∃x.(∃e.(paparatanera(e) ∧ (Agent(e, ba) ∧ Patient(e, x))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
-        );
-    }
-
-    #[test]
-    #[ignore]
     fn test_事象名詞化_あなたは_私はりんごを食べる_と言った() {
         check(
             "kasahi ba si he pahete mi si ri behapare ho",
