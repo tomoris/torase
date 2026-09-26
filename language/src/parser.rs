@@ -2288,6 +2288,7 @@ impl QuantifiedVariableList {
 }
 
 impl S {
+    #[allow(dead_code)]
     pub(crate) fn get_range(&self) -> Range {
         match self {
             S::One(declarative_sentence) => declarative_sentence.get_range(),

@@ -6,10 +6,7 @@ pub mod tokenizer;
 pub mod types;
 
 use argument_type_checker::type_check as argument_type_check;
-use formal_semantics::{
-    find_contradiction_index, free_variables, is_schema_variable_name, to_fol,
-    type_check as formal_type_check,
-};
+use formal_semantics::{find_contradiction_index, free_variables, is_schema_variable_name, to_fol};
 use parser::{Ast, parse};
 use tokenizer::{Range, TerminalType, add_eos_to_last_sentence, tokenize};
 
@@ -63,18 +60,6 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Ve
                     "argument type error: {} (expected: {:?}, actual: {:?})",
                     e.message, e.expected, e.actual
                 ),
-            };
-            diagnostics.push(diagnostics_item);
-        }
-    }
-
-    // formal semantics type checking
-    for ast in &asts {
-        let formal_type_check_result = formal_type_check(ast);
-        if let Err(e) = formal_type_check_result {
-            let diagnostics_item = Diagnostic {
-                range: e.range,
-                message: format!("formal type error: {}", e.message),
             };
             diagnostics.push(diagnostics_item);
         }
