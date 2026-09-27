@@ -370,7 +370,7 @@ ze (ta|to) za (ta|to) zi [平叙文]
 - `sa`/`si`: 述語の`get_argument_types`が返す(x1, x2)の型
 - `subu`/`sube`/`subo`: `bV`(生物)。固有名詞では`heba`/`hebi`(「固有名詞」節参照)も直接満たす。
 - `sudu`: `dV|nV`(人工物・その他物理的実体。`da`/`di`/`du`は現状区別していない)。固有名詞では`heda`/`hedi`/`hedu`も直接満たす。
-- `sute`/`suto`: `gV|mV|rV|zV`(抽象概念全般。`ka`/`ki`/`ku`の抽象項と同じ範囲)。固有名詞では`hemu`も直接満たす。
+- `sute`/`suto`: `gV|mV|rV`(抽象概念。`ka`/`ki`/`ku`の抽象項と異なり、空間・時間の`zV`は含まない)。固有名詞では`hemu`も直接満たす。
 - `suni`/`sune`/`suno`: 空間を指す指示代名詞(`me`/`be`/`ge`)、または`za`(空間関係。例:「Xの中」「Xの近く」)。固有名詞では`heza`(「固有名詞」節参照)も直接満たす。
 - `sugi`/`suge`/`sugo`: 時を指す指示代名詞(`me`/`be`/`ge`)、`ziV`(時間関係)、または`zu`(時間の尺度。例:「6日」「5分間」)。固有名詞では`hezi`も直接満たす。
 
