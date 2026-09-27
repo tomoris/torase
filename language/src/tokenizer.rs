@@ -132,6 +132,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
             doc.push(TerminalType::Number(Number::new(
                 token.0, token.1, token.2, token.3, token.4,
             )));
+        } else if ProperNoun::is_match(token.0) {
+            doc.push(TerminalType::ProperNoun(ProperNoun::new(
+                token.0, token.1, token.2, token.3, token.4,
+            )));
         } else if Determiner::is_match(token.0) {
             doc.push(TerminalType::Determiner(Determiner::new(
                 token.0, token.1, token.2, token.3, token.4,
@@ -393,6 +397,7 @@ pub enum TerminalType {
     Determiner(Determiner),
     MtaEventToArgumentPhraseConverter(MtaEventToArgumentPhraseConverter),
     MtaEventToArgumentPhraseConverterEnd(MtaEventToArgumentPhraseConverterEnd),
+    ProperNoun(ProperNoun),
     ProperNounOpener(ProperNounOpener),
     ProperNounBody(ProperNounBody),
     ProperNounCloser(ProperNounCloser),
@@ -427,6 +432,7 @@ pub enum DummyTerminalType {
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
+    ProperNoun,
     ProperNounOpener,
     ProperNounBody,
     ProperNounCloser,
@@ -465,6 +471,7 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
         TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => {
             DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
         }
+        TerminalType::ProperNoun(_) => DummyTerminalType::ProperNoun,
         TerminalType::ProperNounOpener(_) => DummyTerminalType::ProperNounOpener,
         TerminalType::ProperNounBody(_) => DummyTerminalType::ProperNounBody,
         TerminalType::ProperNounCloser(_) => DummyTerminalType::ProperNounCloser,
@@ -527,6 +534,7 @@ impl_terminal_range!(
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
+    ProperNoun,
     ProperNounOpener,
     ProperNounBody,
     ProperNounCloser,
@@ -774,6 +782,14 @@ pub struct MtaEventToArgumentPhraseConverterEnd {
     range: Range,
 }
 
+/// t で始まる1語の固有名詞。2文字目の母音が型を表す
+/// (`ta`=生物、`te`=物理的実体、`ti`=空間、`to`=抽象)。
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProperNoun {
+    range: Range,
+    string: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProperNounOpener {
     range: Range,
@@ -950,6 +966,7 @@ impl_get_range!(
     Determiner,
     MtaEventToArgumentPhraseConverter,
     MtaEventToArgumentPhraseConverterEnd,
+    ProperNoun,
     ProperNounOpener,
     ProperNounBody,
     ProperNounCloser,
@@ -1367,6 +1384,37 @@ define_surface_token!(ProperNounOpener, ProperNounOpenerKind, "proper noun opene
     Hedu: "hedu",
 });
 
+impl ProperNoun {
+    fn is_match(string: &str) -> bool {
+        const RE_PROPER_NOUN: Regex = Regex::compile(r"^t[aeio](?:[ptkbdgmnrszh][aeiou])+$");
+        RE_PROPER_NOUN.is_match(string)
+    }
+    fn new(
+        string: &str,
+        start_line: usize,
+        start_character: usize,
+        end_line: usize,
+        end_character: usize,
+    ) -> Self {
+        ProperNoun {
+            range: make_range(start_line, start_character, end_line, end_character),
+            string: string.to_string(),
+        }
+    }
+    pub fn get_string(&self) -> String {
+        self.string.clone()
+    }
+    pub(crate) fn get_type(&self) -> ArgumentType {
+        match self.string.as_bytes()[1] {
+            b'a' => ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
+            b'e' => ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+            b'i' => ArgumentType::Space,
+            b'o' => ArgumentType::Abstraction,
+            _ => unreachable!("`ProperNoun::is_match` guarantees t[aeio]"),
+        }
+    }
+}
+
 impl ProperNounOpener {
     pub fn get_kind(&self) -> &ProperNounOpenerKind {
         &self.kind
@@ -1590,6 +1638,31 @@ mod tests {
         assert!(
             matches!(&sentences[0][1], TerminalType::ProperNounBody(body) if body.get_string() == "ta")
         );
+    }
+
+    #[test]
+    fn test_tokenize_tで始まる語は固有名詞になる() {
+        for word in ["taro", "tetitanika", "tikanada", "tonasa"] {
+            let sentences = tokenize(&format!("{word} eos")).unwrap();
+            assert!(
+                matches!(&sentences[0][0], TerminalType::ProperNoun(pn) if pn.get_string() == word),
+                "{word} should be a proper noun: {:?}",
+                sentences[0][0]
+            );
+        }
+    }
+
+    #[test]
+    fn test_tokenize_量化詞と数詞はtで始まる固有名詞にならない() {
+        let sentences = tokenize("ta to tupedo eos").unwrap();
+        assert!(matches!(&sentences[0][0], TerminalType::Quantifier(_)));
+        assert!(matches!(&sentences[0][1], TerminalType::Quantifier(_)));
+        assert!(matches!(&sentences[0][2], TerminalType::Number(_)));
+    }
+
+    #[test]
+    fn test_tokenize_tuで始まる数詞でない語はエラーになる() {
+        assert!(tokenize("tuhana eos").is_err());
     }
 
     #[test]

@@ -1174,6 +1174,7 @@ impl ArgumentPhrase {
             ArgumentPhrase::Six(opener, body, _hoho) => {
                 ArgCtx::Const(format!("{}:{}", opener.get_string(), body.get_string()))
             }
+            ArgumentPhrase::Seven(proper_noun) => ArgCtx::Const(proper_noun.get_string()),
         }
     }
 }
@@ -1589,6 +1590,14 @@ mod tests {
         check(
             "parobe sa heba Kanye hoho si ba",
             "∃e.(parobe(e) ∧ (Agent(e, heba:Kanye) ∧ Patient(e, ba)))",
+        );
+    }
+
+    #[test]
+    fn test_tで始まる固有名詞はその語の定項になる() {
+        check(
+            "parobe sa taro si ba",
+            "∃e.(parobe(e) ∧ (Agent(e, taro) ∧ Patient(e, ba)))",
         );
     }
 

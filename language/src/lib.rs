@@ -206,6 +206,19 @@ mod tests {
     }
 
     #[test]
+    fn test_tで始まる固有名詞を含む文が診断を通る() {
+        let text = "pamobe sa mi subo taro".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok(), "expected diagnose to succeed: {result:?}");
+    }
+
+    #[test]
+    fn test_tで始まる固有名詞の型が合わない文は診断エラーになる() {
+        let text = "parobe sa tetitanika si ba".to_string();
+        assert!(diagnose(text).is_err());
+    }
+
+    #[test]
     fn test_閉じマーカーの無い固有名詞はトークナイズエラーになる() {
         let text = "parobe sa heba Kanye si ba".to_string();
         let diagnostics = diagnose(text).unwrap_err();

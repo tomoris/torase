@@ -481,6 +481,7 @@ pub enum ArgumentPhrase {
         MtaEventToArgumentPhraseConverterEnd,
     ),
     Six(ProperNounOpener, ProperNounBody, ProperNounCloser),
+    Seven(ProperNoun),
 }
 
 #[derive(Clone, Debug)]
@@ -1269,6 +1270,7 @@ impl PostBinaryPredicatePhraseExpression {
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::AdjunctArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ProperNoun
             | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
             | DummyTerminalType::Tense
@@ -1402,6 +1404,11 @@ impl ArgumentPhrase {
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounBody),
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounCloser),
             ])),
+            DummyTerminalType::ProperNoun => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::ProperNoun,
+                )]))
+            }
             _ => Err(()),
         }
     }
@@ -1437,6 +1444,9 @@ impl ArgumentPhrase {
                     SymbolType::Terminal(TerminalType::ProperNounBody(child2)),
                     SymbolType::Terminal(TerminalType::ProperNounCloser(child3)),
                 ] => Self::Six(child1.clone(), child2.clone(), child3.clone()),
+                [SymbolType::Terminal(TerminalType::ProperNoun(child1))] => {
+                    Self::Seven(child1.clone())
+                }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
                 }
@@ -1505,6 +1515,11 @@ impl NonNegatedArgumentPhrase {
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounBody),
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounCloser),
             ])),
+            DummyTerminalType::ProperNoun => {
+                Ok(DummyRhs::Sequence(vec![DummySymbolType::DummyTerminal(
+                    DummyTerminalType::ProperNoun,
+                )]))
+            }
             _ => Err(()),
         }
     }
@@ -1689,6 +1704,7 @@ impl ArgumentRetrievalWithArgumentPhrase {
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::AdjunctArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ProperNoun
             | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
             | DummyTerminalType::Tense
@@ -1837,6 +1853,7 @@ impl TypeOverrideModifier {
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::AdjunctArgumentRetriever
             | DummyTerminalType::MtaEventToArgumentPhraseConverter
+            | DummyTerminalType::ProperNoun
             | DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Epsilon),
             _ => Err(()),
         }
@@ -2062,6 +2079,7 @@ impl ArgumentPhrase {
                 let end = closer.get_range().end();
                 Range::new(start, end)
             }
+            ArgumentPhrase::Seven(proper_noun) => proper_noun.get_range(),
         }
     }
 }
@@ -2765,6 +2783,13 @@ mod tests {
                 .unwrap()
                 .to_string(),
         );
+        let proper_noun = grammar::Terminal(
+            type_name::<ProperNoun>()
+                .split("::")
+                .last()
+                .unwrap()
+                .to_string(),
+        );
         let proper_noun_opener = grammar::Terminal(
             type_name::<ProperNounOpener>()
                 .split("::")
@@ -3047,6 +3072,7 @@ mod tests {
                     grammar::Symbol::Terminal(proper_noun_body.clone()),
                     grammar::Symbol::Terminal(proper_noun_closer.clone()),
                 ]),
+                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(proper_noun.clone())]),
             ],
         );
         rules.insert(
@@ -3071,6 +3097,7 @@ mod tests {
                     grammar::Symbol::Terminal(proper_noun_body.clone()),
                     grammar::Symbol::Terminal(proper_noun_closer.clone()),
                 ]),
+                grammar::Rhs::Sequence(vec![grammar::Symbol::Terminal(proper_noun.clone())]),
             ],
         );
         rules.insert(
@@ -3192,6 +3219,7 @@ mod tests {
                     "MtaEventToArgumentPhraseConverterEnd" => {
                         DummyTerminalType::MtaEventToArgumentPhraseConverterEnd
                     }
+                    "ProperNoun" => DummyTerminalType::ProperNoun,
                     "ProperNounOpener" => DummyTerminalType::ProperNounOpener,
                     "ProperNounBody" => DummyTerminalType::ProperNounBody,
                     "ProperNounCloser" => DummyTerminalType::ProperNounCloser,
@@ -3359,6 +3387,7 @@ mod tests {
                                         DummyTerminalType::MtaEventToArgumentPhraseConverterEnd => {
                                             "MtaEventToArgumentPhraseConverterEnd"
                                         }
+                                        DummyTerminalType::ProperNoun => "ProperNoun",
                                         DummyTerminalType::ProperNounOpener => "ProperNounOpener",
                                         DummyTerminalType::ProperNounBody => "ProperNounBody",
                                         DummyTerminalType::ProperNounCloser => "ProperNounCloser",
@@ -3435,6 +3464,15 @@ mod tests {
         // 深いASTの形を辿るのではなく、ArgumentPhrase::Sixが実際に生成されたことを
         // デバッグ表示から確認する(パース自体が成功することは上のassertで検証済み)。
         assert!(format!("{:?}", ast.get_s()).contains("Six("));
+    }
+
+    #[test]
+    fn test_parse_tで始まる固有名詞がargumentphrase_sevenとしてパースできる() {
+        let input = "parobe sa taro si ba eos";
+        let sentences = tokenize(input).unwrap();
+        let result = parse(sentences[0].clone());
+        assert!(result.is_ok(), "expected parse to succeed: {result:?}");
+        assert!(format!("{:?}", result.unwrap().get_s()).contains("Seven("));
     }
 
     #[test]

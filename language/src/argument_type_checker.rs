@@ -455,6 +455,7 @@ impl ArgumentPhrase {
                 _mta_event_to_argument_phrase_converter_end,
             ) => mta_event.type_check(),
             ArgumentPhrase::Six(_opener, _body, _closer) => Ok(()),
+            ArgumentPhrase::Seven(_proper_noun) => Ok(()),
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
@@ -470,6 +471,7 @@ impl ArgumentPhrase {
                 vec![ArgumentType::Abstraction]
             }
             ArgumentPhrase::Six(opener, _, _) => vec![opener.get_type()],
+            ArgumentPhrase::Seven(proper_noun) => vec![proper_noun.get_type()],
         }
     }
 }
@@ -1025,6 +1027,37 @@ mod tests {
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_tで始まる固有名詞_母音ごとに対応する格を満たす() {
+        for source in [
+            "parobe sa taro si ba eos",
+            "parobe sa mi si ba sudu tetitanika eos",
+            "parobe sa mi si ba suni tikanada eos",
+            "parobe sa mi si ba sute tonasa eos",
+        ] {
+            let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+            let ast = parser::parse(tokens).unwrap();
+            assert!(type_check(&ast).is_ok(), "{source} should type-check");
+        }
+    }
+
+    #[test]
+    fn test_tで始まる固有名詞_型の合わない格では失敗する() {
+        for source in [
+            "parobe sa tetitanika si ba eos",
+            "parobe sa mi si ba sudu taro eos",
+            "parobe sa mi si ba suni tonasa eos",
+            "parobe sa mi si ba sugi tikanada eos",
+        ] {
+            let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+            let ast = parser::parse(tokens).unwrap();
+            assert!(
+                type_check(&ast).is_err(),
+                "{source} should fail to type-check"
+            );
+        }
     }
 
     #[test]

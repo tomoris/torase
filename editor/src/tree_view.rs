@@ -575,6 +575,11 @@ impl TreeViewer for ArgumentPhrase {
                 ]);
                 category_box(category, content, background)
             }
+            ArgumentPhrase::Seven(proper_noun) => {
+                let category = "ArgumentPhrase".to_string();
+                let content = text(proper_noun.get_string()).into();
+                category_box(category, content, background)
+            }
         }
     }
     fn is_empty(&self) -> bool {
