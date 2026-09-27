@@ -148,7 +148,6 @@ ze ta za ta zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi
 ### 疑問文マーカー
 
 - `ku`
-- `?` (読み、発音は`ku`)
 
 #### 疑問詞
 
