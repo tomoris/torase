@@ -438,6 +438,78 @@ fn frame_axioms() -> Vec<Clause> {
     ]
 }
 
+/// Axioms on the time relations used by `event_semantics` (`<`, `≤`, `*` overlap), where
+/// `τ_begin(e)`/`τ_end(e)` are points and every other time term is an interval.
+///
+/// These are kept apart from the other clauses and used only for unit-resulting resolution
+/// (see [`resolve_with_axioms`]): resolving transitivity-like axioms freely lets clauses
+/// grow without bound, so every consistent input would run into the clause limit.
+fn temporal_axioms() -> Vec<Clause> {
+    let v = |name: &str| Term::Var(format!("ta_{name}"));
+    let f = |name: &str, arg: Term| Term::Func(name.to_string(), vec![arg]);
+    let (x, y, z, t, e, w) = (v("x"), v("y"), v("z"), v("t"), v("e"), v("w"));
+    let lit = |pred: &str, a: &Term, b: &Term, positive: bool| Literal {
+        pred: pred.to_string(),
+        args: vec![a.clone(), b.clone(), w.clone()],
+        positive,
+    };
+    let (lt, le, ov) = ("<", "≤", "*");
+    vec![
+        // < is a strict order.
+        vec![lit(lt, &x, &x, false)],
+        vec![lit(lt, &x, &y, false), lit(lt, &y, &x, false)],
+        vec![
+            lit(lt, &x, &y, false),
+            lit(lt, &y, &z, false),
+            lit(lt, &x, &z, true),
+        ],
+        // ≤ is weaker than <, and chains with both.
+        vec![lit(lt, &x, &y, false), lit(le, &x, &y, true)],
+        vec![
+            lit(le, &x, &y, false),
+            lit(le, &y, &z, false),
+            lit(le, &x, &z, true),
+        ],
+        vec![
+            lit(le, &x, &y, false),
+            lit(lt, &y, &z, false),
+            lit(lt, &x, &z, true),
+        ],
+        vec![
+            lit(lt, &x, &y, false),
+            lit(le, &y, &z, false),
+            lit(lt, &x, &z, true),
+        ],
+        // Overlap is symmetric, and intervals in precedence do not overlap.
+        vec![lit(ov, &x, &y, false), lit(ov, &y, &x, true)],
+        vec![lit(lt, &x, &y, false), lit(ov, &x, &y, false)],
+        // An interval's start does not come after its end.
+        vec![lit(le, &f("min", t.clone()), &f("max", t.clone()), true)],
+        vec![
+            lit(le, &x, &f("min", t.clone()), false),
+            lit(le, &x, &f("max", t.clone()), true),
+        ],
+        vec![
+            lit(lt, &f("max", t.clone()), &z, false),
+            lit(lt, &f("min", t.clone()), &z, true),
+        ],
+        vec![
+            lit(lt, &z, &f("min", t.clone()), false),
+            lit(lt, &z, &f("max", t.clone()), true),
+        ],
+        // An event lies wholly before whatever its end point precedes.
+        vec![
+            lit(lt, &f("τ_end", e.clone()), &y, false),
+            lit(lt, &f("τ", e.clone()), &y, true),
+        ],
+        // An end point overlapping an interval lies no later than the interval's end.
+        vec![
+            lit(ov, &t, &f("τ_end", e.clone()), false),
+            lit(le, &f("τ_end", e.clone()), &f("max", t.clone()), true),
+        ],
+    ]
+}
+
 /// Cross-product of two clause sets: each pair is merged into one clause.
 /// Tautological clauses are discarded.
 fn cross_or(left: Vec<Clause>, right: Vec<Clause>) -> Vec<Clause> {
@@ -528,9 +600,40 @@ enum Refutation {
     GaveUp,
 }
 
+/// Unit-resulting resolution of each axiom with `unit` and, for an axiom with a literal left
+/// over, one more of the already processed unit clauses. Only unit (or empty) clauses are
+/// derived. Every axiom has at most 3 literals, so two unit partners always suffice.
+fn resolve_with_axioms(
+    unit: &Clause,
+    axioms: &[Clause],
+    processed_units: &[&Clause],
+    rename_id: &mut usize,
+) -> Vec<Clause> {
+    let mut results = Vec::new();
+    for axiom in axioms {
+        for resolvent in resolve_pair(unit, axiom) {
+            if resolvent.len() <= 1 {
+                results.push(resolvent);
+                continue;
+            }
+            for other in processed_units {
+                let prefix = format!("r{rename_id}_");
+                *rename_id += 1;
+                let renamed = clause_prefix_vars(other, &prefix);
+                results.extend(
+                    resolve_pair(&renamed, &resolvent)
+                        .into_iter()
+                        .filter(|r| r.len() <= 1),
+                );
+            }
+        }
+    }
+    results
+}
+
 /// Run binary resolution on the initial set of clauses, deriving at most
-/// `max_clauses` distinct clauses.
-fn resolution(initial: Vec<Clause>, max_clauses: usize) -> Refutation {
+/// `max_clauses` distinct clauses. `axioms` are used only through [`resolve_with_axioms`].
+fn resolution(initial: Vec<Clause>, axioms: &[Clause], max_clauses: usize) -> Refutation {
     let mut seen: HashSet<String> = HashSet::new();
     let mut worklist: VecDeque<Clause> = VecDeque::new();
     let mut processed: Vec<Clause> = Vec::new();
@@ -551,21 +654,35 @@ fn resolution(initial: Vec<Clause>, max_clauses: usize) -> Refutation {
             return Refutation::GaveUp;
         }
 
+        let mut resolvents = Vec::new();
         // Resolve `clause` against every already-processed clause.
         for existing in &processed {
             // Rename vars in `clause` to avoid clashes with `existing`.
             let prefix = format!("r{rename_id}_");
             rename_id += 1;
             let renamed = clause_prefix_vars(&clause, &prefix);
+            resolvents.extend(resolve_pair(&renamed, existing));
+        }
+        if clause.len() == 1 {
+            let prefix = format!("r{rename_id}_");
+            rename_id += 1;
+            let renamed = clause_prefix_vars(&clause, &prefix);
+            let processed_units: Vec<&Clause> = processed.iter().filter(|c| c.len() == 1).collect();
+            resolvents.extend(resolve_with_axioms(
+                &renamed,
+                axioms,
+                &processed_units,
+                &mut rename_id,
+            ));
+        }
 
-            for resolvent in resolve_pair(&renamed, existing) {
-                if resolvent.is_empty() {
-                    return Refutation::Refuted; // ⊥ derived — contradiction!
-                }
-                let key = clause_key(&resolvent);
-                if seen.insert(key) {
-                    worklist.push_back(resolvent);
-                }
+        for resolvent in resolvents {
+            if resolvent.is_empty() {
+                return Refutation::Refuted; // ⊥ derived — contradiction!
+            }
+            let key = clause_key(&resolvent);
+            if seen.insert(key) {
+                worklist.push_back(resolvent);
             }
         }
 
@@ -590,7 +707,7 @@ fn refute(formulas: &[Formula], max_clauses: usize) -> Refutation {
         all_clauses.extend(clauses);
     }
 
-    resolution(all_clauses, max_clauses)
+    resolution(all_clauses, &temporal_axioms(), max_clauses)
 }
 
 /// Result of [`check_contradiction`].
@@ -657,6 +774,27 @@ mod tests {
             ContradictionCheck::Contradiction(2)
         );
         assert_eq!(check_contradiction(&[p]), ContradictionCheck::Consistent);
+    }
+
+    #[test]
+    fn test_時間の前後関係は推移的で非反射的である() {
+        let lt = |a: &str, b: &str| atom("<", vec![konst(a), konst(b)]);
+        let not = |f: Formula| Formula::Not(Box::new(f));
+        assert!(is_contradictory(&[
+            lt("a", "b"),
+            lt("b", "c"),
+            not(lt("a", "c"))
+        ]));
+        assert!(is_contradictory(&[lt("a", "b"), lt("b", "a")]));
+        assert!(is_contradictory(&[lt("a", "a")]));
+        assert!(!is_contradictory(&[lt("a", "b"), lt("b", "c")]));
+    }
+
+    #[test]
+    fn test_前後関係にある区間は重ならない() {
+        let lt = atom("<", vec![konst("a"), konst("b")]);
+        let overlap = atom("*", vec![konst("b"), konst("a")]);
+        assert!(is_contradictory(&[lt, overlap]));
     }
 
     #[test]

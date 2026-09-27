@@ -1329,6 +1329,34 @@ mod tests {
     }
 
     #[test]
+    fn test_過去に食べ終えていたことと過去に食べていないことは矛盾する() {
+        for text in [
+            "hita hudu pahete sa mi si ri behapara eos hita ne pahete sa mi si ri behapara",
+            "hita hudo pahete sa mi si ri behapara eos hita ne pahete sa mi si ri behapara",
+        ] {
+            let diagnostics = diagnose(text.to_string()).unwrap_err();
+            assert!(
+                diagnostics
+                    .iter()
+                    .all(|d| d.message == "contradiction error"),
+                "{text}: {diagnostics:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_過去に食べていた途中や食べ始めたことは過去に食べていないことと矛盾しない() {
+        // 進行・開始は出来事が発話時まで続いている可能性があるため、出来事全体が過去とは言えない。
+        for text in [
+            "hita hudida pahete sa mi si ri behapara eos hita ne pahete sa mi si ri behapara",
+            "hita hude pahete sa mi si ri behapara eos hita ne pahete sa mi si ri behapara",
+        ] {
+            let result = diagnose(text.to_string());
+            assert!(result.is_ok_and(|d| d.warnings.is_empty()), "{text}");
+        }
+    }
+
+    #[test]
     fn test_習慣の否定は1回の出来事と矛盾しない() {
         let text = "hita pahete sa mi si ri behapara eos hune hudidi pahete sa mi si ri behapara"
             .to_string();
