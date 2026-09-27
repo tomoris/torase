@@ -517,12 +517,20 @@ fn resolve_pair(c1: &[Literal], c2: &[Literal]) -> Vec<Clause> {
 
 const MAX_CLAUSES: usize = 10_000;
 
-/// Run binary resolution on the initial set of clauses.
-///
-/// Returns `true` if the empty clause (⊥) is derived, i.e., the set is
-/// unsatisfiable.  Returns `false` if no contradiction is found within
-/// [`MAX_CLAUSES`] derived clauses.
-fn resolution(initial: Vec<Clause>) -> bool {
+/// Outcome of running resolution on a set of clauses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Refutation {
+    /// The empty clause (⊥) was derived: the set is unsatisfiable.
+    Refuted,
+    /// No new clause can be derived and ⊥ was not found.
+    Saturated,
+    /// The clause limit was reached before either of the above.
+    GaveUp,
+}
+
+/// Run binary resolution on the initial set of clauses, deriving at most
+/// `max_clauses` distinct clauses.
+fn resolution(initial: Vec<Clause>, max_clauses: usize) -> Refutation {
     let mut seen: HashSet<String> = HashSet::new();
     let mut worklist: VecDeque<Clause> = VecDeque::new();
     let mut processed: Vec<Clause> = Vec::new();
@@ -530,7 +538,7 @@ fn resolution(initial: Vec<Clause>) -> bool {
 
     for c in initial {
         if c.is_empty() {
-            return true;
+            return Refutation::Refuted;
         }
         let key = clause_key(&c);
         if seen.insert(key) {
@@ -539,8 +547,8 @@ fn resolution(initial: Vec<Clause>) -> bool {
     }
 
     while let Some(clause) = worklist.pop_front() {
-        if seen.len() > MAX_CLAUSES {
-            break;
+        if seen.len() > max_clauses {
+            return Refutation::GaveUp;
         }
 
         // Resolve `clause` against every already-processed clause.
@@ -552,7 +560,7 @@ fn resolution(initial: Vec<Clause>) -> bool {
 
             for resolvent in resolve_pair(&renamed, existing) {
                 if resolvent.is_empty() {
-                    return true; // ⊥ derived — contradiction!
+                    return Refutation::Refuted; // ⊥ derived — contradiction!
                 }
                 let key = clause_key(&resolvent);
                 if seen.insert(key) {
@@ -564,16 +572,15 @@ fn resolution(initial: Vec<Clause>) -> bool {
         processed.push(clause);
     }
 
-    false
+    Refutation::Saturated
 }
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
-/// Returns `true` if the conjunction of `formulas` is unsatisfiable
-/// (logically contradictory).
-fn is_contradictory(formulas: &[Formula]) -> bool {
+/// Runs resolution on the conjunction of `formulas`.
+fn refute(formulas: &[Formula], max_clauses: usize) -> Refutation {
     let mut builder = CnfBuilder::new();
     let mut all_clauses: Vec<Clause> = frame_axioms();
     let actual = Term::Const(ACTUAL_WORLD.to_string());
@@ -583,21 +590,37 @@ fn is_contradictory(formulas: &[Formula]) -> bool {
         all_clauses.extend(clauses);
     }
 
-    resolution(all_clauses)
+    resolution(all_clauses, max_clauses)
 }
 
-/// Returns `Some(i)` where `i` is the index of the first formula whose addition
-/// makes the set contradictory, or `None` if all formulas are consistent.
-///
-/// Uses prefix checking: finds the smallest prefix `formulas[..i+1]` that is
-/// unsatisfiable, and returns `i` as the index of the offending formula.
-pub fn find_contradiction_index(formulas: &[Formula]) -> Option<usize> {
+/// Result of [`check_contradiction`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContradictionCheck {
+    /// No contradiction was found among all the formulas.
+    Consistent,
+    /// Adding the formula at this index makes the set contradictory.
+    Contradiction(usize),
+    /// Resolution hit the clause limit when the formula at this index was added,
+    /// so neither it nor any later formula could be checked.
+    Unknown(usize),
+}
+
+/// Checks the formulas in order and reports the first one whose addition makes the set
+/// contradictory, using prefix checking on `formulas[..i+1]`.
+pub fn check_contradiction(formulas: &[Formula]) -> ContradictionCheck {
+    check_contradiction_with_limit(formulas, MAX_CLAUSES)
+}
+
+fn check_contradiction_with_limit(formulas: &[Formula], max_clauses: usize) -> ContradictionCheck {
     for i in 1..=formulas.len() {
-        if is_contradictory(&formulas[..i]) {
-            return Some(i - 1);
+        match refute(&formulas[..i], max_clauses) {
+            Refutation::Refuted => return ContradictionCheck::Contradiction(i - 1),
+            // A larger prefix would only derive more clauses, so stop checking here.
+            Refutation::GaveUp => return ContradictionCheck::Unknown(i - 1),
+            Refutation::Saturated => {}
         }
     }
-    None
+    ContradictionCheck::Consistent
 }
 
 // ---------------------------------------------------------------------------
@@ -619,6 +642,33 @@ mod tests {
 
     fn atom(pred: &str, args: Vec<FolTerm>) -> Formula {
         Formula::Atom(pred.to_string(), args)
+    }
+
+    fn is_contradictory(formulas: &[Formula]) -> bool {
+        refute(formulas, MAX_CLAUSES) == Refutation::Refuted
+    }
+
+    #[test]
+    fn test_矛盾する式の位置を返す() {
+        let p = atom("P", vec![konst("a")]);
+        let not_p = Formula::Not(Box::new(atom("P", vec![konst("a")])));
+        assert_eq!(
+            check_contradiction(&[p.clone(), p.clone(), not_p]),
+            ContradictionCheck::Contradiction(2)
+        );
+        assert_eq!(check_contradiction(&[p]), ContradictionCheck::Consistent);
+    }
+
+    #[test]
+    fn test_節の数が上限に達すると判定不能を返す() {
+        let formulas = [
+            a_boy_loves_every_girl(),
+            every_boy_does_not_love_every_girl(),
+        ];
+        assert_eq!(
+            check_contradiction_with_limit(&formulas, 0),
+            ContradictionCheck::Unknown(0)
+        );
     }
 
     /// ∃x [boy(x) ∧ ∀y (girl(y) → love(x,y))]

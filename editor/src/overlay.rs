@@ -6,8 +6,8 @@ use iced::mouse;
 use iced::widget::canvas::{self, Frame, Path, Stroke};
 use iced::{Color, Font, Pixels, Point, Rectangle, Renderer, Size, Theme};
 
-use language::Diagnostic;
 use language::tokenizer::TerminalType;
+use language::{Diagnostic, Severity};
 
 use crate::app::Message;
 
@@ -174,12 +174,11 @@ impl canvas::Program<Message> for DiagnosticOverlay {
                     }
                 });
 
-                frame.stroke(
-                    &path,
-                    Stroke::default()
-                        .with_color(Color::from_rgb(1.0, 0.0, 0.0))
-                        .with_width(1.5),
-                );
+                let color = match diagnostic.severity {
+                    Severity::Error => Color::from_rgb(1.0, 0.0, 0.0),
+                    Severity::Warning => Color::from_rgb(0.9, 0.7, 0.0),
+                };
+                frame.stroke(&path, Stroke::default().with_color(color).with_width(1.5));
             }
         }
 

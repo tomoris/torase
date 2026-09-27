@@ -7,7 +7,7 @@ use iced::{Element, Font, Subscription, Task};
 
 use language::parser::Ast;
 use language::tokenizer::{TerminalType, tokenize};
-use language::{Diagnostic, diagnose_tokens};
+use language::{Diagnosed, Diagnostic, diagnose_tokens};
 
 use crate::overlay::{DiagnosticOverlay, LINE_HEIGHT_RATIO};
 use crate::tree_view::asts_view;
@@ -30,7 +30,7 @@ pub(crate) enum Message {
     Edit(text_editor::Action),
     ToFull,
     ToCompact,
-    Diagnosing(Result<Vec<Ast>, Vec<Diagnostic>>),
+    Diagnosing(Result<Diagnosed, Vec<Diagnostic>>),
     IncreaseFontSize,
     DecreaseFontSize,
 }
@@ -61,12 +61,12 @@ impl Editor {
             Ok(sentences) => {
                 let tokens: Vec<TerminalType> = sentences.iter().flatten().cloned().collect();
                 let (viewer, diagnostics) = match diagnose_tokens(sentences) {
-                    Ok(asts) => (
+                    Ok(Diagnosed { asts, warnings }) => (
                         Viewer::Asts {
                             asts,
                             mode: ViewMode::Compact,
                         },
-                        vec![],
+                        warnings,
                     ),
                     Err(diagnostics) => {
                         eprintln!(
@@ -108,10 +108,7 @@ impl Editor {
                     }
                     Err(e) => {
                         self.tokens = vec![];
-                        let diagnostics = vec![Diagnostic {
-                            range: e.range,
-                            message: "tokenize error".to_string(),
-                        }];
+                        let diagnostics = vec![Diagnostic::error(e.range, "tokenize error")];
                         self.diagnostics = diagnostics.clone();
                         self.viewer = Viewer::Error(diagnostics);
                         Task::none()
@@ -144,8 +141,8 @@ impl Editor {
                     self.viewer = Viewer::Error(diagnostics);
                     Task::none()
                 }
-                Ok(asts) => {
-                    self.diagnostics = vec![];
+                Ok(Diagnosed { asts, warnings }) => {
+                    self.diagnostics = warnings;
                     self.viewer = Viewer::Asts {
                         asts,
                         mode: ViewMode::Compact,

@@ -1302,7 +1302,7 @@ mod tests {
 
     /// Parse `text`, run all checks, and return the FOL formula string for the first sentence.
     fn to_fol_string(text: &str) -> Result<String, Vec<Diagnostic>> {
-        let asts = diagnose(text.to_string())?;
+        let asts = diagnose(text.to_string())?.asts;
         Ok(to_fol(&asts[0]).to_string())
     }
 

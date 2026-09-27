@@ -6,28 +6,60 @@ pub mod tokenizer;
 pub mod types;
 
 use argument_type_checker::type_check as argument_type_check;
-use formal_semantics::{find_contradiction_index, free_variables, is_schema_variable_name, to_fol};
+use formal_semantics::{
+    ContradictionCheck, check_contradiction, free_variables, is_schema_variable_name, to_fol,
+};
 use parser::{Ast, S, parse};
 use tokenizer::{Range, TerminalType, add_eos_to_last_sentence, tokenize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Severity {
+    Error,
+    Warning,
+}
 
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
     pub range: Range,
+    pub severity: Severity,
     pub message: String,
 }
 
-pub fn diagnose(text: String) -> Result<Vec<Ast>, Vec<Diagnostic>> {
-    let tokenize_result = tokenize(&text);
-    match tokenize_result {
-        Ok(sentences) => diagnose_tokens(sentences),
-        Err(e) => Err(vec![Diagnostic {
-            range: e.range,
-            message: "tokenize error".to_string(),
-        }]),
+impl Diagnostic {
+    pub fn error(range: Range, message: impl Into<String>) -> Self {
+        Diagnostic {
+            range,
+            severity: Severity::Error,
+            message: message.into(),
+        }
+    }
+
+    pub fn warning(range: Range, message: impl Into<String>) -> Self {
+        Diagnostic {
+            range,
+            severity: Severity::Warning,
+            message: message.into(),
+        }
     }
 }
 
-pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Vec<Diagnostic>> {
+/// エラーが無かった場合の診断結果。警告は残りうる。
+#[derive(Debug, Clone)]
+pub struct Diagnosed {
+    pub asts: Vec<Ast>,
+    pub warnings: Vec<Diagnostic>,
+}
+
+/// エラーが1つでもあれば全診断を`Err`で、無ければASTと警告を`Ok`で返す。
+pub fn diagnose(text: String) -> Result<Diagnosed, Vec<Diagnostic>> {
+    let tokenize_result = tokenize(&text);
+    match tokenize_result {
+        Ok(sentences) => diagnose_tokens(sentences),
+        Err(e) => Err(vec![Diagnostic::error(e.range, "tokenize error")]),
+    }
+}
+
+pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Diagnosed, Vec<Diagnostic>> {
     // parsing
     let sentences = add_eos_to_last_sentence(sentences);
     let mut ast_with_ranges: Vec<(Ast, Range)> = Vec::new();
@@ -39,21 +71,20 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Ve
         );
         let parse_result = parse(sentence.clone());
         if let Err(e) = parse_result {
-            let diagnostics_item = Diagnostic {
-                range: e.error_token.range(),
-                message: format!("parse error: {}", e.error_message),
-            };
-            diagnostics.push(diagnostics_item);
+            diagnostics.push(Diagnostic::error(
+                e.error_token.range(),
+                format!("parse error: {}", e.error_message),
+            ));
         } else {
             if !matches!(sentence.first(), Some(TerminalType::InterrogativeMarker(_))) {
                 for token in &sentence {
                     if let TerminalType::Argument(arg) = token
                         && arg.is_interrogative()
                     {
-                        diagnostics.push(Diagnostic {
-                            range: token.range(),
-                            message: "interrogative ko can only be used in a question (start the sentence with ku)".to_string(),
-                        });
+                        diagnostics.push(Diagnostic::error(
+                            token.range(),
+                            "interrogative ko can only be used in a question (start the sentence with ku)",
+                        ));
                     }
                 }
             }
@@ -66,14 +97,13 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Ve
     for ast in &asts {
         let argument_type_check_result = argument_type_check(ast);
         if let Err(e) = argument_type_check_result {
-            let diagnostics_item = Diagnostic {
-                range: e.range,
-                message: format!(
+            diagnostics.push(Diagnostic::error(
+                e.range,
+                format!(
                     "argument type error: {} (expected: {:?}, actual: {:?})",
                     e.message, e.expected, e.actual
                 ),
-            };
-            diagnostics.push(diagnostics_item);
+            ));
         }
     }
 
@@ -85,13 +115,13 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Ve
             .filter(|name| is_schema_variable_name(name))
             .collect();
         if !free.is_empty() {
-            diagnostics.push(Diagnostic {
-                range: range.clone(),
-                message: format!(
+            diagnostics.push(Diagnostic::error(
+                range.clone(),
+                format!(
                     "unbound schema variable(s) (use ze to quantify): {}",
                     free.join(", ")
                 ),
-            });
+            ));
         }
     }
 
@@ -106,17 +136,35 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Ve
         .iter()
         .map(|&i| formulas[i].clone())
         .collect();
-    if let Some(idx) = find_contradiction_index(&premises) {
-        diagnostics.push(Diagnostic {
-            range: ast_with_ranges[premise_indices[idx]].1.clone(),
-            message: "contradiction error".to_string(),
-        });
+    let sentence_range =
+        |premise_idx: usize| ast_with_ranges[premise_indices[premise_idx]].1.clone();
+    match check_contradiction(&premises) {
+        ContradictionCheck::Consistent => {}
+        ContradictionCheck::Contradiction(idx) => {
+            diagnostics.push(Diagnostic::error(
+                sentence_range(idx),
+                "contradiction error",
+            ));
+        }
+        ContradictionCheck::Unknown(idx) => {
+            diagnostics.push(Diagnostic::warning(
+                sentence_range(idx),
+                "contradiction check gave up: consistency from this sentence onward is not verified",
+            ));
+        }
     }
 
-    if !diagnostics.is_empty() {
+    finish(asts, diagnostics)
+}
+
+fn finish(asts: Vec<Ast>, diagnostics: Vec<Diagnostic>) -> Result<Diagnosed, Vec<Diagnostic>> {
+    if diagnostics.iter().any(|d| d.severity == Severity::Error) {
         Err(diagnostics)
     } else {
-        Ok(asts)
+        Ok(Diagnosed {
+            asts,
+            warnings: diagnostics,
+        })
     }
 }
 
@@ -1266,6 +1314,18 @@ mod tests {
                 .all(|d| d.message == "contradiction error"),
             "diagnostics: {diagnostics:?}"
         );
+    }
+
+    #[test]
+    fn test_警告だけならokで警告を返しエラーがあればerrになる() {
+        let range = tokenize("mi").unwrap()[0][0].range();
+        let warning = Diagnostic::warning(range.clone(), "warning");
+        let diagnosed = finish(vec![], vec![warning.clone()]).unwrap();
+        assert_eq!(diagnosed.warnings.len(), 1);
+
+        let error = Diagnostic::error(range, "error");
+        let diagnostics = finish(vec![], vec![warning, error]).unwrap_err();
+        assert_eq!(diagnostics.len(), 2);
     }
 
     #[test]
