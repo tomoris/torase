@@ -253,7 +253,10 @@ fn adjunct_case_type(kind: &CaseLabelKind) -> Option<(Vec<ArgumentType>, &'stati
             "Event type mismatch in an abstract (抽象系) case argument.",
         )),
         CaseLabelKind::Sudu => Some((
-            vec![ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact)],
+            vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+            ],
             "Event type mismatch in an instrumental (道具系) case argument.",
         )),
         CaseLabelKind::Suni | CaseLabelKind::Sune | CaseLabelKind::Suno => Some((
@@ -791,6 +794,15 @@ mod tests {
     #[test]
     fn test_道具系の格の型検査が成功する() {
         let source = "parobe sa mi si ba sudu ri didora eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        let type_checked = type_check(&ast);
+        assert!(type_checked.is_ok());
+    }
+
+    #[test]
+    fn test_具格に人工物以外の物理的実体を置いた場合に型検査が成功する() {
+        let source = "parobe sa mi si ba sudu ri nihotara eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
