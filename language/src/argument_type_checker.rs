@@ -681,8 +681,8 @@ mod tests {
 
     #[test]
     fn test_ruで抽出した付加詞の項は格の型を持つ() {
-        assert!(check("pahete sa mi si ri behapare suni ru suni pahete eos").is_ok());
-        assert!(check("pahete sa mi si ri behapare sudu ru sudu pahete du mi eos").is_ok());
+        assert!(check("pahete sa mi si ri behapara suni ru suni pahete eos").is_ok());
+        assert!(check("pahete sa mi si ri behapara sudu ru sudu pahete du mi eos").is_ok());
     }
 
     #[test]
@@ -693,13 +693,13 @@ mod tests {
     #[test]
     fn test_節からの抽出の型検査が成功する() {
         assert!(check("pahete sa mi si ri he pahete sa ba ho eos").is_ok());
-        assert!(check("pahete sa mi si ri behapare suni ru suni he pahete sa ba ho eos").is_ok());
+        assert!(check("pahete sa mi si ri behapara suni ru suni he pahete sa ba ho eos").is_ok());
         assert!(check("parobe sa mi si ri he homa pahete sa mi parobe sa ba ho eos").is_ok());
     }
 
     #[test]
     fn test_節からの抽出で空所の格が埋まっている場合にerr型を返す() {
-        assert!(check("parobe sa mi si ri he pahete sa mi si ri behapare ho eos").is_err());
+        assert!(check("parobe sa mi si ri he pahete sa mi si ri behapara ho eos").is_err());
         assert!(check("pahete sa mi suni ru suni he pahete suni me ho eos").is_err());
     }
 
@@ -730,7 +730,7 @@ mod tests {
 
     #[test]
     fn test_生物系の格の型検査が成功する() {
-        let source = "pagibe sa mi si ri behapare subu gi sube mi subo ba eos";
+        let source = "pagibe sa mi si ri behapara subu gi sube mi subo ba eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);

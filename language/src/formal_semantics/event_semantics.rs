@@ -1340,208 +1340,208 @@ mod tests {
     #[test]
     fn test_随伴格_私はあなたとりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare subu ba",
-            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Comitative(e, ba)))",
+            "pahete sa mi si ri behapara subu ba",
+            "∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Comitative(e, ba)))",
         );
     }
 
     #[test]
     fn test_奪格与格_私はあなたにりんごをあげる() {
         check(
-            "pamobe sa mi si ri behapare sube mi subo ba",
-            "∃x.(behapare(x) ∧ ∃e.(((pamobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ AnimateSource(e, mi)) ∧ AnimateGoal(e, ba)))",
+            "pamobe sa mi si ri behapara sube mi subo ba",
+            "∃x.(behapara(x) ∧ ∃e.(((pamobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ AnimateSource(e, mi)) ∧ AnimateGoal(e, ba)))",
         );
     }
 
     #[test]
     fn test_原因格目的格_私はりんごを理由があって目的のために食べる() {
         check(
-            "pahete sa mi si ri behapare sute ri kahoraka suto ri kahoraka",
-            "∃y.(kahoraka(y) ∧ ∃z.(kahoraka(z) ∧ ∃x.(behapare(x) ∧ ∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Cause(e, y)) ∧ Purpose(e, z)))))",
+            "pahete sa mi si ri behapara sute ri kahoraka suto ri kahoraka",
+            "∃y.(kahoraka(y) ∧ ∃z.(kahoraka(z) ∧ ∃x.(behapara(x) ∧ ∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Cause(e, y)) ∧ Purpose(e, z)))))",
         );
     }
 
     #[test]
     fn test_具格_私は道具を使ってりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare sudu ri didora",
-            "∃y.(didora(y) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Instrument(e, y))))",
+            "pahete sa mi si ri behapara sudu ri didora",
+            "∃y.(didora(y) ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Instrument(e, y))))",
         );
     }
 
     #[test]
     fn test_空間系_私はある空間からある空間へある空間でりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare suni me sune be suno ge",
-            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, me)) ∧ LocationSource(e, be)) ∧ LocationGoal(e, ge)))",
+            "pahete sa mi si ri behapara suni me sune be suno ge",
+            "∃x.(behapara(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, me)) ∧ LocationSource(e, be)) ∧ LocationGoal(e, ge)))",
         );
     }
 
     #[test]
     fn test_時間系_私はある時からある時までりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare sugi me suge be sugo ge",
-            "∃x.(behapare(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Time(e, me)) ∧ TimeSource(e, be)) ∧ TimeGoal(e, ge)))",
+            "pahete sa mi si ri behapara sugi me suge be sugo ge",
+            "∃x.(behapara(x) ∧ ∃e.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Time(e, me)) ∧ TimeSource(e, be)) ∧ TimeGoal(e, ge)))",
         );
     }
 
     #[test]
     fn test_存在量化_私はりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare",
-            "∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "pahete sa mi si ri behapara",
+            "∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
     #[test]
     fn test_接続詞_hesuteto_結果から原因() {
         check(
-            "hesuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hesuteto hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_henosuteto_結果から反対の原因() {
         check(
-            "henosuteto hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "henosuteto hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hesuteto_役割の順序を入れ替えても同じ論理式になる() {
         check(
-            "hesuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hesuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapara",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_henosuteto_役割の順序を入れ替えても同じ論理式になる() {
         check(
-            "henosuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "henosuteto hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapara",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehoma_and() {
         check(
-            "hehoma hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hehoma hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehomi_or() {
         check(
-            "hehomi hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hehomi hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehomu_xor() {
         check(
-            "hehomu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "((∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))) ∧ ¬(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))))",
+            "hehomu hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "((∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))) ∧ ¬(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehitatu_時間前() {
         check(
-            "hehitatu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hehitatu hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehiti_同時() {
         check(
-            "hehiti hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hehiti hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehitatu_役割の順序を入れ替えても同じ論理式になる() {
         check(
-            "hehitatu hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapare",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hehitatu hesi pahete sa ba si ri behoranage hesa pahete sa mi si ri behapara",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehito_条件() {
         check(
-            "hehito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hehito hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_henohito_反実仮想条件() {
         check(
-            "henohito hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "henohito hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ⇒ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_接続詞_hehenu_対比() {
         check(
-            "hehenu hesa pahete sa mi si ri behapare hesi pahete sa ba si ri behoranage",
-            "(¬∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "hehenu hesa pahete sa mi si ri behapara hesi pahete sa ba si ri behoranage",
+            "(¬∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_演算子_命題_homa_and() {
         check(
-            "homa pahete sa mi si ri behapare pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "homa pahete sa mi si ri behapara pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_演算子_命題_homi_or() {
         check(
-            "homi pahete sa mi si ri behapare pahete sa ba si ri behoranage",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
+            "homi pahete sa mi si ri behapara pahete sa ba si ri behoranage",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))",
         );
     }
 
     #[test]
     fn test_演算子_命題_homu_xor() {
         check(
-            "homu pahete sa mi si ri behapare pahete sa ba si ri behoranage",
-            "((∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))) ∧ ¬(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))))",
+            "homu pahete sa mi si ri behapara pahete sa ba si ri behoranage",
+            "((∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))) ∧ ¬(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃y.(behoranage(y) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y))))))",
         );
     }
 
     #[test]
     fn test_演算子_述語_hobu_xor() {
         check(
-            "hobu pahete pahete sa mi si ri behapare",
-            "((∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃x.(behapare(x) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))) ∧ ¬(∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃x.(behapare(x) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))))",
+            "hobu pahete pahete sa mi si ri behapara",
+            "((∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃x.(behapara(x) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))) ∧ ¬(∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃x.(behapara(x) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))))",
         );
     }
 
     #[test]
     fn test_全称量化_私は全てのりんごを食べる() {
         check(
-            "pahete sa mi si ta ri behapare",
-            "∀x.(behapare(x) ⇒ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "pahete sa mi si ta ri behapara",
+            "∀x.(behapara(x) ⇒ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
     #[test]
     fn test_述語否定_私はりんごを食べない() {
         check(
-            "ne pahete sa mi si ri behapare",
-            "¬∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "ne pahete sa mi si ri behapara",
+            "¬∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -1549,15 +1549,15 @@ mod tests {
     fn test_述語反意化_no_neとは異なる派生atomを作る() {
         // `no`はNotで全体を包まず、独立した新しい原子述語"pahete@anti"を作る。
         check(
-            "no pahete sa mi si ri behapare",
-            "∃x.(behapare(x) ∧ ∃e.(pahete@anti(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "no pahete sa mi si ri behapara",
+            "∃x.(behapara(x) ∧ ∃e.(pahete@anti(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
     #[test]
     fn test_述語反意化_noとneは異なる式になる() {
-        let no_form = to_fol_string("no pahete sa mi si ri behapare").unwrap();
-        let ne_form = to_fol_string("ne pahete sa mi si ri behapare").unwrap();
+        let no_form = to_fol_string("no pahete sa mi si ri behapara").unwrap();
+        let ne_form = to_fol_string("ne pahete sa mi si ri behapara").unwrap();
         assert_ne!(no_form, ne_form);
         assert!(!no_form.contains('¬'));
     }
@@ -1565,16 +1565,16 @@ mod tests {
     #[test]
     fn test_述語反意化_hoba配下にネストしても両方の葉に付く() {
         check(
-            "no hoba pahete pahete sa mi si ri behapare",
-            "(∃x.(behapare(x) ∧ ∃e.(pahete@anti(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃x.(behapare(x) ∧ ∃e1.(pahete@anti(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x)))))",
+            "no hoba pahete pahete sa mi si ri behapara",
+            "(∃x.(behapara(x) ∧ ∃e.(pahete@anti(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∧ ∃x.(behapara(x) ∧ ∃e1.(pahete@anti(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x)))))",
         );
     }
 
     #[test]
     fn test_転置_りんごは食べられない() {
         check(
-            "hapu ta pahete si ri behapare",
-            "□_cir ∃y.∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
+            "hapu ta pahete si ri behapara",
+            "□_cir ∃y.∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
         );
     }
 
@@ -1589,24 +1589,24 @@ mod tests {
     #[test]
     fn test_指示詞_このりんご() {
         check(
-            "pahete sa mi si mo ri behapare",
-            "∃x.((mo(x) ∧ behapare(x)) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "pahete sa mi si mo ri behapara",
+            "∃x.((mo(x) ∧ behapara(x)) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
     #[test]
     fn test_数量化_数のりんご() {
         check(
-            "pahete sa mi si tupe ri behapare",
-            "∃_# x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "pahete sa mi si tupe ri behapara",
+            "∃_# x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
     #[test]
     fn test_多量化_多くのりんご() {
         check(
-            "pahete sa mi si te ri behapare",
-            "∃_many x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "pahete sa mi si te ri behapara",
+            "∃_many x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -1629,24 +1629,24 @@ mod tests {
     #[test]
     fn test_du_量化された項の制限部が残る_床の上() {
         check(
-            "pahete sa mi si ri behapare suni ri zahatano du ri diharora",
-            "∃y.((zahatano(y) ∧ ∃z.(diharora(z) ∧ Of(y, z))) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, y))))",
+            "pahete sa mi si ri behapara suni ri zahatano du ri diharora",
+            "∃y.((zahatano(y) ∧ ∃z.(diharora(z) ∧ Of(y, z))) ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, y))))",
         );
     }
 
     #[test]
     fn test_ru_私は食べる場所でりんごを食べる() {
         check(
-            "pahete sa mi si ri behapare suni ru suni pahete",
-            "∃y.(∃e.(pahete(e) ∧ Location(e, y)) ∧ ∃x.(behapare(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ Location(e1, y))))",
+            "pahete sa mi si ri behapara suni ru suni pahete",
+            "∃y.(∃e.(pahete(e) ∧ Location(e, y)) ∧ ∃x.(behapara(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ Location(e1, y))))",
         );
     }
 
     #[test]
     fn test_ru_duを付けると関係を添える() {
         check(
-            "pahete sa mi si ri behapare sudu ru sudu pahete du mi",
-            "∃y.((∃e.(pahete(e) ∧ Instrument(e, y)) ∧ Of(y, mi)) ∧ ∃x.(behapare(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ Instrument(e1, y))))",
+            "pahete sa mi si ri behapara sudu ru sudu pahete du mi",
+            "∃y.((∃e.(pahete(e) ∧ Instrument(e, y)) ∧ Of(y, mi)) ∧ ∃x.(behapara(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ Instrument(e1, y))))",
         );
     }
 
@@ -1661,16 +1661,16 @@ mod tests {
     #[test]
     fn test_節からの抽出_ru_私がりんごを食べた場所で食べる() {
         check(
-            "pahete sa ba suni ru suni he hita pahete sa mi si ri behapare ho",
-            "∃y.(∃z.(behapare(z) ∧ ∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, z))) ∧ Location(e, y)) ∧ τ(e) < t0)) ∧ ∃x.∃e1.((pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))) ∧ Location(e1, y)))",
+            "pahete sa ba suni ru suni he hita pahete sa mi si ri behapara ho",
+            "∃y.(∃z.(behapara(z) ∧ ∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, z))) ∧ Location(e, y)) ∧ τ(e) < t0)) ∧ ∃x.∃e1.((pahete(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))) ∧ Location(e1, y)))",
         );
     }
 
     #[test]
     fn test_節からの抽出_ra_りんごを食べている者を愛する() {
         check(
-            "parobe sa mi si ra he hudida pahete si ri behapare ho",
-            "∃x.(∃tR.∃y.(behapare(y) ∧ ∃e.((pahete(e) ∧ (Agent(e, x) ∧ Patient(e, y))) ∧ tR * τ(e))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
+            "parobe sa mi si ra he hudida pahete si ri behapara ho",
+            "∃x.(∃tR.∃y.(behapara(y) ∧ ∃e.((pahete(e) ∧ (Agent(e, x) ∧ Patient(e, y))) ∧ tR * τ(e))) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
         );
     }
 
@@ -1685,144 +1685,144 @@ mod tests {
     #[test]
     fn test_節からの抽出_入れ子の名詞化には空所が伝わらない() {
         check(
-            "parobe sa mi si ra he karobe si he pahete si ri behapare ho ho",
-            "∃x.(∃y.(∃x1.∃z.(behapare(z) ∧ ∃e.(pahete(e) ∧ (Agent(e, x1) ∧ Patient(e, z)))) ∧ ∃e1.(karobe(e1) ∧ (Agent(e1, x) ∧ Patient(e1, y)))) ∧ ∃e2.(parobe(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))))",
+            "parobe sa mi si ra he karobe si he pahete si ri behapara ho ho",
+            "∃x.(∃y.(∃x1.∃z.(behapara(z) ∧ ∃e.(pahete(e) ∧ (Agent(e, x1) ∧ Patient(e, z)))) ∧ ∃e1.(karobe(e1) ∧ (Agent(e1, x) ∧ Patient(e1, y)))) ∧ ∃e2.(parobe(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))))",
         );
     }
 
     #[test]
     fn test_ru_否定と等位接続は述語ごとに分配される() {
         check(
-            "pahete sa mi si ri behapare suni ru suni hoba pahete ne parobe",
-            "∃y.((∃e.(pahete(e) ∧ Location(e, y)) ∧ ¬∃e1.(parobe(e1) ∧ Location(e1, y))) ∧ ∃x.(behapare(x) ∧ ∃e2.((pahete(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))) ∧ Location(e2, y))))",
+            "pahete sa mi si ri behapara suni ru suni hoba pahete ne parobe",
+            "∃y.((∃e.(pahete(e) ∧ Location(e, y)) ∧ ¬∃e1.(parobe(e1) ∧ Location(e1, y))) ∧ ∃x.(behapara(x) ∧ ∃e2.((pahete(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))) ∧ Location(e2, y))))",
         );
     }
 
     #[test]
     fn test_テンス_過去() {
         check(
-            "hita pahete sa mi si ri behapare",
-            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ(e) < t0))",
+            "hita pahete sa mi si ri behapara",
+            "∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ(e) < t0))",
         );
     }
 
     #[test]
     fn test_テンス_現在() {
         check(
-            "hiti pahete sa mi si ri behapare",
-            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ(e) * t0))",
+            "hiti pahete sa mi si ri behapara",
+            "∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ(e) * t0))",
         );
     }
 
     #[test]
     fn test_テンス_未来() {
         check(
-            "hitu pahete sa mi si ri behapare",
-            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ t0 < τ(e)))",
+            "hitu pahete sa mi si ri behapara",
+            "∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ t0 < τ(e)))",
         );
     }
 
     #[test]
     fn test_テンス否定_hineは時間関係だけを否定する() {
         check(
-            "hine hita pahete sa mi si ri behapare",
-            "∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ ¬(τ(e) < t0)))",
+            "hine hita pahete sa mi si ri behapara",
+            "∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ ¬(τ(e) < t0)))",
         );
     }
 
     #[test]
     fn test_アスペクト_未然() {
         check(
-            "hita huda pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ ¬∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ_begin(e) ≤ max(tR))))",
+            "hita huda pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ ¬∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ τ_begin(e) ≤ max(tR))))",
         );
     }
 
     #[test]
     fn test_アスペクト_開始() {
         check(
-            "hita hude pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ_begin(e))))",
+            "hita hude pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ_begin(e))))",
         );
     }
 
     #[test]
     fn test_アスペクト_進行() {
         check(
-            "hita hudida pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e))))",
+            "hita hudida pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e))))",
         );
     }
 
     #[test]
     fn test_アスペクト_習慣() {
         check(
-            "hita hudidi pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ Hab s.(s ⊆ tR ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ s * τ(e)))))",
+            "hita hudidi pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ Hab s.(s ⊆ tR ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ s * τ(e)))))",
         );
     }
 
     #[test]
     fn test_アスペクト_反復() {
         check(
-            "hita hudidu pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.∃e1.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x)))) ∧ ¬(e = e1)) ∧ (tR * τ(e) ∧ tR * τ(e1)))))",
+            "hita hudidu pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapara(x) ∧ ∃e.∃e1.((((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x)))) ∧ ¬(e = e1)) ∧ (tR * τ(e) ∧ tR * τ(e1)))))",
         );
     }
 
     #[test]
     fn test_アスペクト_終了() {
         check(
-            "hita hudo pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ_end(e))))",
+            "hita hudo pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ_end(e))))",
         );
     }
 
     #[test]
     fn test_アスペクト_事後() {
         check(
-            "hita hudu pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (τ_end(e) ≤ min(tR) ∧ ResultState(e, tR)))))",
+            "hita hudu pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (τ_end(e) ≤ min(tR) ∧ ResultState(e, tR)))))",
         );
     }
 
     #[test]
     fn test_アスペクト否定_huneは参照時のアスペクト命題を否定する() {
         check(
-            "hune hudida pahete sa mi si ri behapare",
-            "∃tR.¬∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e)))",
+            "hune hudida pahete sa mi si ri behapara",
+            "∃tR.¬∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e)))",
         );
     }
 
     #[test]
     fn test_アスペクト_述語の等位接続は参照時を共有する() {
         check(
-            "hita hudida hoba pahete pahete sa mi si ri behapare",
-            "∃tR.(max(tR) < t0 ∧ (∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e))) ∧ ∃x.(behapare(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ tR * τ(e1)))))",
+            "hita hudida hoba pahete pahete sa mi si ri behapara",
+            "∃tR.(max(tR) < t0 ∧ (∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ tR * τ(e))) ∧ ∃x.(behapara(x) ∧ ∃e1.((pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))) ∧ tR * τ(e1)))))",
         );
     }
 
     #[test]
     fn test_モダリティ_認識的必然_未来事後() {
         check(
-            "hapa ta hitu hudu pahete sa mi si ri behapare",
-            "□_epi ∃tR.(t0 < min(tR) ∧ ∃x.(behapare(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (τ_end(e) ≤ min(tR) ∧ ResultState(e, tR)))))",
+            "hapa ta hitu hudu pahete sa mi si ri behapara",
+            "□_epi ∃tR.(t0 < min(tR) ∧ ∃x.(behapara(x) ∧ ∃e.((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ (τ_end(e) ≤ min(tR) ∧ ResultState(e, tR)))))",
         );
     }
 
     #[test]
     fn test_モダリティ_能力可能() {
         check(
-            "hapu to pahete sa mi si ri behapare",
-            "◇_cir ∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "hapu to pahete sa mi si ri behapara",
+            "◇_cir ∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
     #[test]
     fn test_モダリティ否定_haneは様相演算子を否定する() {
         check(
-            "hane hapi to pahete sa mi si ri behapare",
-            "¬◇_deon ∃x.(behapare(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+            "hane hapi to pahete sa mi si ri behapara",
+            "¬◇_deon ∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
@@ -1830,8 +1830,8 @@ mod tests {
     #[ignore]
     fn test_事象名詞化_あなたは_私はりんごを食べる_と言った() {
         check(
-            "kasahi ba si he pahete mi si ri behapare ho",
-            "∃x.(∃y.(behapare(y) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, y)))) ∧ ∃e1.(kasahi(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))))",
+            "kasahi ba si he pahete mi si ri behapara ho",
+            "∃x.(∃y.(behapara(y) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, y)))) ∧ ∃e1.(kasahi(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))))",
         );
     }
 }
