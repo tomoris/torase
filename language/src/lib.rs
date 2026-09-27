@@ -1250,6 +1250,13 @@ mod tests {
     }
 
     #[test]
+    fn test_raで抽出した項とriで抽出した項は矛盾しない() {
+        let text = "parobe sa mi si ra pahete eos ne parobe sa mi si ri pahete".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    #[test]
     fn test_習慣の否定は1回の出来事と矛盾しない() {
         let text = "hita pahete sa mi si ri behapara eos hune hudidi pahete sa mi si ri behapara"
             .to_string();
