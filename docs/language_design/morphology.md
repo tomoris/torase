@@ -406,7 +406,7 @@ ze (ta|to) za (ta|to) zi [平叙文]
 `ra`/`ri`/`ru <格標識>`の後ろには、述語の代わりに`he … ho`で囲んだ節を置くこともできる。節の中で省略した格(`ra`なら`sa`、`ri`なら`si`、`ru K`なら`K`)が空所となり、その項が抽出される。節の中ではテンス・アスペクト・モダリティや`homa`/`homi`/`homu`も使える。
 
 - `ri he pahete sa mi ho` (私が食べる物)
-- `ru suni he hita pahete sa mi si ri behapara ho` (私がりんごを食べた場所)
+- `ru suni he hita pahete sa mi si ri behapare ho` (私がりんごを食べた場所)
 
 - `he` (命題を項に変換、命題の始まりに置く)
 - `ho` (命題を項に変換、命題の終わりに置く)
