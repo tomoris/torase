@@ -1,20 +1,17 @@
 //! 英語からの述語借用アルゴリズム。
 //!
-//! 手順・音素対応表・再音節化規則・語源記録フォーマットは
+//! 手順・綴りの対応表・再音節化規則・語源記録フォーマットは
 //! `docs/language_design/borrowing.md` を正とする。このモジュールはその手順のうち、
-//! 機械的に決定できる部分(発音の音素変換・CV音節への再構成・辞書との衝突チェック)を実装する。
+//! 機械的に決定できる部分(綴りの置き換え・CV音節への再構成・辞書との衝突チェック)を実装する。
 //!
 //! 借用の手順1(既存述語の組み合わせで表現できないかの検討)と手順2(意味に基づく先頭音節の決定)は
 //! 人手の判断であるため、このモジュールでは扱わない。呼び出し側があらかじめ決定した
 //! [`PredicatePrefix`] を渡すこと。
-//!
-//! 英語の発音は、[CMU Pronouncing Dictionary](http://www.speech.cs.cmu.edu/cgi-bin/cmudict)などで
-//!広く使われているARPAbet風の音素記号をベースにした [`EnglishConsonant`] / [`EnglishVowel`] で表す。
 
 use std::collections::HashSet;
 
 /// 述語の先頭音節。名詞述語のWordNet分類、または動詞述語の項の型を表す文法標識であり、
-/// 借用元の英語の発音とは無関係に、借用する概念の意味だけから選ぶ(`morphology.md`参照)。
+/// 借用元の英語の綴りとは無関係に、借用する概念の意味だけから選ぶ(`morphology.md`参照)。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PredicatePrefix {
     Ba,
@@ -98,158 +95,7 @@ impl PredicatePrefix {
     }
 }
 
-/// 借用元の英語の子音。`borrowing.md`の子音対応表に対応する。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum EnglishConsonant {
-    P,
-    B,
-    T,
-    D,
-    K,
-    G,
-    M,
-    N,
-    R,
-    S,
-    Z,
-    Hh,
-    F,
-    V,
-    Th,
-    Dh,
-    Sh,
-    Zh,
-    Ch,
-    Jh,
-    L,
-    W,
-    Y,
-    Ng,
-}
-
-impl EnglishConsonant {
-    /// (採用音素への変換先, IPA表記)。
-    fn info(self) -> (char, &'static str) {
-        match self {
-            Self::P => ('p', "p"),
-            Self::B => ('b', "b"),
-            Self::T => ('t', "t"),
-            Self::D => ('d', "d"),
-            Self::K => ('k', "k"),
-            Self::G => ('g', "g"),
-            Self::M => ('m', "m"),
-            Self::N => ('n', "n"),
-            Self::R => ('r', "r"),
-            Self::S => ('s', "s"),
-            Self::Z => ('z', "z"),
-            Self::Hh => ('h', "h"),
-            Self::F => ('h', "f"),
-            Self::V => ('b', "v"),
-            Self::Th => ('s', "θ"),
-            Self::Dh => ('d', "ð"),
-            Self::Sh => ('s', "ʃ"),
-            Self::Zh => ('z', "ʒ"),
-            Self::Ch => ('t', "tʃ"),
-            Self::Jh => ('d', "dʒ"),
-            Self::L => ('r', "l"),
-            Self::W => ('h', "w"),
-            Self::Y => ('h', "j"),
-            Self::Ng => ('n', "ŋ"),
-        }
-    }
-
-    fn substitute(self) -> char {
-        self.info().0
-    }
-
-    fn ipa_label(self) -> &'static str {
-        self.info().1
-    }
-}
-
-/// 借用元の英語の母音。`borrowing.md`の母音対応表に対応する。
-///
-/// `Er`は"-er"(bird, her等)のようなrに色付けされた母音を表し、母音`a`と子音`r`の2音に展開される
-/// (`ɑːr`/`ɔːr`/`ɪr`/`ʊr`のような組み合わせは、`Aa`/`Ao`/`Ih`/`Uh`に続けて`R`を並べることで表現できるため
-/// 個別のバリアントを設けていない)。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum EnglishVowel {
-    Iy,
-    Ih,
-    Ey,
-    Eh,
-    Ae,
-    Ah,
-    Ao,
-    Aa,
-    Ow,
-    Uw,
-    Uh,
-    Ay,
-    Aw,
-    Oy,
-    Er,
-}
-
-impl EnglishVowel {
-    /// (採用音素への変換先, IPA表記)。
-    fn info(self) -> (char, &'static str) {
-        match self {
-            Self::Iy => ('i', "iː"),
-            Self::Ih => ('i', "ɪ"),
-            Self::Ey => ('e', "eɪ"),
-            Self::Eh => ('e', "e"),
-            // シュワ(ə)はストレスのない`Ah`として表す(CMU辞書でも別音素を設けない慣例に合わせる)。
-            Self::Ae => ('a', "æ"),
-            Self::Ah => ('a', "ʌ"),
-            Self::Ao => ('o', "ɔː"),
-            Self::Aa => ('o', "ɑː"),
-            Self::Ow => ('o', "oʊ"),
-            Self::Uw => ('u', "uː"),
-            Self::Uh => ('u', "ʊ"),
-            Self::Ay => ('a', "aɪ"),
-            Self::Aw => ('a', "aʊ"),
-            Self::Oy => ('o', "ɔɪ"),
-            Self::Er => ('a', "ɜːr"),
-        }
-    }
-
-    fn substitute(self) -> char {
-        self.info().0
-    }
-
-    fn ipa_label(self) -> &'static str {
-        self.info().1
-    }
-}
-
-/// 変換元となる英語の発音の1単位。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum EnglishPhoneme {
-    Consonant(EnglishConsonant),
-    Vowel(EnglishVowel),
-}
-
-impl EnglishPhoneme {
-    fn ipa_label(self) -> &'static str {
-        match self {
-            Self::Consonant(c) => c.ipa_label(),
-            Self::Vowel(v) => v.ipa_label(),
-        }
-    }
-
-    /// この音素が採用音素へ変換された結果(等音節化前)。
-    fn substituted(self) -> String {
-        match self {
-            Self::Consonant(c) => c.substitute().to_string(),
-            // Erのみ母音+子音rの2文字になる。
-            Self::Vowel(EnglishVowel::Er) => "ar".to_string(),
-            Self::Vowel(v) => v.substitute().to_string(),
-        }
-    }
-}
-
-/// 音素変換・再音節化の途中で使う内部表現。
+/// 綴りの置き換え・再音節化の途中で使う内部表現。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Segment {
     Consonant(char),
@@ -263,23 +109,126 @@ impl Segment {
     fn is_consonant(self) -> bool {
         matches!(self, Segment::Consonant(_))
     }
+
+    fn is_vowel(self) -> bool {
+        matches!(self, Segment::Vowel(_))
+    }
 }
 
-/// 手順3: 発音ベースの音素変換。英語の発音記号列を採用音素に写像する。
-fn substitute_phonemes(phonemes: &[EnglishPhoneme]) -> Vec<Segment> {
-    let mut segments = Vec::new();
-    for phoneme in phonemes {
-        match phoneme {
-            EnglishPhoneme::Consonant(c) => segments.push(Segment::Consonant(c.substitute())),
-            EnglishPhoneme::Vowel(EnglishVowel::Er) => {
-                // rを伴う母音: 母音aと子音rの2音に展開する。
-                segments.push(Segment::Vowel('a'));
-                segments.push(Segment::Consonant('r'));
+/// 借用に失敗した理由。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BorrowError {
+    /// 綴りが空、または英小文字(a〜z)以外の文字を含む。
+    InvalidSpelling,
+    /// 挿入母音を5通りすべて試しても既存の語と衝突した。
+    Collision,
+}
+
+fn is_vowel_letter(c: char) -> bool {
+    matches!(c, 'a' | 'e' | 'i' | 'o' | 'u')
+}
+
+/// 手順3: 綴りの置き換え。英語の綴りを採用音素に写像し、重なった子音と母音の連続をまとめる。
+fn spelling_to_segments(spelling: &str) -> Result<Vec<Segment>, BorrowError> {
+    if spelling.is_empty() || !spelling.chars().all(|c| c.is_ascii_lowercase()) {
+        return Err(BorrowError::InvalidSpelling);
+    }
+    let letters: Vec<char> = spelling.chars().collect();
+    let at = |i: usize| letters.get(i).copied();
+    let starts_with = |i: usize, s: &str| {
+        s.chars()
+            .enumerate()
+            .all(|(k, c)| letters.get(i + k) == Some(&c))
+    };
+
+    let mut raw: Vec<Segment> = Vec::new();
+    let consonants = |raw: &mut Vec<Segment>, cs: &str| {
+        raw.extend(cs.chars().map(Segment::Consonant));
+    };
+    let mut i = 0;
+    while i < letters.len() {
+        let c = letters[i];
+        // 規則1: 語頭の黙字。
+        if i == 0
+            && let Some(mapped) = ["kn", "wr", "gn", "ps"]
+                .iter()
+                .find(|s| starts_with(0, s))
+                .map(|s| &s[1..])
+        {
+            consonants(&mut raw, mapped);
+            i += 2;
+            continue;
+        }
+        // 規則2: 語中のti/siの直後にo/aが続く(-tion, -sion, -tial)ならs。
+        if i > 0
+            && matches!(c, 't' | 's')
+            && at(i + 1) == Some('i')
+            && matches!(at(i + 2), Some('o' | 'a'))
+        {
+            consonants(&mut raw, "s");
+            i += 2;
+            continue;
+        }
+        // 規則3: 2〜3文字で1音を表す綴り(長い方を優先)。
+        if let Some((len, mapped)) = [
+            ("sch", "sk"),
+            ("tch", "t"),
+            ("ch", "t"),
+            ("sh", "s"),
+            ("th", "s"),
+            ("ph", "h"),
+            ("ck", "k"),
+            ("wh", "h"),
+            ("qu", "kh"),
+        ]
+        .iter()
+        .find(|(s, _)| starts_with(i, s))
+        .map(|(s, mapped)| (s.len(), *mapped))
+        {
+            consonants(&mut raw, mapped);
+            i += len;
+            continue;
+        }
+        // 規則4: ghは語頭ならg、それ以外は発音しない。
+        if starts_with(i, "gh") {
+            if i == 0 {
+                consonants(&mut raw, "g");
             }
-            EnglishPhoneme::Vowel(v) => segments.push(Segment::Vowel(v.substitute())),
+            i += 2;
+            continue;
+        }
+        // 規則5: 1文字の置き換え。
+        match c {
+            'c' if matches!(at(i + 1), Some('e' | 'i' | 'y')) => consonants(&mut raw, "s"),
+            'c' | 'q' => consonants(&mut raw, "k"),
+            'f' => consonants(&mut raw, "h"),
+            'v' => consonants(&mut raw, "b"),
+            'l' => consonants(&mut raw, "r"),
+            'j' => consonants(&mut raw, "d"),
+            'x' => consonants(&mut raw, "ks"),
+            'w' if i > 0 && is_vowel_letter(letters[i - 1]) => {}
+            'w' => consonants(&mut raw, "h"),
+            'y' if i == 0 && at(1).is_some_and(is_vowel_letter) => consonants(&mut raw, "h"),
+            'y' => raw.push(Segment::Vowel('i')),
+            c if is_vowel_letter(c) => raw.push(Segment::Vowel(c)),
+            c => raw.push(Segment::Consonant(c)),
+        }
+        i += 1;
+    }
+
+    // 規則6: 重なった子音を1つにまとめる。規則7: 母音の連続は最初の1つだけ残す。
+    let mut segments: Vec<Segment> = Vec::new();
+    for segment in raw {
+        let merged = match (segments.last(), segment) {
+            (Some(Segment::Consonant(prev)), Segment::Consonant(c)) => *prev == c,
+            (Some(prev), segment) => prev.is_vowel() && segment.is_vowel(),
+            (None, _) => false,
+        };
+        if !merged {
+            segments.push(segment);
         }
     }
-    segments
+    Ok(segments)
 }
 
 /// 手順4: CV音節への再構成。子音クラスタ・語頭(語中)の無初頭母音・語末子音を解消する。
@@ -304,7 +253,7 @@ fn resyllabify(segments: &[Segment]) -> Vec<Segment> {
                 result.push(*segment);
             }
             Segment::EpentheticVowel => {
-                unreachable!("substitute_phonemesの出力にEpentheticVowelは含まれない")
+                unreachable!("spelling_to_segmentsの出力にEpentheticVowelは含まれない")
             }
         }
     }
@@ -329,37 +278,27 @@ fn render(segments: &[Segment], epenthetic_vowel: char) -> String {
         .collect()
 }
 
-/// 借用元の発音のIPA表記(スラッシュなし)。`dictionary.json`の`original_pronunciation`にそのまま使える形式。
-fn ipa_string(phonemes: &[EnglishPhoneme]) -> String {
-    phonemes.iter().map(|p| p.ipa_label()).collect()
-}
-
-/// 音素変換・再音節化の過程を人が読める形にまとめた説明文(語源の確認・議論用の補助であり、
+/// 綴りの置き換え・再音節化の過程を人が読める形にまとめた説明文(語源の確認・議論用の補助であり、
 /// `dictionary.json`のフィールドをそのまま置き換えるものではない。`dictionary.json`への記録方法は
 /// `docs/language_design/borrowing.md`の「語源記録のフォーマット」を参照)。
 fn etymology_note(
-    source_word: &str,
-    phonemes: &[EnglishPhoneme],
+    spelling: &str,
+    segments: &[Segment],
     resyllabified: &[Segment],
     epenthetic_vowel: char,
 ) -> String {
-    let ipa = ipa_string(phonemes);
+    let substituted = render(segments, epenthetic_vowel);
     let root = render(resyllabified, epenthetic_vowel);
-    let mut substitutions: Vec<String> = phonemes
-        .iter()
-        .map(|p| format!("{}→{}", p.ipa_label(), p.substituted()))
-        .collect();
     let epenthesis_count = resyllabified
         .iter()
         .filter(|s| matches!(s, Segment::EpentheticVowel))
         .count();
-    if epenthesis_count > 0 {
-        substitutions.push(format!("+挿入母音{epenthetic_vowel}×{epenthesis_count}"));
-    }
-    format!(
-        "借用: en \"{source_word}\" /{ipa}/ → {root} ({})",
-        substitutions.join(", ")
-    )
+    let epenthesis = if epenthesis_count > 0 {
+        format!(", +挿入母音{epenthetic_vowel}×{epenthesis_count}")
+    } else {
+        String::new()
+    };
+    format!("借用: en \"{spelling}\" → {root} (綴りの置き換え: {substituted}{epenthesis})")
 }
 
 /// 借用によって生成された述語。
@@ -369,27 +308,24 @@ pub struct BorrowedWord {
     pub word: String,
     /// 先頭音節を除いた語根の部分。
     pub root: String,
-    /// 借用元の発音のIPA表記(スラッシュなし)。`dictionary.json`の`original_pronunciation`にそのまま使える。
-    pub pronunciation: String,
-    /// 音素変換・再音節化の過程を人が読める形にまとめた説明文(記録用の補助)。
+    /// 綴りの置き換え・再音節化の過程を人が読める形にまとめた説明文(記録用の補助)。
     pub etymology_note: String,
 }
 
-/// 手順3〜7: 音素変換・CV音節への再構成・先頭音節の結合・辞書との衝突チェック・語源記録の組み立てを行う。
+/// 手順3〜6: 綴りの置き換え・CV音節への再構成・先頭音節の結合・辞書との衝突チェックを行う。
 ///
 /// 手順1(既存述語の組み合わせで表現できないかの検討)と手順2(先頭音節の意味的な決定)は人手の判断のため、
-/// `prefix`として呼び出し側があらかじめ決定した値を渡すこと。
+/// `prefix`として呼び出し側があらかじめ決定した値を渡すこと。`spelling`は英語の綴り(英小文字のみ)。
 ///
 /// 衝突チェック(手順6)では、再音節化で挿入した母音を`a`→`e`→`i`→`o`→`u`の順に一括で差し替えて
-/// 再試行し、`existing_words`に含まれない最初の結果を採用する。5通りすべてが衝突する場合は`None`を返す
-/// (挿入母音を含まない借用語で衝突した場合も含む。この場合は差し替える余地がないため常に`None`になる)。
+/// 再試行し、`existing_words`に含まれない最初の結果を採用する。5通りすべてが衝突する場合は
+/// `BorrowError::Collision`を返す(挿入母音を含まない借用語で衝突した場合も、差し替える余地がないため同じ)。
 pub fn borrow_predicate(
     prefix: PredicatePrefix,
-    source_word: &str,
-    phonemes: &[EnglishPhoneme],
+    spelling: &str,
     existing_words: &HashSet<String>,
-) -> Option<BorrowedWord> {
-    let segments = substitute_phonemes(phonemes);
+) -> Result<BorrowedWord, BorrowError> {
+    let segments = spelling_to_segments(spelling)?;
     let resyllabified = resyllabify(&segments);
 
     const FALLBACK_VOWELS: [char; 5] = ['a', 'e', 'i', 'o', 'u'];
@@ -397,15 +333,14 @@ pub fn borrow_predicate(
         let root = render(&resyllabified, vowel);
         let word = format!("{}{root}", prefix.as_str());
         if !existing_words.contains(&word) {
-            return Some(BorrowedWord {
+            return Ok(BorrowedWord {
                 word,
                 root,
-                pronunciation: ipa_string(phonemes),
-                etymology_note: etymology_note(source_word, phonemes, &resyllabified, vowel),
+                etymology_note: etymology_note(spelling, &segments, &resyllabified, vowel),
             });
         }
     }
-    None
+    Err(BorrowError::Collision)
 }
 
 #[cfg(test)]
@@ -416,145 +351,139 @@ mod tests {
         HashSet::new()
     }
 
-    #[test]
-    fn test_動詞述語_runは生物x1のみの自動詞としてpiranaになる() {
-        // run /rʌn/: r, ʌ(→a), n。語末子音nを閉じるためaを追加してrana。
-        // pi(生物x1のみ)と結合してpirana。borrowing.mdの用例と同じ結果になる。
-        let phonemes = [
-            EnglishPhoneme::Consonant(EnglishConsonant::R),
-            EnglishPhoneme::Vowel(EnglishVowel::Ah),
-            EnglishPhoneme::Consonant(EnglishConsonant::N),
-        ];
-        let result =
-            borrow_predicate(PredicatePrefix::Pi, "run", &phonemes, &no_existing_words()).unwrap();
-        assert_eq!(result.word, "pirana");
-        assert_eq!(result.root, "rana");
-        // dictionary.jsonのoriginal_pronunciationにそのまま使える形式(スラッシュなし)。
-        assert_eq!(result.pronunciation, "rʌn");
+    fn root(spelling: &str) -> String {
+        borrow_predicate(PredicatePrefix::Du, spelling, &no_existing_words())
+            .unwrap()
+            .root
     }
 
     #[test]
-    fn test_名詞述語_coffeeは物質としてnikohiになる() {
-        // coffee /ˈkɒfi/: k, ɒ(→o), f(→h), i。クラスタも語末子音もないためそのままkohi。
-        // ni(substance)と結合してnikohi。borrowing.mdの用例と同じ結果になる。
-        let phonemes = [
-            EnglishPhoneme::Consonant(EnglishConsonant::K),
-            EnglishPhoneme::Vowel(EnglishVowel::Ao),
-            EnglishPhoneme::Consonant(EnglishConsonant::F),
-            EnglishPhoneme::Vowel(EnglishVowel::Iy),
-        ];
-        let result = borrow_predicate(
-            PredicatePrefix::Ni,
-            "coffee",
-            &phonemes,
-            &no_existing_words(),
-        )
-        .unwrap();
-        assert_eq!(result.word, "nikohi");
-        assert_eq!(result.root, "kohi");
+    fn test_動詞述語_runは生物x1のみの自動詞としてpirunaになる() {
+        // run: r, u, n。語末子音nを閉じるためaを追加してruna。borrowing.mdの用例と同じ結果になる。
+        let result = borrow_predicate(PredicatePrefix::Pi, "run", &no_existing_words()).unwrap();
+        assert_eq!(result.word, "piruna");
+        assert_eq!(result.root, "runa");
+    }
+
+    #[test]
+    fn test_名詞述語_coffeeは物質としてnikoheになる() {
+        // coffee: c(→k), o, ff(→h), ee(→e)。borrowing.mdの用例と同じ結果になる。
+        let result = borrow_predicate(PredicatePrefix::Ni, "coffee", &no_existing_words()).unwrap();
+        assert_eq!(result.word, "nikohe");
+        assert_eq!(result.root, "kohe");
     }
 
     #[test]
     fn test_動詞述語_holdは既存の借用語kahoradaと一致する() {
-        // hold /hoʊld/: h, oʊ(→o), l(→r), d。l,dの子音連続をaで割り、語末dの後にaを追加してhorada。
-        // ka(生物x1が抽象概念x2に対して行う)と結合してkahorada。
-        // これは既存のdictionary.txtの「x1(人)がx2という会議を開く」の借用語と一致する
-        // (アルゴリズムが場当たり的だった過去の造語と偶然同じ結果を再現できる例)。
-        let phonemes = [
-            EnglishPhoneme::Consonant(EnglishConsonant::Hh),
-            EnglishPhoneme::Vowel(EnglishVowel::Ow),
-            EnglishPhoneme::Consonant(EnglishConsonant::L),
-            EnglishPhoneme::Consonant(EnglishConsonant::D),
-        ];
-        let result =
-            borrow_predicate(PredicatePrefix::Ka, "hold", &phonemes, &no_existing_words()).unwrap();
+        // hold: h, o, l(→r), d。r,dの子音連続をaで割り、語末dの後にaを追加してhorada。
+        let result = borrow_predicate(PredicatePrefix::Ka, "hold", &no_existing_words()).unwrap();
         assert_eq!(result.word, "kahorada");
-        assert_eq!(result.root, "horada");
+    }
+
+    #[test]
+    fn test_語頭の母音にはhを補い語末のeは母音として残す() {
+        let result = borrow_predicate(PredicatePrefix::Be, "apple", &no_existing_words()).unwrap();
+        assert_eq!(result.word, "behapare");
+    }
+
+    #[test]
+    fn test_語頭の黙字を落とす() {
+        assert_eq!(root("knight"), "nita");
+        assert_eq!(root("write"), "rite");
+    }
+
+    #[test]
+    fn test_2から3文字で1音を表す綴りを置き換える() {
+        assert_eq!(root("school"), "sakora");
+        assert_eq!(root("church"), "turata");
+        assert_eq!(root("thing"), "sinaga");
+        assert_eq!(root("phone"), "hone");
+        assert_eq!(root("queen"), "kahena");
+    }
+
+    #[test]
+    fn test_ghは語頭ならgでそれ以外は発音しない() {
+        assert_eq!(root("ghost"), "gosata");
+        assert_eq!(root("night"), "nita");
+    }
+
+    #[test]
+    fn test_cはeiyの前ならsでそれ以外はk() {
+        assert_eq!(root("city"), "siti");
+        assert_eq!(root("cat"), "kata");
+    }
+
+    #[test]
+    fn test_母音の後のwは落としそれ以外はh() {
+        assert_eq!(root("snow"), "sano");
+        assert_eq!(root("water"), "hatera");
+    }
+
+    #[test]
+    fn test_yは語頭で母音の前ならhでそれ以外は母音i() {
+        assert_eq!(root("yes"), "hesa");
+        assert_eq!(root("day"), "da");
+    }
+
+    #[test]
+    fn test_語中のtiとsiの後にoかaが続けばs() {
+        assert_eq!(root("nation"), "nasona");
+        assert_eq!(root("question"), "kahesona");
+    }
+
+    #[test]
+    fn test_重なった子音と母音の連続をまとめる() {
+        assert_eq!(root("hello"), "hero");
+        assert_eq!(root("eat"), "heta");
+        assert_eq!(root("box"), "bokasa");
+    }
+
+    #[test]
+    fn test_英小文字以外を含む綴りはエラーになる() {
+        for spelling in ["", "Apple", "ice-cream", "café"] {
+            assert_eq!(
+                borrow_predicate(PredicatePrefix::Du, spelling, &no_existing_words()),
+                Err(BorrowError::InvalidSpelling),
+                "{spelling}"
+            );
+        }
     }
 
     #[test]
     fn test_辞書と衝突した場合は挿入母音をaからeに差し替える() {
-        // "pirana"が既に辞書にある想定で再度runを借用すると、
-        // クラスタ回避・語末閉音節化の挿入母音がaからeに差し替わりpiraneになる
-        // (runの発音由来の母音aはそのまま、挿入母音だけが差し替わる)。
-        let phonemes = [
-            EnglishPhoneme::Consonant(EnglishConsonant::R),
-            EnglishPhoneme::Vowel(EnglishVowel::Ah),
-            EnglishPhoneme::Consonant(EnglishConsonant::N),
-        ];
+        // "piruna"が既に辞書にある想定で再度runを借用すると、挿入母音だけがaからeに差し替わる。
         let mut existing_words = no_existing_words();
-        existing_words.insert("pirana".to_string());
+        existing_words.insert("piruna".to_string());
 
-        let result =
-            borrow_predicate(PredicatePrefix::Pi, "run", &phonemes, &existing_words).unwrap();
-        assert_eq!(result.word, "pirane");
+        let result = borrow_predicate(PredicatePrefix::Pi, "run", &existing_words).unwrap();
+        assert_eq!(result.word, "pirune");
     }
 
     #[test]
-    fn test_衝突が5通りの挿入母音すべてで解決しない場合はnoneを返す() {
-        let phonemes = [
-            EnglishPhoneme::Consonant(EnglishConsonant::R),
-            EnglishPhoneme::Vowel(EnglishVowel::Ah),
-            EnglishPhoneme::Consonant(EnglishConsonant::N),
-        ];
+    fn test_衝突が5通りの挿入母音すべてで解決しない場合はエラーになる() {
         let mut existing_words = no_existing_words();
-        for word in ["pirana", "pirane", "pirani", "pirano", "piranu"] {
+        for word in ["piruna", "pirune", "piruni", "piruno", "pirunu"] {
             existing_words.insert(word.to_string());
         }
 
-        let result = borrow_predicate(PredicatePrefix::Pi, "run", &phonemes, &existing_words);
-        assert_eq!(result, None);
+        let result = borrow_predicate(PredicatePrefix::Pi, "run", &existing_words);
+        assert_eq!(result, Err(BorrowError::Collision));
     }
 
     #[test]
-    fn test_挿入母音を含まない語が衝突すると差し替える余地がなくnoneを返す() {
-        // coffee由来のnikohiには挿入母音が無いため、衝突しても差し替えようがない。
-        let phonemes = [
-            EnglishPhoneme::Consonant(EnglishConsonant::K),
-            EnglishPhoneme::Vowel(EnglishVowel::Ao),
-            EnglishPhoneme::Consonant(EnglishConsonant::F),
-            EnglishPhoneme::Vowel(EnglishVowel::Iy),
-        ];
+    fn test_挿入母音を含まない語が衝突すると差し替える余地がなくエラーになる() {
+        // coffee由来のnikoheには挿入母音が無いため、衝突しても差し替えようがない。
         let mut existing_words = no_existing_words();
-        existing_words.insert("nikohi".to_string());
+        existing_words.insert("nikohe".to_string());
 
-        let result = borrow_predicate(PredicatePrefix::Ni, "coffee", &phonemes, &existing_words);
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn test_先頭が母音の語には子音hが補われる() {
-        // "app"のような先頭母音の語(例: æ, p)を想定: 語頭にhを補いhapaになる。
-        let phonemes = [
-            EnglishPhoneme::Vowel(EnglishVowel::Ae),
-            EnglishPhoneme::Consonant(EnglishConsonant::P),
-        ];
-        let result =
-            borrow_predicate(PredicatePrefix::Du, "app", &phonemes, &no_existing_words()).unwrap();
-        // 語頭母音æ(→a)の前にhが補われ、語末子音pの後にもaが追加される。
-        assert_eq!(result.root, "hapa");
-        assert_eq!(result.word, "duhapa");
+        let result = borrow_predicate(PredicatePrefix::Ni, "coffee", &existing_words);
+        assert_eq!(result, Err(BorrowError::Collision));
     }
 
     #[test]
     fn test_子音クラスタを含む語も述語のトークン規則を満たす() {
-        // "category"の簡略化した音素列を想定し、子音クラスタ(g, r)を含む語を確認する。
-        let phonemes = [
-            EnglishPhoneme::Consonant(EnglishConsonant::K),
-            EnglishPhoneme::Vowel(EnglishVowel::Ae),
-            EnglishPhoneme::Consonant(EnglishConsonant::T),
-            EnglishPhoneme::Vowel(EnglishVowel::Ah),
-            EnglishPhoneme::Consonant(EnglishConsonant::G),
-            EnglishPhoneme::Consonant(EnglishConsonant::R),
-            EnglishPhoneme::Vowel(EnglishVowel::Iy),
-        ];
-        let result = borrow_predicate(
-            PredicatePrefix::Ga,
-            "category",
-            &phonemes,
-            &no_existing_words(),
-        )
-        .unwrap();
+        let result =
+            borrow_predicate(PredicatePrefix::Ga, "strength", &no_existing_words()).unwrap();
 
         const RE: crate::tokenizer::regex_engine::Regex =
             crate::tokenizer::regex_engine::Regex::compile(
