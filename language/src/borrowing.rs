@@ -336,7 +336,7 @@ fn ipa_string(phonemes: &[EnglishPhoneme]) -> String {
 
 /// 音素変換・再音節化の過程を人が読める形にまとめた説明文(語源の確認・議論用の補助であり、
 /// `dictionary.json`のフィールドをそのまま置き換えるものではない。`dictionary.json`への記録方法は
-/// `docs/dictionary_format.md`を参照)。
+/// `docs/language_design/borrowing.md`の「語源記録のフォーマット」を参照)。
 fn etymology_note(
     source_word: &str,
     phonemes: &[EnglishPhoneme],

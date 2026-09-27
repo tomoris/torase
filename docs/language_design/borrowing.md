@@ -80,14 +80,15 @@
 
 # 語源記録のフォーマット
 
-`dictionary.json`の当該エントリに、`original_spelling`(借用元の英単語の綴り)と`original_pronunciation`(発音のIPA表記)を記録する。フィールドの詳細・不変条件は[辞書ファイルの形式](../dictionary_format.md)を参照。
+`dictionary.json`の当該エントリに、`original_spelling`(借用元の英単語の綴り)と`original_pronunciation`(発音のIPA表記)を記録する。この2つは両方記録するか、語源の無い語では両方`null`にする。
 
 ```json
 "kahoraka": {
-  "original_spelling": "work",
-  "original_pronunciation": "wɜːrk",
-  "terminal_symbol": "BinaryPredicate",
-  "definition": "x1(人)がx2(概念)という仕事をする"
+    "original_spelling": "work",
+    "original_pronunciation": "wɜːrk",
+    "terminal_type": "BinaryPredicate",
+    "definition": null,
+    "description": "x1(人)はx2(概念)という仕事をする。"
 }
 ```
 
