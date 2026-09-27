@@ -664,6 +664,7 @@ enum ArgumentKind {
     Ge, // あれ
     Za, // 定義用のスキーマ変数(x1)
     Zi, // 定義用のスキーマ変数(x2)
+    Ko, // 疑問詞(何、誰、いつ、どこ)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1175,6 +1176,7 @@ define_surface_token!(Argument, ArgumentKind, "argument", {
     Ge: "ge",
     Za: "za",
     Zi: "zi",
+    Ko: "ko",
 });
 
 impl Argument {
@@ -1228,11 +1230,24 @@ impl Argument {
                 ArgumentType::Space,
                 ArgumentType::Time,
             ],
+            ArgumentKind::Ko => vec![
+                ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing),
+                ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
+                ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
+                ArgumentType::Abstraction,
+                ArgumentType::Space,
+                ArgumentType::Time,
+            ],
         }
     }
 
     pub(crate) fn is_schema_variable(&self) -> bool {
         matches!(self.kind, ArgumentKind::Za | ArgumentKind::Zi)
+    }
+
+    /// 疑問詞`ko`。`ku`で始まる疑問文の中でのみ使え、尋ねる項を表す。
+    pub(crate) fn is_interrogative(&self) -> bool {
+        matches!(self.kind, ArgumentKind::Ko)
     }
 }
 

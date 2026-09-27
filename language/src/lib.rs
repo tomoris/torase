@@ -7,7 +7,7 @@ pub mod types;
 
 use argument_type_checker::type_check as argument_type_check;
 use formal_semantics::{find_contradiction_index, free_variables, is_schema_variable_name, to_fol};
-use parser::{Ast, parse};
+use parser::{Ast, S, parse};
 use tokenizer::{Range, TerminalType, add_eos_to_last_sentence, tokenize};
 
 #[derive(Debug, Clone)]
@@ -45,6 +45,18 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Ve
             };
             diagnostics.push(diagnostics_item);
         } else {
+            if !matches!(sentence.first(), Some(TerminalType::InterrogativeMarker(_))) {
+                for token in &sentence {
+                    if let TerminalType::Argument(arg) = token
+                        && arg.is_interrogative()
+                    {
+                        diagnostics.push(Diagnostic {
+                            range: token.range(),
+                            message: "interrogative ko can only be used in a question (start the sentence with ku)".to_string(),
+                        });
+                    }
+                }
+            }
             ast_with_ranges.push((parse_result.unwrap(), sentence_range));
         }
     }
@@ -83,10 +95,20 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Vec<Ast>, Ve
         }
     }
 
-    // contradiction checking
-    if let Some(idx) = find_contradiction_index(&formulas) {
+    // contradiction checking (a question asserts nothing, so it is not used as a premise)
+    let premise_indices: Vec<usize> = ast_with_ranges
+        .iter()
+        .enumerate()
+        .filter(|(_, (ast, _))| !matches!(ast.get_s(), S::Two(_)))
+        .map(|(i, _)| i)
+        .collect();
+    let premises: Vec<_> = premise_indices
+        .iter()
+        .map(|&i| formulas[i].clone())
+        .collect();
+    if let Some(idx) = find_contradiction_index(&premises) {
         diagnostics.push(Diagnostic {
-            range: ast_with_ranges[idx].1.clone(),
+            range: ast_with_ranges[premise_indices[idx]].1.clone(),
             message: "contradiction error".to_string(),
         });
     }
@@ -1174,6 +1196,57 @@ mod tests {
         let text = "pahete sa mi si ri behapara eos ne pahete sa mi si te ri behapara".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_疑問詞koを含む疑問文が診断を通る() {
+        for text in [
+            "ku pahete sa ko si ri behapara",
+            "ku pahete sa mi si ko",
+            "ku pahete sa mi si ko sugi ko suni ko",
+            "ku pahete sa ri paparatanera du ko si ri behapara",
+        ] {
+            let result = diagnose(text.to_string());
+            assert!(result.is_ok(), "{text}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn test_kuのない文で疑問詞koを使うとエラーになる() {
+        let diagnostics = diagnose("pahete sa ko si ri behapara".to_string()).unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.message.contains("interrogative ko")),
+            "diagnostics: {diagnostics:?}"
+        );
+    }
+
+    #[test]
+    fn test_疑問詞koは単項述語のx2には置けない() {
+        let result = diagnose("ku pirana sa mi si ko".to_string());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_疑問文は矛盾判定の前提に含めない() {
+        let text = "pahete sa mi si ri behapara eos ku ne pahete sa mi si ri behapara".to_string();
+        let result = diagnose(text);
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    #[test]
+    fn test_疑問文を除いた前提どうしの矛盾は疑問文の後ろでも検出する() {
+        let text = "pahete sa mi si ri behapara eos ku pahete sa ko si ri behapara eos ne pahete sa mi si ri behapara".to_string();
+        let third_sentence_start = text.find("ne pahete").unwrap();
+        let diagnostics = diagnose(text).unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message == "contradiction error"
+                    && d.range.start().character() == third_sentence_start),
+            "diagnostics: {diagnostics:?}"
+        );
     }
 
     #[test]

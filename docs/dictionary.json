@@ -286,6 +286,13 @@
         "definition": null,
         "description": "アスペクトの否定。"
     },
+    "ko": {
+        "original_spelling": null,
+        "original_pronunciation": null,
+        "terminal_type": "Argument",
+        "definition": null,
+        "description": "疑問詞。格標識の後ろに置き、その項を尋ねる(誰、何、いつ、どこ)。`ku`で始まる疑問文の中でのみ使える。"
+    },
     "ku": {
         "original_spelling": null,
         "original_pronunciation": null,

@@ -351,7 +351,8 @@ impl CnfBuilder {
             }
 
             // ---- Existential quantifier ----
-            Formula::Exists(x, phi) => {
+            // A question `?x.φ` presupposes that some x satisfies φ, so it is treated as ∃x.φ.
+            Formula::Exists(x, phi) | Formula::Question(x, phi) => {
                 if positive {
                     // ∃x.φ  →  Skolemize x
                     let sk = self.skolem(universals);

@@ -150,6 +150,13 @@ ze ta za ta zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi
 - `ku`
 - `?` (読み、発音は`ku`)
 
+#### 疑問詞
+
+- `ko` (誰、何、いつ、どこ)
+
+`ko`は代名詞と同じ項の位置に置き、その項を尋ねる。指示物の種類を限定しないため、どの格にも置ける。
+`ku`で始まる疑問文の中でのみ使える。
+
 ### 全称量化マーカー
 
 - `ze`

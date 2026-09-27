@@ -49,6 +49,8 @@ pub enum Formula {
     GenQ(GenQKind, String, Box<Formula>),
     /// □_b φ / ◇_b φ
     Modal(ModalForce, ModalBase, Box<Formula>),
+    /// ?x. φ — 疑問詞`ko`が尋ねる項xを束縛する(疑問文の文頭でのみ現れる)
+    Question(String, Box<Formula>),
 }
 
 /// Kinds of generalized quantifiers that cannot be expressed with ∀/∃.
@@ -153,6 +155,7 @@ impl std::fmt::Display for Formula {
             Formula::Forall(x, phi) => write!(f, "∀{x}.{phi}"),
             Formula::Exists(x, phi) => write!(f, "∃{x}.{phi}"),
             Formula::GenQ(k, x, phi) => write!(f, "{k} {x}.{phi}"),
+            Formula::Question(x, phi) => write!(f, "?{x}.{phi}"),
             Formula::Modal(force, base, phi) => {
                 let op = match force {
                     ModalForce::Necessity => "□",
@@ -173,6 +176,8 @@ struct VarGen {
     evt: usize,
     ref_time: usize,
     occasion: usize,
+    /// 疑問詞`ko`に割り当てた変数。`InterrogativeSentence::to_fol`が文頭で`?x`として束縛する。
+    question_vars: Vec<String>,
 }
 
 impl VarGen {
@@ -182,6 +187,7 @@ impl VarGen {
             evt: 0,
             ref_time: 0,
             occasion: 0,
+            question_vars: Vec::new(),
         }
     }
 
@@ -493,7 +499,13 @@ impl DeclarativeSentence {
 impl InterrogativeSentence {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            InterrogativeSentence::One(_, pm) => pm.to_fol(vg),
+            InterrogativeSentence::One(_, pm) => {
+                let body = pm.to_fol(vg);
+                std::mem::take(&mut vg.question_vars)
+                    .into_iter()
+                    .rev()
+                    .fold(body, |acc, var| Formula::Question(var, Box::new(acc)))
+            }
         }
     }
 }
@@ -559,7 +571,10 @@ fn collect_free_variables(
             collect_free_variables(l, bound, free);
             collect_free_variables(r, bound, free);
         }
-        Formula::Forall(x, phi) | Formula::Exists(x, phi) | Formula::GenQ(_, x, phi) => {
+        Formula::Forall(x, phi)
+        | Formula::Exists(x, phi)
+        | Formula::GenQ(_, x, phi)
+        | Formula::Question(x, phi) => {
             let newly_bound = bound.insert(x.clone());
             collect_free_variables(phi, bound, free);
             if newly_bound {
@@ -1119,6 +1134,12 @@ impl ArgumentPhrase {
             // Bare pronoun → individual constant, except za/zi (schema variables) → free variable.
             ArgumentPhrase::One(arg) if arg.is_schema_variable() => {
                 ArgCtx::FreeVar(arg.get_string())
+            }
+            // ko(疑問詞) → fresh variable, closed by `?x` in `InterrogativeSentence::to_fol`.
+            ArgumentPhrase::One(arg) if arg.is_interrogative() => {
+                let var = vg.next();
+                vg.question_vars.push(var.clone());
+                ArgCtx::FreeVar(var)
             }
             ArgumentPhrase::One(arg) => ArgCtx::Const(arg.get_string()),
 
@@ -1823,6 +1844,30 @@ mod tests {
         check(
             "hane hapi to pahete sa mi si ri behapara",
             "¬◇_deon ∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_疑問詞_誰がりんごを食べますか() {
+        check(
+            "ku pahete sa ko si ri behapara",
+            "?y.∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, y) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_疑問詞_複数のkoはそれぞれ別の変数で束縛される() {
+        check(
+            "ku pahete sa mi si ko sugi ko suni ko",
+            "?x.?y.?z.∃e.(((pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))) ∧ Location(e, y)) ∧ Time(e, z))",
+        );
+    }
+
+    #[test]
+    fn test_疑問詞の無い疑問文は平叙文と同じ論理式になる() {
+        check(
+            "ku pahete sa mi si ri behapara",
+            "∃x.(behapara(x) ∧ ∃e.(pahete(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
         );
     }
 
