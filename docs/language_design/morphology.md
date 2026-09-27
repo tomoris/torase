@@ -83,7 +83,7 @@ WordNetの階層構造に従い、第一音節が決まり、第一音節の子�
 - `ze[CV]+` (空間の尺度。例:「メートル」)
   - abstraction.n.06 -> measure.n.02 -> linear_measure.n.01
 
-`za`/`zi`/`zu`/`ze`はそれぞれ`SpatialRelation`/`TemporalRelation`/`Duration`/`Distance`型として扱われる。
+`za`(空間関係)・`ze`(空間の尺度)は`Space`型、`zi`(時間関係)・`zu`(時間の尺度)は`Time`型として扱われる。
 
 #### 動詞を表す述語
 
