@@ -680,7 +680,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの第一項の型が間違っている場合にerr型を返す() {
-        let source = "pusatanada sa ra bahomo eos";
+        let source = "pusatanada sa ra bahumana eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -698,7 +698,7 @@ mod tests {
 
     #[test]
     fn test_項抽出の型検査が成功する() {
-        let source = "parobe sa ra bahomo si ri bidoga eos";
+        let source = "parobe sa ra bahumana si ri bidoga eos";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -713,26 +713,26 @@ mod tests {
 
     #[test]
     fn test_ruで抽出した付加詞の項は格の型を持つ() {
-        assert!(check("pahete sa mi si ri behapare suni ru suni pahete eos").is_ok());
-        assert!(check("pahete sa mi si ri behapare sudu ru sudu pahete du mi eos").is_ok());
+        assert!(check("paheta sa mi si ri behapare suni ru suni paheta eos").is_ok());
+        assert!(check("paheta sa mi si ri behapare sudu ru sudu paheta du mi eos").is_ok());
     }
 
     #[test]
     fn test_ruで抽出した項の型が合わない場合にerr型を返す() {
-        assert!(check("parobe sa mi si ru suni pahete eos").is_err());
+        assert!(check("parobe sa mi si ru suni paheta eos").is_err());
     }
 
     #[test]
     fn test_節からの抽出の型検査が成功する() {
-        assert!(check("pahete sa mi si ri he pahete sa ba ho eos").is_ok());
-        assert!(check("pahete sa mi si ri behapare suni ru suni he pahete sa ba ho eos").is_ok());
-        assert!(check("parobe sa mi si ri he homa pahete sa mi parobe sa ba ho eos").is_ok());
+        assert!(check("paheta sa mi si ri he paheta sa ba ho eos").is_ok());
+        assert!(check("paheta sa mi si ri behapare suni ru suni he paheta sa ba ho eos").is_ok());
+        assert!(check("parobe sa mi si ri he homa paheta sa mi parobe sa ba ho eos").is_ok());
     }
 
     #[test]
     fn test_節からの抽出で空所の格が埋まっている場合にerr型を返す() {
-        assert!(check("parobe sa mi si ri he pahete sa mi si ri behapare ho eos").is_err());
-        assert!(check("pahete sa mi suni ru suni he pahete suni me ho eos").is_err());
+        assert!(check("parobe sa mi si ri he paheta sa mi si ri behapare ho eos").is_err());
+        assert!(check("paheta sa mi suni ru suni he paheta suni me ho eos").is_err());
     }
 
     #[test]
@@ -742,13 +742,13 @@ mod tests {
 
     #[test]
     fn test_節からの抽出で抽出した項の型が合わない場合にerr型を返す() {
-        assert!(check("parobe sa mi si ru suni he pahete sa ba ho eos").is_err());
+        assert!(check("parobe sa mi si ru suni he paheta sa ba ho eos").is_err());
     }
 
     #[test]
     fn test_ru_sa_ru_siはerr型を返す() {
-        assert!(check("parobe sa mi si ru sa pahete eos").is_err());
-        assert!(check("pahete sa mi si ru si pahete eos").is_err());
+        assert!(check("parobe sa mi si ru sa paheta eos").is_err());
+        assert!(check("paheta sa mi si ru si paheta eos").is_err());
     }
 
     #[test]
@@ -850,8 +850,8 @@ mod tests {
     #[test]
     fn test_等位接続した項の型が重なれば型検査が成功する() {
         for source in [
-            "pahete sa hoba mi me si ri behapare eos",
-            "ku pahete sa hoba mi ko si ri behapare eos",
+            "paheta sa hoba mi me si ri behapare eos",
+            "ku paheta sa hoba mi ko si ri behapare eos",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
@@ -871,7 +871,7 @@ mod tests {
     #[test]
     fn test_等位接続や否定の中の項も型検査される() {
         for source in [
-            "parobe sa mi si hoba mi ri rumonehi eos",
+            "parobe sa mi si hoba mi ri rumone eos",
             "parobe sa mi si hoba ri bidoga di rebaraka ba eos",
             "parobe sa mi si ne ri bidoga di rebaraka eos",
         ] {

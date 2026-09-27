@@ -479,8 +479,8 @@
         "definition": null,
         "description": "x1はx2を医者と定義する。"
     },
-    "bahomo": {
-        "original_spelling": null,
+    "bahumana": {
+        "original_spelling": "human",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を人と定義する。"
@@ -492,7 +492,7 @@
         "description": "x1はx2をりんごと定義する。"
     },
     "behoranage": {
-        "original_spelling": null,
+        "original_spelling": "orange",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2をみかんと定義する。"
@@ -510,7 +510,7 @@
         "description": "x1はx2を生物学的に雌(メス)と定義する。 `bimare`(雄)と対になる語。性自認上の性別は`gumare`/`guhemare`を使う。"
     },
     "bimare": {
-        "original_spelling": null,
+        "original_spelling": "male",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を生物学的に雄(オス)と定義する。 `bihemare`(雌)と対になる語。性自認上の性別は`gumare`/`guhemare`を使う。"
@@ -576,7 +576,7 @@
         "description": "x1はx2を事務所/オフィスと定義する。"
     },
     "dihome": {
-        "original_spelling": null,
+        "original_spelling": "home",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を家(建物)と定義する。 概念上の故郷を表す`rahome`とは別語。"
@@ -600,7 +600,7 @@
         "description": "x1はx2をものと定義する。 `dasinaga`/`dusinaga`と近義語。`dasinaga`の言い換え(`definition`参照)。"
     },
     "ditabare": {
-        "original_spelling": null,
+        "original_spelling": "table",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2をテーブルと定義する。"
@@ -630,25 +630,25 @@
         "description": "x1はx2をビジネス/事業と定義する。"
     },
     "guhemare": {
-        "original_spelling": null,
+        "original_spelling": "female",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を(性自認上)女性と定義する。 生物学的な雌は`bihemare`。"
     },
     "gumare": {
-        "original_spelling": null,
+        "original_spelling": "male",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を(性自認上)男性と定義する。 生物学的な雄は`bimare`。"
     },
     "gumesoda": {
-        "original_spelling": null,
+        "original_spelling": "method",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を方法と定義する。"
     },
     "guminada": {
-        "original_spelling": null,
+        "original_spelling": "mind",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を考え/アイデアと定義する。"
@@ -660,7 +660,7 @@
         "description": "x1はx2を理由と定義する。"
     },
     "guside": {
-        "original_spelling": null,
+        "original_spelling": "side",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を側面/局面と定義する。"
@@ -678,7 +678,7 @@
         "description": "x1(人)はx2(概念)を理解する。"
     },
     "kahanata": {
-        "original_spelling": null,
+        "original_spelling": "want",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(概念)を望む/欲する。"
@@ -695,8 +695,8 @@
             }
         ]
     },
-    "kahehara": {
-        "original_spelling": null,
+    "kasema": {
+        "original_spelling": "seem",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)にはx2(概念)のようだ(伝聞・推量)。"
@@ -761,8 +761,8 @@
         "definition": null,
         "description": "x1(人)はx2(概念)という命題をさせる(使役)。"
     },
-    "kasahi": {
-        "original_spelling": null,
+    "kasa": {
+        "original_spelling": "say",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(概念)を言う。"
@@ -887,8 +887,8 @@
         "definition": null,
         "description": "x1はx2を頭と定義する。"
     },
-    "nuhehi": {
-        "original_spelling": null,
+    "nuhe": {
+        "original_spelling": "eye",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を目と定義する。"
@@ -941,8 +941,8 @@
         "definition": null,
         "description": "x1はx2を歯と定義する。"
     },
-    "pabuhi": {
-        "original_spelling": null,
+    "pabu": {
+        "original_spelling": "buy",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を買う。"
@@ -965,14 +965,8 @@
         "definition": null,
         "description": "x1(人)はx2(物)をあげる。"
     },
-    "pagibeto": {
-        "original_spelling": null,
-        "terminal_type": "BinaryPredicate",
-        "definition": null,
-        "description": "x1(人)はx2(人)にあげる。"
-    },
     "pahamiri": {
-        "original_spelling": null,
+        "original_spelling": "family",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(人)の家族だ。 `dictionary.txt`の下書きでは`pehamiri`(`pe`接頭辞)だったが、x1・x2ともに生物である関係のため`pa`接頭辞に修正した。"
@@ -989,8 +983,8 @@
         "definition": null,
         "description": "x1(人)はx2(人)を助ける。"
     },
-    "pahete": {
-        "original_spelling": null,
+    "paheta": {
+        "original_spelling": "eat",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を食べる。"
@@ -1002,7 +996,7 @@
         "description": "x1(人)はx2(物)を綺麗にする。"
     },
     "pamobe": {
-        "original_spelling": null,
+        "original_spelling": "move",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)の所有を移す(`sube`=起点、`subo`=目標)。 `sube`のみなら「もらう」、`subo`のみなら「あげる」の意味になる。"
@@ -1020,7 +1014,7 @@
         "description": "x1(人)はx2(人)の親だ。"
     },
     "parobe": {
-        "original_spelling": null,
+        "original_spelling": "love",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(人)を愛す。",
@@ -1110,7 +1104,7 @@
         "description": "x1(人)はx2(物)を読む。"
     },
     "peroka": {
-        "original_spelling": null,
+        "original_spelling": "look",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を見る。"
@@ -1332,7 +1326,7 @@
         ]
     },
     "resamara": {
-        "original_spelling": null,
+        "original_spelling": "small",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を小さいと定義する。",
@@ -1386,7 +1380,7 @@
         "description": "x1はx2を言葉と定義する。"
     },
     "riname": {
-        "original_spelling": null,
+        "original_spelling": "name",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を名前と定義する。"
@@ -1397,10 +1391,10 @@
         "definition": null,
         "description": "x1はx2を部分と定義する。"
     },
-    "ronehasa": {
-        "original_spelling": null,
+    "ronesa": {
+        "original_spelling": "news",
         "terminal_type": "BinaryPredicate",
-        "definition": "ze ta za ta zi hehezu hesa ronehasa sa za si zi hesi homa rihorada sa za si zi rene sa za si zi",
+        "definition": "ze ta za ta zi hehezu hesa ronesa sa za si zi hesi homa rihorada sa za si zi rene sa za si zi",
         "description": "x1はx2をニュース/知らせと定義する。"
     },
     "rosatori": {
@@ -1410,7 +1404,7 @@
         "description": "x1はx2を物語と定義する。"
     },
     "ruhage": {
-        "original_spelling": null,
+        "original_spelling": "age",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を年齢/年齢的な成熟度と定義する。"
@@ -1421,8 +1415,8 @@
         "definition": null,
         "description": "x1はx2を(2人の)組/カップルと定義する。"
     },
-    "rumonehi": {
-        "original_spelling": null,
+    "rumone": {
+        "original_spelling": "money",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2をお金と定義する。"
@@ -1433,15 +1427,15 @@
         "definition": null,
         "description": "x1はx2を数と定義する。"
     },
-    "zahatano": {
-        "original_spelling": null,
+    "zahona": {
+        "original_spelling": "on",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を上/表面(空間関係)と定義する。",
         "compositions": [
             {
                 "gloss": "下/底(空間関係)と定義する",
-                "expression": "no zahatano sa za si zi"
+                "expression": "no zahona sa za si zi"
             }
         ]
     },
@@ -1463,8 +1457,8 @@
         "definition": null,
         "description": "x1はx2を時間(1時間)と定義する。"
     },
-    "zuharahahi": {
-        "original_spelling": null,
+    "zuharahasa": {
+        "original_spelling": "always",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を常に/いつも(という時間)と定義する。"
