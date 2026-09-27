@@ -333,7 +333,18 @@ impl PostModifiedBinaryPredicatePhrase {
                 post_binary_predicate_phrase_expression,
             ) => {
                 binary_predicate_phrase.type_check()?;
-                post_binary_predicate_phrase_expression.type_check()
+                post_binary_predicate_phrase_expression.type_check()?;
+                if let PostBinaryPredicatePhraseExpression::One(_, modifier) =
+                    post_binary_predicate_phrase_expression
+                {
+                    check_shared_argument_types(
+                        binary_predicate_phrase.get_argument_types(),
+                        modifier.get_argument_types(),
+                        modifier.get_range().clone(),
+                        "of the predicate modifier (di)",
+                    )?;
+                }
+                Ok(())
             }
         }
     }
@@ -359,6 +370,32 @@ impl PostBinaryPredicatePhraseExpression {
     }
 }
 
+/// `P hoba Q`や`P di Q`のように2つの述語が同じ項を共有するとき、x1同士・x2同士の型が重なるか検査する。
+fn check_shared_argument_types(
+    (t11, t12): (Vec<ArgumentType>, Vec<ArgumentType>),
+    (t21, t22): (Vec<ArgumentType>, Vec<ArgumentType>),
+    range: Range,
+    context: &str,
+) -> TypeMismatchResult {
+    if !has_intersection(&t11, &t21) {
+        return Err(TypeMismatch {
+            range,
+            actual: t21,
+            expected: t11,
+            message: format!("Type mismatch in the first argument {context}."),
+        });
+    }
+    if !has_intersection(&t12, &t22) {
+        return Err(TypeMismatch {
+            range,
+            actual: t22,
+            expected: t12,
+            message: format!("Type mismatch in the second argument {context}."),
+        });
+    }
+    Ok(())
+}
+
 impl BinaryPredicatePhrase {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
@@ -368,28 +405,12 @@ impl BinaryPredicatePhrase {
                 _binary_operator,
                 binary_predicate1,
                 binary_predicate2,
-            ) => {
-                let (t11, t12) = binary_predicate1.get_argument_types();
-                let (t21, t22) = binary_predicate2.get_argument_types();
-                if !has_intersection(&t11, &t21) {
-                    return Err(TypeMismatch {
-                        range: binary_predicate2.get_range().clone(),
-                        actual: t21,
-                        expected: t11,
-                        message: "Type mismatch in the first argument after binary operation."
-                            .to_string(),
-                    });
-                } else if !has_intersection(&t12, &t22) {
-                    return Err(TypeMismatch {
-                        range: binary_predicate2.get_range().clone(),
-                        actual: t22,
-                        expected: t12,
-                        message: "Type mismatch in the second argument after binary operation."
-                            .to_string(),
-                    });
-                }
-                Ok(())
-            }
+            ) => check_shared_argument_types(
+                binary_predicate1.get_argument_types(),
+                binary_predicate2.get_argument_types(),
+                binary_predicate2.get_range().clone(),
+                "after binary operation",
+            ),
         }
     }
     fn get_argument_types(&self) -> (Vec<ArgumentType>, Vec<ArgumentType>) {
@@ -789,6 +810,30 @@ mod tests {
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
         assert!(type_checked.is_err());
+    }
+
+    #[test]
+    fn test_diで修飾する述語と項の型が重なれば型検査が成功する() {
+        for source in [
+            "parobe sa mi si ri bidoga di bihimera eos",
+            "parobe di paherapa sa mi si ba eos",
+        ] {
+            let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+            let ast = parser::parse(tokens).unwrap();
+            assert!(type_check(&ast).is_ok(), "{source}");
+        }
+    }
+
+    #[test]
+    fn test_diで修飾する述語と項の型が合わない場合にerr型を返す() {
+        for source in [
+            "parobe sa mi si ri bidoga di rebaraka eos",
+            "parobe di rebaraka sa mi si ba eos",
+        ] {
+            let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+            let ast = parser::parse(tokens).unwrap();
+            assert!(type_check(&ast).is_err(), "{source}");
+        }
     }
 
     #[test]

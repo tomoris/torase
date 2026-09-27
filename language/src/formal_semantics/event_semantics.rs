@@ -1815,6 +1815,14 @@ mod tests {
     }
 
     #[test]
+    fn test_項抽出_diで修飾した述語も制限に含まれる_雌の犬() {
+        check(
+            "parobe sa mi si ri bidoga di bihimera",
+            "∃x.((∃e.(bidoga(e) ∧ Patient(e, x)) ∧ ∃e1.(bihimera(e1) ∧ Patient(e1, x))) ∧ ∃e2.(parobe(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))))",
+        );
+    }
+
+    #[test]
     fn test_項抽出_名詞述語のraは定義する者を抽出する() {
         check(
             "pahete sa mi si ra behapara",
