@@ -1245,6 +1245,11 @@ impl Argument {
         matches!(self.kind, ArgumentKind::Za | ArgumentKind::Zi)
     }
 
+    /// 不定代名詞`ga`(誰か)。特定の個体ではなく、存在量化される項を表す。
+    pub(crate) fn is_indefinite(&self) -> bool {
+        matches!(self.kind, ArgumentKind::Ga)
+    }
+
     /// 疑問詞`ko`。`ku`で始まる疑問文の中でのみ使え、尋ねる項を表す。
     pub(crate) fn is_interrogative(&self) -> bool {
         matches!(self.kind, ArgumentKind::Ko)

@@ -1135,6 +1135,8 @@ impl ArgumentPhrase {
             ArgumentPhrase::One(arg) if arg.is_schema_variable() => {
                 ArgCtx::FreeVar(arg.get_string())
             }
+            // ga(誰か) → fresh existential variable, not an individual constant.
+            ArgumentPhrase::One(arg) if arg.is_indefinite() => ArgCtx::ExistOnly(vg.next()),
             // ko(疑問詞) → fresh variable, closed by `?x` in `InterrogativeSentence::to_fol`.
             ArgumentPhrase::One(arg) if arg.is_interrogative() => {
                 let var = vg.next();
@@ -1827,6 +1829,14 @@ mod tests {
         check(
             "pahete sa mi si ra behapara",
             "∃x.(∃e.(behapara(e) ∧ Agent(e, x)) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
+        );
+    }
+
+    #[test]
+    fn test_不定代名詞_誰かがりんごを食べる() {
+        check(
+            "pahete sa ga si ri behapara",
+            "∃y.∃x.(∃e.(behapara(e) ∧ Patient(e, x)) ∧ ∃e1.(pahete(e1) ∧ (Agent(e1, y) ∧ Patient(e1, x))))",
         );
     }
 

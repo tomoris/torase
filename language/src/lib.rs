@@ -1257,6 +1257,18 @@ mod tests {
     }
 
     #[test]
+    fn test_私が食べたことと誰も食べていないことは矛盾する() {
+        let text = "pahete sa mi si ri behapara eos ne pahete sa ga si ri behapara".to_string();
+        let diagnostics = diagnose(text).unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message == "contradiction error"),
+            "diagnostics: {diagnostics:?}"
+        );
+    }
+
+    #[test]
     fn test_習慣の否定は1回の出来事と矛盾しない() {
         let text = "hita pahete sa mi si ri behapara eos hune hudidi pahete sa mi si ri behapara"
             .to_string();
