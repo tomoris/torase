@@ -340,7 +340,7 @@
         "original_pronunciation": null,
         "terminal_type": "TypeOverride",
         "definition": null,
-        "description": "型オーバーライド。格標識(`sa`/`si`/`su[CV]`)の直後・項句の直前に置く任意のトークンで、その項を型検査の対象から除外する。比喩・見立て表現用。"
+        "description": "型の上書き。格標識(`sa`/`si`/`su[CV]`)の直後・項句の直前に置く任意のトークンで、その項を型検査の対象から除外する。比喩・見立て表現用。"
     },
     "si": {
         "original_spelling": null,
