@@ -430,11 +430,13 @@ impl ArgumentPhrase {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
             ArgumentPhrase::One(_argument) => Ok(()),
-            ArgumentPhrase::Two(_negation, _argument) => Ok(()),
+            ArgumentPhrase::Two(_negation, argument_phrase) => argument_phrase.type_check(),
             ArgumentPhrase::Three(_binary_operator, argument_phrase1, argument_phrase2) => {
+                argument_phrase1.type_check()?;
+                argument_phrase2.type_check()?;
                 let t1 = argument_phrase1.get_type();
                 let t2 = argument_phrase2.get_type();
-                if t1 != t2 {
+                if !has_intersection(&t1, &t2) {
                     return Err(TypeMismatch {
                         range: argument_phrase2.get_range().clone(),
                         actual: t2,
@@ -459,7 +461,10 @@ impl ArgumentPhrase {
         match self {
             ArgumentPhrase::One(argument) => argument.get_type(),
             ArgumentPhrase::Two(_, argument) => argument.get_type(),
-            ArgumentPhrase::Three(_, argument1, _) => argument1.get_type(),
+            // 等位接続した項は、両方の項が満たせる型(共通部分)を持つ。
+            ArgumentPhrase::Three(_, argument1, argument2) => {
+                intersection(&argument1.get_type(), &argument2.get_type())
+            }
             ArgumentPhrase::Four(quantified_argument) => quantified_argument.get_type(),
             ArgumentPhrase::Five(_, _, _) => {
                 vec![ArgumentType::Abstraction]
@@ -623,6 +628,12 @@ impl ArgumentRetrievalWithArgumentPhrase {
 fn has_intersection<T: Eq + Hash>(vec1: &[T], vec2: &[T]) -> bool {
     let set: HashSet<_> = vec1.iter().collect();
     vec2.iter().any(|x| set.contains(x))
+}
+
+/// `vec1`のうち`vec2`にも含まれる要素を、`vec1`の順序のまま返す。
+fn intersection<T: Eq + Hash + Clone>(vec1: &[T], vec2: &[T]) -> Vec<T> {
+    let set: HashSet<_> = vec2.iter().collect();
+    vec1.iter().filter(|x| set.contains(x)).cloned().collect()
 }
 
 #[cfg(test)]
@@ -829,6 +840,40 @@ mod tests {
         for source in [
             "parobe sa mi si ri bidoga di rebaraka eos",
             "parobe di rebaraka sa mi si ba eos",
+        ] {
+            let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+            let ast = parser::parse(tokens).unwrap();
+            assert!(type_check(&ast).is_err(), "{source}");
+        }
+    }
+
+    #[test]
+    fn test_等位接続した項の型が重なれば型検査が成功する() {
+        for source in [
+            "pahete sa hoba mi me si ri behapara eos",
+            "ku pahete sa hoba mi ko si ri behapara eos",
+        ] {
+            let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+            let ast = parser::parse(tokens).unwrap();
+            assert!(type_check(&ast).is_ok(), "{source}");
+        }
+    }
+
+    #[test]
+    fn test_等位接続した項の型は両方の型の共通部分になる() {
+        // hoba me miの型はmiの生物型だけになるので、抽象概念を取るkarobeのx2には置けない。
+        let source = "karobe sa mi si hoba me mi eos";
+        let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
+        let ast = parser::parse(tokens).unwrap();
+        assert!(type_check(&ast).is_err());
+    }
+
+    #[test]
+    fn test_等位接続や否定の中の項も型検査される() {
+        for source in [
+            "parobe sa mi si hoba mi ri rumonehi eos",
+            "parobe sa mi si hoba ri bidoga di rebaraka ba eos",
+            "parobe sa mi si ne ri bidoga di rebaraka eos",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
