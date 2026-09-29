@@ -1481,13 +1481,13 @@
         "definition": null,
         "description": "x1はx2を年(1年)と定義する。"
     },
-    "zuhita": {
+    "zihita": {
         "original_spelling": null,
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2を(基準より)前の時点と定義する。 テンス`hita`(過去)の語根を流用した内部派生語で、英語からの借用語ではない。`suge`/`sugi`格と`du`で「N日前」のように使う。"
     },
-    "zuhitu": {
+    "zihitu": {
         "original_spelling": null,
         "terminal_type": "BinaryPredicate",
         "definition": null,

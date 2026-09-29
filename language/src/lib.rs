@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は昨日りんごを食べた() {
-        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zuhita du tusa ri zuda"
+        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zihita du tusa ri zuda"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は6日前にりんごを食べた() {
-        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zuhita du tuke ri zuda"
+        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zihita du tuke ri zuda"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -279,13 +279,13 @@ mod tests {
 
     #[test]
     fn test_彼らは明日りんごを食べる() {
-        let text = "hitu paheta sa gu si ri behapare sugi ri zuhitu du tusa ri zuda".to_string();
+        let text = "hitu paheta sa gu si ri behapare sugi ri zihitu du tusa ri zuda".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
     #[test]
     fn test_彼らは6日後にりんごを食べる() {
-        let text = "hitu paheta sa gu si ri behapare sugi ri zuhitu du tuke ri zuda".to_string();
+        let text = "hitu paheta sa gu si ri behapare sugi ri zihitu du tuke ri zuda".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -293,14 +293,14 @@ mod tests {
     #[test]
     fn test_彼女らは3日間りんごを食べている_食事としてりんごだけを食べている() {
         let text =
-            "hiti hudidi paheta sa gu si ri behapare suge ri zuhita du tusi ri zuda".to_string();
+            "hiti hudidi paheta sa gu si ri behapare suge ri zihita du tusi ri zuda".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_彼女らはりんごを5分間食べ続けている_りんごを食べる所要時間に5分かかっている() {
-        let text = "hiti hudida paheta sa gu si ri behapare suge ri zuhita du tuka ri zuminute"
+        let text = "hiti hudida paheta sa gu si ri behapare suge ri zihita du tuka ri zuminute"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
