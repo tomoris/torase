@@ -1572,7 +1572,7 @@ mod tests {
     #[test]
     fn test_数量化_数のりんご() {
         check(
-            "paheta sa mi si tupe ri behapare",
+            "paheta sa mi si tusa ri behapare",
             "∃_# x.(∃e.(behapare(e) ∧ Patient(e, x)) ∧ ∃e1.(paheta(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
         );
     }

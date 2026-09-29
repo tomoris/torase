@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は昨日りんごを食べた() {
-        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zuhita du tupe ri zuda"
+        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zuhita du tusa ri zuda"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_私と私の妻は6日前にりんごを食べた() {
-        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zuhita du tuki ri zuda"
+        let text = "hita paheta sa hoba mi ri paparatanera du mi si ri behapare sugi ri zuhita du tuke ri zuda"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -279,13 +279,13 @@ mod tests {
 
     #[test]
     fn test_彼らは明日りんごを食べる() {
-        let text = "hitu paheta sa gu si ri behapare sugi ri zuhitu du tupe ri zuda".to_string();
+        let text = "hitu paheta sa gu si ri behapare sugi ri zuhitu du tusa ri zuda".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
     #[test]
     fn test_彼らは6日後にりんごを食べる() {
-        let text = "hitu paheta sa gu si ri behapare sugi ri zuhitu du tuki ri zuda".to_string();
+        let text = "hitu paheta sa gu si ri behapare sugi ri zuhitu du tuke ri zuda".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -293,14 +293,14 @@ mod tests {
     #[test]
     fn test_彼女らは3日間りんごを食べている_食事としてりんごだけを食べている() {
         let text =
-            "hiti hudidi paheta sa gu si ri behapare suge ri zuhita du tupo ri zuda".to_string();
+            "hiti hudidi paheta sa gu si ri behapare suge ri zuhita du tusi ri zuda".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_彼女らはりんごを5分間食べ続けている_りんごを食べる所要時間に5分かかっている() {
-        let text = "hiti hudida paheta sa gu si ri behapare suge ri zuhita du tuke ri zuminute"
+        let text = "hiti hudida paheta sa gu si ri behapare suge ri zuhita du tuka ri zuminute"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -315,14 +315,14 @@ mod tests {
 
     #[test]
     fn test_りんごが3つある() {
-        let text = "pihekasisata sa tupo ri behapare".to_string();
+        let text = "pihekasisata sa tusi ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_りんご達がテーブルの上にある() {
-        let text = "pihekasisata sa tupe ri behapare suni ri zahona du ri ditabare".to_string();
+        let text = "pihekasisata sa tusa ri behapare suni ri zahona du ri ditabare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -972,7 +972,7 @@ mod tests {
     #[test]
     fn test_私は3つのりんごを食べる() {
         // ∃=3 x (apple(x))
-        let text = "paheta sa mi si tupo ri behapare".to_string();
+        let text = "paheta sa mi si tusi ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -980,7 +980,7 @@ mod tests {
     #[test]
     fn test_私はこの3つのりんごを食べる() {
         // ∃=3 x (apple(x))
-        let text = "paheta sa mi si tupo mo ri behapare".to_string();
+        let text = "paheta sa mi si tusi mo ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -1003,12 +1003,12 @@ mod tests {
 
     #[test]
     fn test_私は少しの3つのりんごを食べる_がエラーになること() {
-        // to(数量詞)とtupo(数)は同じ項に同時指定できずパースエラーになる
-        let text = "paheta sa mi si tupo to ri behapare".to_string();
+        // to(数量詞)とtusi(数)は同じ項に同時指定できずパースエラーになる
+        let text = "paheta sa mi si tusi to ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
 
-        let text = "paheta sa mi si to tupo ri behapare".to_string();
+        let text = "paheta sa mi si to tusi ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }
@@ -1047,12 +1047,12 @@ mod tests {
 
     #[test]
     fn test_私は全ての3つのりんごを食べる_がエラーになること() {
-        // ta(数量詞)とtupo(数)は同じ項に同時指定できずパースエラーになる
-        let text = "paheta sa mi si tupo ta ri behapare".to_string();
+        // ta(数量詞)とtusi(数)は同じ項に同時指定できずパースエラーになる
+        let text = "paheta sa mi si tusi ta ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
 
-        let text = "paheta sa mi si ta tupo ri behapare".to_string();
+        let text = "paheta sa mi si ta tusi ri behapare".to_string();
         let result = diagnose(text);
         assert!(result.is_err());
     }

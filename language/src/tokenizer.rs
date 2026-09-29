@@ -1654,7 +1654,7 @@ mod tests {
 
     #[test]
     fn test_tokenize_量化詞と数詞はtで始まる固有名詞にならない() {
-        let sentences = tokenize("ta to tupedo eos").unwrap();
+        let sentences = tokenize("ta to tusadi eos").unwrap();
         assert!(matches!(&sentences[0][0], TerminalType::Quantifier(_)));
         assert!(matches!(&sentences[0][1], TerminalType::Quantifier(_)));
         assert!(matches!(&sentences[0][2], TerminalType::Number(_)));
@@ -1762,37 +1762,37 @@ mod tests {
 
     #[test]
     fn test_数詞_1桁の値が桁位置なしで往復変換できる() {
-        assert_number_roundtrip("tupa", 0, false);
-        assert_number_roundtrip("tuka", 4, false);
-        assert_number_roundtrip("tume", 9, false);
+        assert_number_roundtrip("tuso", 0, false);
+        assert_number_roundtrip("tuko", 4, false);
+        assert_number_roundtrip("tuma", 9, false);
     }
 
     #[test]
     fn test_数詞_複数桁_ゼロを含む値が桁位置省略ルール込みで往復変換できる() {
-        assert_number_roundtrip("tupede", 10, false);
-        assert_number_roundtrip("tupedi", 100, false);
-        assert_number_roundtrip("tupedo", 1000, false);
-        assert_number_roundtrip("tupedopidipodeka", 1234, false);
+        assert_number_roundtrip("tusada", 10, false);
+        assert_number_roundtrip("tusade", 100, false);
+        assert_number_roundtrip("tusadi", 1000, false);
+        assert_number_roundtrip("tusadisedesidako", 1234, false);
     }
 
     #[test]
     fn test_数詞_16進数はruを付けて表す() {
-        // Aに相当するmi(値10)を含むので、ruを付けて明示的に16進として読む。
-        assert_number_roundtrip("turupedimidepi", 0x1A2, true);
-        assert_number_roundtrip("turuso", 15, true);
-        // 0xFF = F(15)×16 + F(15)。上位桁には桁位置(16^1 = de)が必要で、末尾の1の位だけ桁位置なし。
-        assert_number_roundtrip("turusodeso", 0xFF, true);
+        // Aに相当するme(値10)を含むので、ruを付けて明示的に16進として読む。
+        assert_number_roundtrip("turusademedase", 0x1A2, true);
+        assert_number_roundtrip("turupi", 15, true);
+        // 0xFF = F(15)×16 + F(15)。上位桁には桁位置(16^1 = da)が必要で、末尾の1の位だけ桁位置なし。
+        assert_number_roundtrip("turupidapi", 0xFF, true);
     }
 
     #[test]
     fn test_数詞_桁が全て0から9でもruがあれば16進として解釈される() {
         // ruなしなら10進の12だが、ru付きだと16進の12(=18)になる。
-        let with_ru = Number::new("turupedepi", 0, 0, 0, 0);
+        let with_ru = Number::new("turusadase", 0, 0, 0, 0);
         assert_eq!(with_ru.get_value(), 0x12);
         assert!(with_ru.is_hex());
-        assert_eq!(with_ru.get_string(), "turupedepi");
+        assert_eq!(with_ru.get_string(), "turusadase");
 
-        let without_ru = Number::new("tupedepi", 0, 0, 0, 0);
+        let without_ru = Number::new("tusadase", 0, 0, 0, 0);
         assert_eq!(without_ru.get_value(), 12);
         assert!(!without_ru.is_hex());
     }
@@ -1801,13 +1801,13 @@ mod tests {
     fn test_数詞_不正な文字列はis_matchで弾かれる() {
         assert!(!Number::is_match("tu")); // マーカーのみ
         assert!(!Number::is_match("turu")); // マーカー+フラグのみで数字が無い
-        assert!(!Number::is_match("tude")); // 数字が無く桁位置だけ
+        assert!(!Number::is_match("tuda")); // 数字が無く桁位置だけ
         assert!(!Number::is_match("tup")); // 末尾が半端(母音が無い)
         assert!(!Number::is_match("tuba")); // 数字テーブルに無い子音(b)
         assert!(!Number::is_match("tururu")); // ruが2回連続
         assert!(!Number::is_match("pa")); // マーカーが無い
-        assert!(!Number::is_match("tuso")); // ruなしで10〜15の桁(so=15)を使っている
-        assert!(!Number::is_match("tupedimidepi")); // ruなしでmi(=10)を使っている
+        assert!(!Number::is_match("tupi")); // ruなしで10〜15の桁(pi=15)を使っている
+        assert!(!Number::is_match("tusademedase")); // ruなしでme(=10)を使っている
     }
 
     #[test]
@@ -1816,11 +1816,11 @@ mod tests {
         let n = Number::new("12345", 0, 0, 0, 0);
         assert_eq!(n.get_value(), 12345);
         assert!(!n.is_hex());
-        assert_eq!(n.get_string(), "tupegapidopodikadeke");
+        assert_eq!(n.get_string(), "tusagosedisidekodaka");
 
         let n = Number::new("0", 0, 0, 0, 0);
         assert_eq!(n.get_value(), 0);
-        assert_eq!(n.get_string(), "tupa");
+        assert_eq!(n.get_string(), "tuso");
     }
 
     #[test]

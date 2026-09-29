@@ -17,11 +17,11 @@ impl Number {
         self.range.clone()
     }
 
-    // 数字テーブル: 子音p/k/m/s x 母音a/e/i/o で1桁(0〜15)を表す。
-    const DIGIT_CONSONANTS: [char; 4] = ['p', 'k', 'm', 's'];
-    // 桁位置テーブル: 子音d/g/z/n x 母音a/e/i/o で指数(0〜15)を表す。
+    // 数字テーブル: 子音s/k/m/p x 母音o/a/e/i で1桁(0〜15)を表す。
+    const DIGIT_CONSONANTS: [char; 4] = ['s', 'k', 'm', 'p'];
+    // 桁位置テーブル: 子音d/g/z/n x 母音o/a/e/i で指数(0〜15)を表す。
     const PLACE_CONSONANTS: [char; 4] = ['d', 'g', 'z', 'n'];
-    const VOWELS: [char; 4] = ['a', 'e', 'i', 'o'];
+    const VOWELS: [char; 4] = ['o', 'a', 'e', 'i'];
 
     pub(super) fn is_match(string: &str) -> bool {
         if Self::is_arabic_numeral_match(string) {
