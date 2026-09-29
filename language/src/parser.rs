@@ -475,13 +475,8 @@ pub enum ArgumentPhrase {
     Two(Negation, Box<ArgumentPhrase>),
     Three(PhraseOperator, Box<ArgumentPhrase>, Box<ArgumentPhrase>),
     Four(QuantifiedArgument),
-    Five(
-        MtaEventToArgumentPhraseConverter,
-        Box<MtaEvent>,
-        MtaEventToArgumentPhraseConverterEnd,
-    ),
-    Six(ProperNounOpener, ProperNounBody, ProperNounCloser),
-    Seven(ProperNoun),
+    Five(ProperNounOpener, ProperNounBody, ProperNounCloser),
+    Six(ProperNoun),
 }
 
 #[derive(Clone, Debug)]
@@ -1269,7 +1264,6 @@ impl PostBinaryPredicatePhraseExpression {
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::AdjunctArgumentRetriever
-            | DummyTerminalType::MtaEventToArgumentPhraseConverter
             | DummyTerminalType::ProperNoun
             | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
@@ -1390,15 +1384,6 @@ impl ArgumentPhrase {
                     DummyNonTerminalType::QuantifiedArgument,
                 )]))
             }
-            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(
-                    DummyTerminalType::MtaEventToArgumentPhraseConverter,
-                ),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyTerminal(
-                    DummyTerminalType::MtaEventToArgumentPhraseConverterEnd,
-                ),
-            ])),
             DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounOpener),
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounBody),
@@ -1433,19 +1418,12 @@ impl ArgumentPhrase {
                     Self::Four(child1.clone())
                 }
                 [
-                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverter(child1)),
-                    SymbolType::NonTerminal(NonTerminalType::MtaEvent(child2)),
-                    SymbolType::Terminal(TerminalType::MtaEventToArgumentPhraseConverterEnd(
-                        child3,
-                    )),
-                ] => Self::Five(child1.clone(), Box::new(child2.clone()), child3.clone()),
-                [
                     SymbolType::Terminal(TerminalType::ProperNounOpener(child1)),
                     SymbolType::Terminal(TerminalType::ProperNounBody(child2)),
                     SymbolType::Terminal(TerminalType::ProperNounCloser(child3)),
-                ] => Self::Six(child1.clone(), child2.clone(), child3.clone()),
+                ] => Self::Five(child1.clone(), child2.clone(), child3.clone()),
                 [SymbolType::Terminal(TerminalType::ProperNoun(child1))] => {
-                    Self::Seven(child1.clone())
+                    Self::Six(child1.clone())
                 }
                 _ => {
                     panic!("Unexpected symbols: {:?}", symbols);
@@ -1501,15 +1479,6 @@ impl NonNegatedArgumentPhrase {
                     DummyNonTerminalType::QuantifiedArgument,
                 )]))
             }
-            DummyTerminalType::MtaEventToArgumentPhraseConverter => Ok(DummyRhs::Sequence(vec![
-                DummySymbolType::DummyTerminal(
-                    DummyTerminalType::MtaEventToArgumentPhraseConverter,
-                ),
-                DummySymbolType::DummyNonTerminal(DummyNonTerminalType::MtaEvent),
-                DummySymbolType::DummyTerminal(
-                    DummyTerminalType::MtaEventToArgumentPhraseConverterEnd,
-                ),
-            ])),
             DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Sequence(vec![
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounOpener),
                 DummySymbolType::DummyTerminal(DummyTerminalType::ProperNounBody),
@@ -1703,7 +1672,6 @@ impl ArgumentRetrievalWithArgumentPhrase {
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::AdjunctArgumentRetriever
-            | DummyTerminalType::MtaEventToArgumentPhraseConverter
             | DummyTerminalType::ProperNoun
             | DummyTerminalType::ProperNounOpener
             | DummyTerminalType::ModalityBase
@@ -1852,7 +1820,6 @@ impl TypeOverrideModifier {
             | DummyTerminalType::Determiner
             | DummyTerminalType::ArgumentRetriever
             | DummyTerminalType::AdjunctArgumentRetriever
-            | DummyTerminalType::MtaEventToArgumentPhraseConverter
             | DummyTerminalType::ProperNoun
             | DummyTerminalType::ProperNounOpener => Ok(DummyRhs::Epsilon),
             _ => Err(()),
@@ -2065,21 +2032,12 @@ impl ArgumentPhrase {
                 Range::new(start, end)
             }
             ArgumentPhrase::Four(quantified_argument) => quantified_argument.get_range(),
-            ArgumentPhrase::Five(
-                mta_event_to_argument_phrase_converter,
-                _,
-                mta_event_to_argument_phrase_converter_end,
-            ) => {
-                let start = mta_event_to_argument_phrase_converter.get_range().start();
-                let end = mta_event_to_argument_phrase_converter_end.get_range().end();
-                Range::new(start, end)
-            }
-            ArgumentPhrase::Six(opener, _, closer) => {
+            ArgumentPhrase::Five(opener, _, closer) => {
                 let start = opener.get_range().start();
                 let end = closer.get_range().end();
                 Range::new(start, end)
             }
-            ArgumentPhrase::Seven(proper_noun) => proper_noun.get_range(),
+            ArgumentPhrase::Six(proper_noun) => proper_noun.get_range(),
         }
     }
 }
@@ -3063,11 +3021,6 @@ mod tests {
                     grammar::Symbol::NonTerminal(non_negated_argument_phrase.clone()),
                 ]),
                 grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter.clone()),
-                    grammar::Symbol::NonTerminal(mta_event.clone()),
-                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter_end.clone()),
-                ]),
-                grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(proper_noun_opener.clone()),
                     grammar::Symbol::Terminal(proper_noun_body.clone()),
                     grammar::Symbol::Terminal(proper_noun_closer.clone()),
@@ -3086,11 +3039,6 @@ mod tests {
                     grammar::Symbol::Terminal(phrase_operator.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
                     grammar::Symbol::NonTerminal(argument_phrase.clone()),
-                ]),
-                grammar::Rhs::Sequence(vec![
-                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter.clone()),
-                    grammar::Symbol::NonTerminal(mta_event.clone()),
-                    grammar::Symbol::Terminal(mta_event_to_argument_phrase_converter_end.clone()),
                 ]),
                 grammar::Rhs::Sequence(vec![
                     grammar::Symbol::Terminal(proper_noun_opener.clone()),
@@ -3455,24 +3403,24 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_固有名詞がargumentphrase_sixとしてパースできる() {
+    fn test_parse_固有名詞がargumentphrase_fiveとしてパースできる() {
         let input = "parobe sa heba Kanye hoho si ba eos";
         let sentences = tokenize(input).unwrap();
         let result = parse(sentences[0].clone());
         assert!(result.is_ok(), "expected parse to succeed: {result:?}");
         let ast = result.unwrap();
-        // 深いASTの形を辿るのではなく、ArgumentPhrase::Sixが実際に生成されたことを
+        // 深いASTの形を辿るのではなく、ArgumentPhrase::Fiveが実際に生成されたことを
         // デバッグ表示から確認する(パース自体が成功することは上のassertで検証済み)。
-        assert!(format!("{:?}", ast.get_s()).contains("Six("));
+        assert!(format!("{:?}", ast.get_s()).contains("Five("));
     }
 
     #[test]
-    fn test_parse_tで始まる固有名詞がargumentphrase_sevenとしてパースできる() {
+    fn test_parse_tで始まる固有名詞がargumentphrase_sixとしてパースできる() {
         let input = "parobe sa taro si ba eos";
         let sentences = tokenize(input).unwrap();
         let result = parse(sentences[0].clone());
         assert!(result.is_ok(), "expected parse to succeed: {result:?}");
-        assert!(format!("{:?}", result.unwrap().get_s()).contains("Seven("));
+        assert!(format!("{:?}", result.unwrap().get_s()).contains("Six("));
     }
 
     #[test]

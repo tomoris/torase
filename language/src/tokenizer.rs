@@ -738,6 +738,7 @@ pub struct ArgumentRetriever {
 pub enum ArgumentRetrieverKind {
     Nominative, // ra
     Accusative, // ri
+    Event,      // re
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1325,17 +1326,19 @@ impl MtaEventOperator {
 define_surface_token!(ArgumentRetriever, ArgumentRetrieverKind, "argument retriever", {
     Nominative: "ra",
     Accusative: "ri",
+    Event: "re",
 });
 
 impl ArgumentRetriever {
     pub fn get_kind(&self) -> &ArgumentRetrieverKind {
         &self.kind
     }
-    /// 抽出される項に対応する格。
-    pub fn gap_case(&self) -> CaseLabelKind {
+    /// 抽出される項に対応する格。`re`は事象そのものを抽出するので空所を持たない。
+    pub fn gap_case(&self) -> Option<CaseLabelKind> {
         match self.kind {
-            ArgumentRetrieverKind::Nominative => CaseLabelKind::Sa,
-            ArgumentRetrieverKind::Accusative => CaseLabelKind::Si,
+            ArgumentRetrieverKind::Nominative => Some(CaseLabelKind::Sa),
+            ArgumentRetrieverKind::Accusative => Some(CaseLabelKind::Si),
+            ArgumentRetrieverKind::Event => None,
         }
     }
 }

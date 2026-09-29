@@ -553,20 +553,7 @@ impl TreeViewer for ArgumentPhrase {
                 let content = row_with_separator(vec![quantified_argument.view(is_full)]);
                 category_box(category, content, background)
             }
-            ArgumentPhrase::Five(
-                mta_event_to_argument_phrase_converter,
-                mta_event,
-                mta_event_to_argument_phrase_converter_end,
-            ) => {
-                let category = "ArgumentPhrase".to_string();
-                let content = row_with_separator(vec![
-                    text(mta_event_to_argument_phrase_converter.get_string()).into(),
-                    mta_event.view(is_full),
-                    text(mta_event_to_argument_phrase_converter_end.get_string()).into(),
-                ]);
-                category_box(category, content, background)
-            }
-            ArgumentPhrase::Six(proper_noun_opener, proper_noun_body, proper_noun_closer) => {
+            ArgumentPhrase::Five(proper_noun_opener, proper_noun_body, proper_noun_closer) => {
                 let category = "ArgumentPhrase".to_string();
                 let content = row_with_separator(vec![
                     text(proper_noun_opener.get_string()).into(),
@@ -575,7 +562,7 @@ impl TreeViewer for ArgumentPhrase {
                 ]);
                 category_box(category, content, background)
             }
-            ArgumentPhrase::Seven(proper_noun) => {
+            ArgumentPhrase::Six(proper_noun) => {
                 let category = "ArgumentPhrase".to_string();
                 let content = text(proper_noun.get_string()).into();
                 category_box(category, content, background)

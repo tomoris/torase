@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_私の妻はりんごを食べたことがある() {
-        let text = "hita kahekasaperinase sa ri paparatanera du mi si he paheta sa ri paparatanera du mi si ri behapare ho".to_string();
+        let text = "hita kahekasaperinase sa ri paparatanera du mi si re he paheta sa ri paparatanera du mi si ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_誰かがこのりんごそのりんごあのりんごを食べたそうだ() {
-        let text = "kasema sa mi si he paheta sa ga si hoba mo ri behapare hoba bo ri behapare go ri behapare ho".to_string();
+        let text = "kasema sa mi si re he paheta sa ga si hoba mo ri behapare hoba bo ri behapare go ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -661,7 +661,7 @@ mod tests {
 
     #[test]
     fn test_演算子_命題_homaがhe_ho内で使える() {
-        let text = "kahekasaperinase sa mi si he homa paheta sa mi si ri behapare paheta sa ba si ri behoranage ho".to_string();
+        let text = "kahekasaperinase sa mi si re he homa paheta sa mi si ri behapare paheta sa ba si ri behoranage ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -772,7 +772,7 @@ mod tests {
     #[test]
     fn test_りんごは食べることができない_なぜなら_りんごは綺麗ではないから() {
         let text =
-            "hane hapu to paheta si ri behapare sute he hudu ne pakarena sa ri behoranage ho"
+            "hane hapu to paheta si ri behapare sute re he hudu ne pakarena sa ri behoranage ho"
                 .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -845,7 +845,7 @@ mod tests {
     #[test]
     fn test_私はりんごは食べるなみかんを食べろと言った() {
         let text =
-            "kasa sa mi si he homa ne paheta sa ba si ri behapare paheta sa ba si ri behoranage ho"
+            "kasa sa mi si re he homa ne paheta sa ba si ri behapare paheta sa ba si ri behoranage ho"
                 .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -853,14 +853,14 @@ mod tests {
 
     #[test]
     fn test_あなたはりんごを食べろと言うのですか() {
-        let text = "ku kasa sa ba si he paheta sa mi si ri behapare ho".to_string();
+        let text = "ku kasa sa ba si re he paheta sa mi si ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_貴様はりんごを食べたいと言った() {
-        let text = "hita kasa sa ba si he hapu to paheta sa ba si ri behapare ho".to_string();
+        let text = "hita kasa sa ba si re he hapu to paheta sa ba si ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -868,7 +868,7 @@ mod tests {
     #[test]
     fn test_私はりんごを食べたいと言った覚えがない() {
         let text =
-            "ne karememabera sa mi si he hita kasa sa mi si he hapu to paheta sa mi si ri behapare ho ho"
+            "ne karememabera sa mi si re he hita kasa sa mi si re he hapu to paheta sa mi si ri behapare ho ho"
                 .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -877,7 +877,7 @@ mod tests {
     #[test]
     fn test_あなたは確か私はりんごを食べたいと言ったはずだ() {
         let text =
-            "hapa ta hita kasa sa ba si he hapu to paheta sa ba si ri behapare ho".to_string();
+            "hapa ta hita kasa sa ba si re he hapu to paheta sa ba si ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -891,7 +891,7 @@ mod tests {
 
     #[test]
     fn test_あなたは絶対に私に対してりんごを食べたいと言った() {
-        let text = "hapa ta hita kasa sa ba subo mi si he kahanata sa ba si he paheta sa ba si ri behapare ho ho"
+        let text = "hapa ta hita kasa sa ba subo mi si re he kahanata sa ba si re he paheta sa ba si ri behapare ho ho"
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
@@ -899,7 +899,7 @@ mod tests {
 
     #[test]
     fn test_彼は私にりんごを食べさせる() {
-        let text = "kareta sa gi si he paheta sa ba si ri behapare ho".to_string();
+        let text = "kareta sa gi si re he paheta sa ba si ri behapare ho".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }
@@ -920,7 +920,7 @@ mod tests {
 
     #[test]
     fn test_りんごは彼によって私に食べさせられた() {
-        let text = "kareta si he paheta si ri behapare sa ba ho sa gi".to_string();
+        let text = "kareta si re he paheta si ri behapare sa ba ho sa gi".to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
     }

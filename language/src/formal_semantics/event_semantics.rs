@@ -335,8 +335,6 @@ enum ArgCtx {
         left: Box<ArgCtx>,
         right: Box<ArgCtx>,
     },
-    /// Event nominalization (he … ho): ∃var.(inner ∧ body).
-    Nominal { var: String, inner: Box<Formula> },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -358,7 +356,6 @@ impl ArgCtx {
             ArgCtx::Const(s) => Term::Const(s.clone()),
             ArgCtx::Neg(inner) => inner.term(),
             ArgCtx::Coord { left, .. } => left.term(), // distribution is handled externally
-            ArgCtx::Nominal { var, .. } => Term::Var(var.clone()),
         }
     }
 
@@ -411,9 +408,6 @@ impl ArgCtx {
                 // build_event_inner.  Fall back to scoping only with the left branch.
                 left.scope(body)
             }
-            ArgCtx::Nominal { var, inner } => {
-                Formula::Exists(var, Box::new(Formula::And(inner, Box::new(body))))
-            }
         }
     }
 }
@@ -460,7 +454,7 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
             left: Box::new(negate_restriction(*left)),
             right,
         },
-        other => other, // Const / ExistOnly / Nominal: cannot negate meaningfully
+        other => other, // Const / ExistOnly / FreeVar: cannot negate meaningfully
     }
 }
 
@@ -617,11 +611,11 @@ fn resolve_role_args<'a>(arg1: &'a RoleArg, arg2: &'a RoleArg) -> (&'a RoleArg, 
 impl PostModifiedMtaEvent {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            PostModifiedMtaEvent::One(mta) => mta.to_fol(None, vg),
+            PostModifiedMtaEvent::One(mta) => mta.to_fol(Gap::None, vg),
             PostModifiedMtaEvent::Two(head, arg1, arg2) => {
                 let (p_arg, q_arg) = resolve_role_args(arg1, arg2);
-                let p = p_arg.get_mta_event().to_fol(None, vg);
-                let q = q_arg.get_mta_event().to_fol(None, vg);
+                let p = p_arg.get_mta_event().to_fol(Gap::None, vg);
+                let q = q_arg.get_mta_event().to_fol(Gap::None, vg);
                 match head.get_kind() {
                     ConnectiveHeadKind::Hesuteto
                     | ConnectiveHeadKind::Henosuteto
@@ -646,8 +640,15 @@ impl PostModifiedMtaEvent {
     }
 }
 
-/// 項抽出の空所: 抽出される格と、そこに入る(外側で量化される)変数名。
-type Gap<'a> = Option<(&'a CaseLabelKind, &'a str)>;
+/// 節からの項抽出の空所。変数は外側で量化される。
+#[derive(Clone, Copy)]
+enum Gap<'a> {
+    None,
+    /// `ra`/`ri`/`ru K`: その格の項に変数が入る。
+    Case(&'a CaseLabelKind, &'a str),
+    /// `re`: 節内のイベント変数そのものが変数になる。
+    Event(&'a str),
+}
 
 impl MtaEvent {
     /// `gap`は節からの項抽出(`ri he … ho`など)のとき、節内の全Eventで共有される空所。
@@ -966,7 +967,7 @@ impl Event {
         }
         // 空所の格は節内に書かれていても(型エラー)空所を優先する。
         let arg_of = |kind: &CaseLabelKind, vg: &mut VarGen| match gap {
-            Some((gap_kind, var)) if gap_kind == kind => Some(ArgCtx::FreeVar(var.to_string())),
+            Gap::Case(gap_kind, var) if gap_kind == kind => Some(ArgCtx::FreeVar(var.to_string())),
             _ => by_kind.get(kind).map(|&phrase| phrase.to_fol(vg)),
         };
         let arg2 = arg_of(&CaseLabelKind::Si, vg).unwrap_or_else(|| ArgCtx::ExistOnly(vg.next()));
@@ -976,7 +977,11 @@ impl Event {
             .into_iter()
             .filter_map(|(kind, role_name)| arg_of(&kind, vg).map(|ctx| (role_name, ctx)))
             .collect();
-        build_event_inner(&pred, arg1, arg2, extra_roles, frame, vg)
+        let event_var = match gap {
+            Gap::Event(var) => Some(var),
+            _ => None,
+        };
+        build_event_inner(&pred, arg1, arg2, extra_roles, frame, event_var, vg)
     }
 }
 
@@ -996,12 +1001,15 @@ fn xor_formula(f1: Formula, f2: Formula) -> Formula {
 /// `∃e.(pred(e) ∧ Agent(e, arg1) ∧ Patient(e, arg2) ∧ <extra_roles>)`
 ///
 /// Scope order (outer → inner): arg1, extra_roles (declared order), arg2.
+///
+/// `event_var`が指定されていれば、それをイベント変数として使い、存在閉包しない(`re`の抽出)。
 fn build_event_inner(
     pred: &PredCtx,
     arg1: ArgCtx,
     arg2: ArgCtx,
     extra_roles: Vec<(&'static str, ArgCtx)>,
     frame: &EventFrame,
+    event_var: Option<&str>,
     vg: &mut VarGen,
 ) -> Formula {
     match pred {
@@ -1013,6 +1021,7 @@ fn build_event_inner(
                 arg2,
                 extra_roles,
                 frame,
+                event_var,
                 vg,
             )))
         }
@@ -1020,7 +1029,15 @@ fn build_event_inner(
         PredCtx::Antonym(inner) => {
             // no P: derive a fresh, independent atom "P@anti" and compile it exactly
             // like an ordinary predicate (no `Not`, no asserted relationship to P).
-            build_event_inner(&antonym_rename(inner), arg1, arg2, extra_roles, frame, vg)
+            build_event_inner(
+                &antonym_rename(inner),
+                arg1,
+                arg2,
+                extra_roles,
+                frame,
+                event_var,
+                vg,
+            )
         }
 
         PredCtx::Coord { op, left, right } => {
@@ -1031,9 +1048,10 @@ fn build_event_inner(
                 arg2.clone(),
                 extra_roles.clone(),
                 frame,
+                event_var,
                 vg,
             );
-            let f2 = build_event_inner(right, arg1, arg2, extra_roles, frame, vg);
+            let f2 = build_event_inner(right, arg1, arg2, extra_roles, frame, event_var, vg);
             match op {
                 OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                 OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -1045,8 +1063,16 @@ fn build_event_inner(
             // Distribute over arg1 coordination.
             if let ArgCtx::Coord { op, left, right } = arg1 {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, *left, arg2.clone(), extra_roles.clone(), frame, vg);
-                let f2 = build_event_inner(&p, *right, arg2, extra_roles, frame, vg);
+                let f1 = build_event_inner(
+                    &p,
+                    *left,
+                    arg2.clone(),
+                    extra_roles.clone(),
+                    frame,
+                    event_var,
+                    vg,
+                );
+                let f2 = build_event_inner(&p, *right, arg2, extra_roles, frame, event_var, vg);
                 return match op {
                     OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                     OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -1056,8 +1082,16 @@ fn build_event_inner(
             // Distribute over arg2 coordination.
             if let ArgCtx::Coord { op, left, right } = arg2 {
                 let p = PredCtx::Simple(name.clone());
-                let f1 = build_event_inner(&p, arg1.clone(), *left, extra_roles.clone(), frame, vg);
-                let f2 = build_event_inner(&p, arg1, *right, extra_roles, frame, vg);
+                let f1 = build_event_inner(
+                    &p,
+                    arg1.clone(),
+                    *left,
+                    extra_roles.clone(),
+                    frame,
+                    event_var,
+                    vg,
+                );
+                let f2 = build_event_inner(&p, arg1, *right, extra_roles, frame, event_var, vg);
                 return match op {
                     OperatorKind::And => Formula::And(Box::new(f1), Box::new(f2)),
                     OperatorKind::Or => Formula::Or(Box::new(f1), Box::new(f2)),
@@ -1084,7 +1118,7 @@ fn build_event_inner(
                 }
                 body
             };
-            let e = vg.next_event();
+            let e = event_var.map_or_else(|| vg.next_event(), str::to_string);
             let ev = Term::Var(e.clone());
             let event_formula = match frame {
                 EventFrame::Plain => Formula::Exists(e, Box::new(event_body(&ev))),
@@ -1113,6 +1147,10 @@ fn build_event_inner(
                         )),
                     )
                 }
+            };
+            let event_formula = match (event_var, event_formula) {
+                (Some(_), Formula::Exists(_, body)) => *body,
+                (_, f) => f,
             };
             // arg2 scopes innermost, extra_roles in between, arg1 scopes outermost.
             let mut f = arg2.scope(event_formula);
@@ -1158,23 +1196,13 @@ impl ArgumentPhrase {
             // Quantified argument phrase.
             ArgumentPhrase::Four(quant_arg) => quant_arg.to_fol(vg),
 
-            // Event nominalization: he MtaEvent ho.
-            ArgumentPhrase::Five(_he, mta_event, _ho) => {
-                let var = vg.next();
-                let inner = mta_event.to_fol(None, vg);
-                ArgCtx::Nominal {
-                    var,
-                    inner: Box::new(inner),
-                }
-            }
-
             // Proper noun: he<X> BODY hoho → individual constant, namespaced by the
             // opener so a quoted name can never collide with a pronoun constant or
             // with the same raw text quoted under a different he<X> class.
-            ArgumentPhrase::Six(opener, body, _hoho) => {
+            ArgumentPhrase::Five(opener, body, _hoho) => {
                 ArgCtx::Const(format!("{}:{}", opener.get_string(), body.get_string()))
             }
-            ArgumentPhrase::Seven(proper_noun) => ArgCtx::Const(proper_noun.get_string()),
+            ArgumentPhrase::Six(proper_noun) => ArgCtx::Const(proper_noun.get_string()),
         }
     }
 }
@@ -1233,20 +1261,25 @@ impl DeterminedArgument {
 
 impl RetrievedArgument {
     fn to_fol(&self, var: &str, vg: &mut VarGen) -> Formula {
+        // `None`は`re`(事象そのものの抽出)。
         let (gap_kind, body) = match self {
             RetrievedArgument::One(retriever, body) => (retriever.gap_case(), body),
-            RetrievedArgument::Two(_ru, label, body) => (label.get_kind().clone(), body),
+            RetrievedArgument::Two(_ru, label, body) => (Some(label.get_kind().clone()), body),
         };
         let x = Term::Var(var.to_string());
         match body {
-            // 節からの抽出: 節内のEventの空所の格に`var`を入れる。
+            // 節からの抽出: 節内のEventの空所の格(`re`ならイベント変数)に`var`を入れる。
             ArgumentRetrievalBinaryPredicate::Two(_he, mta_event, _ho) => {
-                mta_event.to_fol(Some((&gap_kind, var)), vg)
+                let gap = match &gap_kind {
+                    Some(kind) => Gap::Case(kind, var),
+                    None => Gap::Event(var),
+                };
+                mta_event.to_fol(gap, vg)
             }
             ArgumentRetrievalBinaryPredicate::One(pred, with_arg) => {
                 let base = build_role_restriction(
                     &extract_pred(pred),
-                    role_name(&gap_kind),
+                    gap_kind.as_ref().map(role_name),
                     x.clone(),
                     vg,
                 );
@@ -1265,9 +1298,13 @@ impl RetrievedArgument {
 }
 
 /// `ra`/`ri`/`ru K`で抽出した項`x`を制限する式 `∃e.(P(e) ∧ Role(e, x))`。
-fn build_role_restriction(pred: &PredCtx, role: &str, x: Term, vg: &mut VarGen) -> Formula {
+/// `role`が`None`(`re`)なら`x`自体がイベントで、式は`P(x)`になる。
+fn build_role_restriction(pred: &PredCtx, role: Option<&str>, x: Term, vg: &mut VarGen) -> Formula {
     match pred {
         PredCtx::Simple(name) => {
+            let Some(role) = role else {
+                return Formula::Atom(name.clone(), vec![x]);
+            };
             let e = vg.next_event();
             let ev = Term::Var(e.clone());
             Formula::Exists(
@@ -1668,8 +1705,8 @@ mod tests {
     #[test]
     fn test_節からの抽出_入れ子の名詞化には空所が伝わらない() {
         check(
-            "parobe sa mi si ra he karobe si he paheta si ri behapare ho ho",
-            "∃x.(∃y.(∃x1.∃z.(∃e.(behapare(e) ∧ Patient(e, z)) ∧ ∃e1.(paheta(e1) ∧ (Agent(e1, x1) ∧ Patient(e1, z)))) ∧ ∃e2.(karobe(e2) ∧ (Agent(e2, x) ∧ Patient(e2, y)))) ∧ ∃e3.(parobe(e3) ∧ (Agent(e3, mi) ∧ Patient(e3, x))))",
+            "parobe sa mi si ra he karobe si re he paheta si ri behapare ho ho",
+            "∃x.(∃y.(∃x1.∃z.(∃e.(behapare(e) ∧ Patient(e, z)) ∧ (paheta(y) ∧ (Agent(y, x1) ∧ Patient(y, z)))) ∧ ∃e1.(karobe(e1) ∧ (Agent(e1, x) ∧ Patient(e1, y)))) ∧ ∃e2.(parobe(e2) ∧ (Agent(e2, mi) ∧ Patient(e2, x))))",
         );
     }
 
@@ -1874,11 +1911,47 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
-    fn test_事象名詞化_あなたは_私はりんごを食べる_と言った() {
+    fn test_事象名詞化_あなたは_私はりんごを食べた_と言った() {
         check(
-            "kasa ba si he paheta mi si ri behapare ho",
-            "∃x.(∃y.(behapare(y) ∧ ∃e.(paheta(e) ∧ (Agent(e, mi) ∧ Patient(e, y)))) ∧ ∃e1.(kasa(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))))",
+            "kasa sa ba si re he hita paheta sa mi si ri behapare ho",
+            "∃x.(∃y.(∃e.(behapare(e) ∧ Patient(e, y)) ∧ ((paheta(x) ∧ (Agent(x, mi) ∧ Patient(x, y))) ∧ τ(x) < t0)) ∧ ∃e1.(kasa(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, x))))",
         );
+    }
+
+    #[test]
+    fn test_事象名詞化_述語から_私は食べることを経験した() {
+        check(
+            "kahekasaperinase sa mi si re paheta",
+            "∃x.(paheta(x) ∧ ∃e.(kahekasaperinase(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_事象名詞化_限定詞が付く_私はこの_あなたが食べたこと_を覚えている() {
+        check(
+            "karememabera sa mi si mo re he hita paheta sa ba ho",
+            "∃x.((mo(x) ∧ ∃y.((paheta(x) ∧ (Agent(x, ba) ∧ Patient(x, y))) ∧ τ(x) < t0)) ∧ ∃e.(karememabera(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_事象名詞化_否定された節() {
+        check(
+            "kasa sa ba si re he ne paheta sa mi ho",
+            "∃x.(¬∃y.(paheta(x) ∧ (Agent(x, mi) ∧ Patient(x, y))) ∧ ∃e.(kasa(e) ∧ (Agent(e, ba) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_事象名詞化_等位接続の両方のeventが同じ事象になる() {
+        check(
+            "kasa sa ba si re he homa paheta sa mi parobe sa mi ho",
+            "∃x.((∃y.(paheta(x) ∧ (Agent(x, mi) ∧ Patient(x, y))) ∧ ∃z.(parobe(x) ∧ (Agent(x, mi) ∧ Patient(x, z)))) ∧ ∃e.(kasa(e) ∧ (Agent(e, ba) ∧ Patient(e, x))))",
+        );
+    }
+
+    #[test]
+    fn test_事象名詞化_reなしのhe_hoは項にならない() {
+        assert!(to_fol_string("kasa sa ba si he paheta sa mi ho").is_err());
     }
 }

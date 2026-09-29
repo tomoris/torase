@@ -449,13 +449,8 @@ impl ArgumentPhrase {
                 Ok(())
             }
             ArgumentPhrase::Four(quantified_argument) => quantified_argument.type_check(),
-            ArgumentPhrase::Five(
-                _mta_event_to_argument_phrase_converter,
-                mta_event,
-                _mta_event_to_argument_phrase_converter_end,
-            ) => mta_event.type_check(),
-            ArgumentPhrase::Six(_opener, _body, _closer) => Ok(()),
-            ArgumentPhrase::Seven(_proper_noun) => Ok(()),
+            ArgumentPhrase::Five(_opener, _body, _closer) => Ok(()),
+            ArgumentPhrase::Six(_proper_noun) => Ok(()),
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
@@ -467,11 +462,8 @@ impl ArgumentPhrase {
                 intersection(&argument1.get_type(), &argument2.get_type())
             }
             ArgumentPhrase::Four(quantified_argument) => quantified_argument.get_type(),
-            ArgumentPhrase::Five(_, _, _) => {
-                vec![ArgumentType::Abstraction]
-            }
-            ArgumentPhrase::Six(opener, _, _) => vec![opener.get_type()],
-            ArgumentPhrase::Seven(proper_noun) => vec![proper_noun.get_type()],
+            ArgumentPhrase::Five(opener, _, _) => vec![opener.get_type()],
+            ArgumentPhrase::Six(proper_noun) => vec![proper_noun.get_type()],
         }
     }
 }
@@ -514,7 +506,8 @@ impl RetrievedArgument {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
             RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
-                argument_retrieval_binary_predicate.type_check(&argument_retriever.gap_case())
+                argument_retrieval_binary_predicate
+                    .type_check(argument_retriever.gap_case().as_ref())
             }
             RetrievedArgument::Two(_ru, case_label, argument_retrieval_binary_predicate) => {
                 if adjunct_case_type(case_label.get_kind()).is_none() {
@@ -528,14 +521,17 @@ impl RetrievedArgument {
                         ),
                     });
                 }
-                argument_retrieval_binary_predicate.type_check(case_label.get_kind())
+                argument_retrieval_binary_predicate.type_check(Some(case_label.get_kind()))
             }
         }
     }
     fn get_type(&self) -> Vec<ArgumentType> {
         match self {
             RetrievedArgument::One(argument_retriever, argument_retrieval_binary_predicate) => {
-                argument_retrieval_binary_predicate.get_type(&argument_retriever.gap_case())
+                match argument_retriever.gap_case() {
+                    Some(gap) => argument_retrieval_binary_predicate.get_type(&gap),
+                    None => vec![ArgumentType::Abstraction],
+                }
             }
             RetrievedArgument::Two(_ru, case_label, _argument_retrieval_binary_predicate) => {
                 adjunct_case_type(case_label.get_kind())
@@ -548,7 +544,8 @@ impl RetrievedArgument {
 
 impl ArgumentRetrievalBinaryPredicate {
     /// `gap`は抽出される格。節の形(`he … ho`)では、節内のEventがこの格を明示してはいけない。
-    fn type_check(&self, gap: &CaseLabelKind) -> TypeMismatchResult {
+    /// `re`は事象そのものを抽出するので`gap`は`None`になる。
+    fn type_check(&self, gap: Option<&CaseLabelKind>) -> TypeMismatchResult {
         match self {
             ArgumentRetrievalBinaryPredicate::One(
                 post_modified_binary_predicate_phrase,
@@ -559,6 +556,9 @@ impl ArgumentRetrievalBinaryPredicate {
             }
             ArgumentRetrievalBinaryPredicate::Two(_he, mta_event, _ho) => {
                 mta_event.type_check()?;
+                let Some(gap) = gap else {
+                    return Ok(());
+                };
                 for event in mta_event.events() {
                     if let Some((label, _)) = event
                         .case_args()

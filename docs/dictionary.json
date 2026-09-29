@@ -57,7 +57,7 @@
         "original_spelling": null,
         "terminal_type": "MtaEventToArgumentPhraseConverter",
         "definition": null,
-        "description": "命題を項に変換する開始マーカー。命題の始まりに置く。"
+        "description": "節の開始マーカー。`ra`/`ri`/`re`/`ru <格標識>`の後ろで、述語の代わりに節を置くときに節の始まりに置く。単独では項にならない。"
     },
     "hehenu": {
         "original_spelling": null,
@@ -159,7 +159,7 @@
         "original_spelling": null,
         "terminal_type": "MtaEventToArgumentPhraseConverterEnd",
         "definition": null,
-        "description": "命題を項に変換する終了マーカー。命題の終わりに置く。"
+        "description": "節の終了マーカー。`he`で始めた節の終わりに置く。"
     },
     "hoba": {
         "original_spelling": null,
@@ -274,6 +274,12 @@
         "terminal_type": "ArgumentRetriever",
         "definition": null,
         "description": "項抽出。述語の第一項(x1)を抽出し、項句(名詞句)に変換する。"
+    },
+    "re": {
+        "original_spelling": null,
+        "terminal_type": "ArgumentRetriever",
+        "definition": null,
+        "description": "項抽出。述語が表す事象そのものを抽出し、項句(名詞句)に変換する(「〜すること」)。"
     },
     "ri": {
         "original_spelling": null,
