@@ -338,7 +338,7 @@ ze (ta|to) za (ta|to) zi [平叙文]
 - `di` (述語修飾句の前置詞)
 - `du` (項修飾句の前置詞。項抽出句の後ろに置き、日本語の「〜の」のように関係の基準となる項を添える)
 
-`du`は関係の種類を指定しない。`ri paparatanera du mi`(私のパートナー)も`ri zahona du ri diharora`(床の上)も、抽出された項xと添えた項yの間に何らかの関係があること(論理式では`Of(x, y)`)だけを表し、yを述語のx1やx2に割り当てるわけではない。
+`du`は関係の種類を指定しない。`ri paparatanera du mi`(私のパートナー)も`ri zahona du ri duharora`(床の上)も、抽出された項xと添えた項yの間に何らかの関係があること(論理式では`Of(x, y)`)だけを表し、yを述語のx1やx2に割り当てるわけではない。
 
 ### 格
 
@@ -385,7 +385,7 @@ ze (ta|to) za (ta|to) zi [平叙文]
 - `suni`/`sune`/`suno`: 空間を指す指示代名詞(`me`/`be`/`ge`)、または`za`(空間関係。例:「Xの中」「Xの近く」)。固有名詞では`heza`と`ti…`(「固有名詞」節参照)も直接満たす。
 - `sugi`/`suge`/`sugo`: 時を指す指示代名詞(`me`/`be`/`ge`)、`ziV`(時間関係)、または`zu`(時間の尺度。例:「6日」「5分間」)。固有名詞では`hezi`も直接満たす。
 
-`ru`(付加詞の項抽出。「その他」節参照)で抽出した項は、抽出に使った格の上記の型を持つ。例えば`ru suni paheta`(食べる場所)は空間の型を持つので、`suni`などの空間格に置ける。
+`ru`(付加詞の項抽出。「その他」節参照)で抽出した項は、抽出に使った格の上記の型を持つ。例えば`ru suni peheta`(食べる場所)は空間の型を持つので、`suni`などの空間格に置ける。
 
 ### 接続詞
 
@@ -424,12 +424,12 @@ ze (ta|to) za (ta|to) zi [平叙文]
 
 | 抽出詞    | 述語                          | 節                                                                        |
 | --------- | ----------------------------- | ------------------------------------------------------------------------- |
-| `ri`      | `ri paheta` (食べる物)        | `ri he paheta sa mi ho` (私が食べる物)                                    |
-| `ru suni` | `ru suni paheta` (食べる場所) | `ru suni he hita paheta sa mi si ri behapare ho` (私がりんごを食べた場所) |
-| `re`      | `re paheta` (食べること)      | `re he hita paheta sa mi si ri behapare ho` (私がりんごを食べたこと)      |
+| `ri`      | `ri peheta` (食べる物)        | `ri he peheta sa mi ho` (私が食べる物)                                    |
+| `ru suni` | `ru suni peheta` (食べる場所) | `ru suni he hita peheta sa mi si ri nohapare ho` (私がりんごを食べた場所) |
+| `re`      | `re peheta` (食べること)      | `re he hita peheta sa mi si ri nohapare ho` (私がりんごを食べたこと)      |
 
 `re`で抽出した項は抽象概念(`gV|mV|rV`)の型を持つので、`sute`/`suto`(原因格・目的格)にも置ける。他の抽出と同じく限定詞・数量詞も付けられる(`mo re he … ho`: このこと)。
-- `se` (型の上書き。格標識(`sa`/`si`/`su[CV]`)の直後・項句の直前に置く任意のトークンで、その項だけを述語の型検査から除外し、任意の型として扱わせる。比喩・見立て表現用。例:「parobe(x1はx2を愛す。x1,x2ともに生物`bV`を要求)sa se ri ditabare si ba」で、本来生物ではない項を主格に置ける)
+- `se` (型の上書き。格標識(`sa`/`si`/`su[CV]`)の直後・項句の直前に置く任意のトークンで、その項だけを述語の型検査から除外し、任意の型として扱わせる。比喩・見立て表現用。例:「parobe(x1はx2を愛す。x1,x2ともに生物`bV`を要求)sa se ri databare si ba」で、本来生物ではない項を主格に置ける)
 
 ### 固有名詞
 

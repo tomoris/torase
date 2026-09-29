@@ -382,8 +382,8 @@ mod tests {
 
     #[test]
     fn test_語頭の母音にはhを補い語末のeは母音として残す() {
-        let result = borrow_predicate(PredicatePrefix::Be, "apple", &no_existing_words()).unwrap();
-        assert_eq!(result.word, "behapare");
+        let result = borrow_predicate(PredicatePrefix::No, "apple", &no_existing_words()).unwrap();
+        assert_eq!(result.word, "nohapare");
     }
 
     #[test]

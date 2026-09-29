@@ -491,13 +491,13 @@
         "definition": null,
         "description": "x1はx2を人と定義する。"
     },
-    "behapare": {
+    "nohapare": {
         "original_spelling": "apple",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1はx2をりんごと定義する。"
     },
-    "behoranage": {
+    "nohoranage": {
         "original_spelling": "orange",
         "terminal_type": "BinaryPredicate",
         "definition": null,
@@ -569,7 +569,7 @@
         "definition": null,
         "description": "x1はx2をドアと定義する。"
     },
-    "diharora": {
+    "duharora": {
         "original_spelling": "floor",
         "terminal_type": "BinaryPredicate",
         "definition": null,
@@ -605,7 +605,7 @@
         "definition": "ze ta za ta zi hehezu hesa disinaga sa za si zi hesi dasinaga sa za si zi",
         "description": "x1はx2をものと定義する。 `dasinaga`/`dusinaga`と近義語。`dasinaga`の言い換え(`definition`参照)。"
     },
-    "ditabare": {
+    "databare": {
         "original_spelling": "table",
         "terminal_type": "BinaryPredicate",
         "definition": null,
@@ -947,25 +947,25 @@
         "definition": null,
         "description": "x1はx2を歯と定義する。"
     },
-    "pabu": {
+    "pebu": {
         "original_spelling": "buy",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を買う。"
     },
-    "padaropa": {
+    "pedaropa": {
         "original_spelling": "drop",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を落とす/x2(物)が落ちる。"
     },
-    "padirati": {
+    "pedirati": {
         "original_spelling": "dirty",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を汚す。"
     },
-    "pagibe": {
+    "pegibe": {
         "original_spelling": "give",
         "terminal_type": "BinaryPredicate",
         "definition": null,
@@ -989,19 +989,25 @@
         "definition": null,
         "description": "x1(人)はx2(人)を助ける。"
     },
-    "paheta": {
+    "pamarige": {
+        "original_spelling": "marriage",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(人)と結婚する。"
+    },
+    "peheta": {
         "original_spelling": "eat",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を食べる。"
     },
-    "pakarena": {
+    "pekarena": {
         "original_spelling": "clean",
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を綺麗にする。"
     },
-    "pamobe": {
+    "pemobe": {
         "original_spelling": "move",
         "terminal_type": "BinaryPredicate",
         "definition": null,
@@ -1079,12 +1085,6 @@
         "definition": null,
         "description": "x1(人)はx2(物)を使う。"
     },
-    "pemarige": {
-        "original_spelling": "marriage",
-        "terminal_type": "BinaryPredicate",
-        "definition": null,
-        "description": "x1(人)はx2(人)と結婚する。"
-    },
     "pemake": {
         "original_spelling": "make",
         "terminal_type": "BinaryPredicate",
@@ -1114,6 +1114,12 @@
         "terminal_type": "BinaryPredicate",
         "definition": null,
         "description": "x1(人)はx2(物)を見る。"
+    },
+    "perobe": {
+        "original_spelling": "love",
+        "terminal_type": "BinaryPredicate",
+        "definition": null,
+        "description": "x1(人)はx2(物)を愛す/好む。"
     },
     "petake": {
         "original_spelling": "take",
