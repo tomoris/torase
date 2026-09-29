@@ -3394,7 +3394,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let input = "parobe sa ma si ba eos";
+        let input = "parobe sa ma si ba do";
         let sentences = tokenize(input).unwrap();
         let result = parse(sentences[0].clone());
         assert!(result.is_ok(), "expected parse to succeed: {result:?}");
@@ -3404,7 +3404,7 @@ mod tests {
 
     #[test]
     fn test_parse_固有名詞がargumentphrase_fiveとしてパースできる() {
-        let input = "parobe sa heba Kanye hoho si ba eos";
+        let input = "parobe sa heba Kanye hoho si ba do";
         let sentences = tokenize(input).unwrap();
         let result = parse(sentences[0].clone());
         assert!(result.is_ok(), "expected parse to succeed: {result:?}");
@@ -3416,7 +3416,7 @@ mod tests {
 
     #[test]
     fn test_parse_tで始まる固有名詞がargumentphrase_sixとしてパースできる() {
-        let input = "parobe sa taro si ba eos";
+        let input = "parobe sa taro si ba do";
         let sentences = tokenize(input).unwrap();
         let result = parse(sentences[0].clone());
         assert!(result.is_ok(), "expected parse to succeed: {result:?}");

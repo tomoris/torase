@@ -1500,7 +1500,7 @@ define_fixed_token!(
     "du"
 );
 
-define_fixed_token!(Eos, "eos", "eos");
+define_fixed_token!(Eos, "eos", "do");
 
 impl Eos {
     pub fn new_omitted_token() -> Self {
@@ -1560,19 +1560,19 @@ mod tests {
 
     #[test]
     fn test_split_with_utf8_ranges() {
-        let input = "binary_predicate argument accusative_preposition argument eos\nbinary_predicate argument accusative_preposition argument eos";
+        let input = "binary_predicate argument accusative_preposition argument do\nbinary_predicate argument accusative_preposition argument do";
         let tokens = split_with_utf8_ranges(input).unwrap();
         assert_eq!(tokens.len(), 10);
         assert_eq!(tokens[0], ("binary_predicate", 0, 0, 0, 16));
         assert_eq!(tokens[1], ("argument", 0, 17, 0, 25));
         assert_eq!(tokens[2], ("accusative_preposition", 0, 26, 0, 48));
         assert_eq!(tokens[3], ("argument", 0, 49, 0, 57));
-        assert_eq!(tokens[4], ("eos", 0, 58, 0, 61));
+        assert_eq!(tokens[4], ("do", 0, 58, 0, 60));
         assert_eq!(tokens[5], ("binary_predicate", 1, 0, 1, 16));
         assert_eq!(tokens[6], ("argument", 1, 17, 1, 25));
         assert_eq!(tokens[7], ("accusative_preposition", 1, 26, 1, 48));
         assert_eq!(tokens[8], ("argument", 1, 49, 1, 57));
-        assert_eq!(tokens[9], ("eos", 1, 58, 1, 61));
+        assert_eq!(tokens[9], ("do", 1, 58, 1, 60));
     }
 
     #[test]
@@ -1609,7 +1609,7 @@ mod tests {
 
     #[test]
     fn test_tokenize_固有名詞が正しくトークナイズされる() {
-        let input = "heba Kanye West hoho eos";
+        let input = "heba Kanye West hoho do";
         let sentences = tokenize(input).unwrap();
         assert_eq!(sentences[0].len(), 4);
         assert_eq!(
@@ -1630,23 +1630,29 @@ mod tests {
     fn test_tokenize_固有名詞の中身が他のトークンと同じ文字列でも生テキストになる() {
         // "mi"は代名詞、"ta"は量化詞と同じ表層形だが、引用区間の中身は無条件に
         // ProperNounBodyとして扱われる。
-        let sentences = tokenize("heba mi hoho eos").unwrap();
+        let sentences = tokenize("heba mi hoho do").unwrap();
         assert_eq!(sentences[0].len(), 4);
         assert!(
             matches!(&sentences[0][1], TerminalType::ProperNounBody(body) if body.get_string() == "mi")
         );
 
-        let sentences = tokenize("hedi ta hoho eos").unwrap();
+        let sentences = tokenize("hedi ta hoho do").unwrap();
         assert_eq!(sentences[0].len(), 4);
         assert!(
             matches!(&sentences[0][1], TerminalType::ProperNounBody(body) if body.get_string() == "ta")
+        );
+
+        let sentences = tokenize("heba A do B hoho do").unwrap();
+        assert_eq!(sentences.len(), 1);
+        assert!(
+            matches!(&sentences[0][1], TerminalType::ProperNounBody(body) if body.get_string() == "A do B")
         );
     }
 
     #[test]
     fn test_tokenize_tで始まる語は固有名詞になる() {
         for word in ["taro", "tetitanika", "tikanada", "tonasa"] {
-            let sentences = tokenize(&format!("{word} eos")).unwrap();
+            let sentences = tokenize(&format!("{word} do")).unwrap();
             assert!(
                 matches!(&sentences[0][0], TerminalType::ProperNoun(pn) if pn.get_string() == word),
                 "{word} should be a proper noun: {:?}",
@@ -1657,7 +1663,7 @@ mod tests {
 
     #[test]
     fn test_tokenize_量化詞と数詞はtで始まる固有名詞にならない() {
-        let sentences = tokenize("ta to tusadi eos").unwrap();
+        let sentences = tokenize("ta to tusadi do").unwrap();
         assert!(matches!(&sentences[0][0], TerminalType::Quantifier(_)));
         assert!(matches!(&sentences[0][1], TerminalType::Quantifier(_)));
         assert!(matches!(&sentences[0][2], TerminalType::Number(_)));
@@ -1665,19 +1671,19 @@ mod tests {
 
     #[test]
     fn test_tokenize_tuで始まる数詞でない語はエラーになる() {
-        assert!(tokenize("tuhana eos").is_err());
+        assert!(tokenize("tuhana do").is_err());
     }
 
     #[test]
     fn test_tokenize_hohoが無い固有名詞はエラーになる() {
-        let input = "parobe sa heba Kanye si ba eos";
+        let input = "parobe sa heba Kanye si ba do";
         let result = tokenize(input);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_1文のトークン分割が成功する() {
-        let input = "parobe ma si ba eos";
+        let input = "parobe ma si ba do";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 1);
@@ -1700,7 +1706,7 @@ mod tests {
         );
         assert_eq!(
             sentences[0][4],
-            TerminalType::Eos(Eos::new("eos", 0, 16, 0, 19))
+            TerminalType::Eos(Eos::new("do", 0, 16, 0, 18))
         );
     }
 
@@ -1747,7 +1753,7 @@ mod tests {
 
     #[test]
     fn test_2文のトークン分割が成功する() {
-        let input = "parobe me si ba eos ri parobe bu si gu";
+        let input = "parobe me si ba do ri parobe bu si gu";
         let sentences = tokenize(input).unwrap();
         let sentences = add_eos_to_last_sentence(sentences);
         assert_eq!(sentences.len(), 2);

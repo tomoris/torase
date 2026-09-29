@@ -11,17 +11,17 @@
         "definition": null,
         "description": "述語修飾句の前置詞。"
     },
+    "do": {
+        "original_spelling": null,
+        "terminal_type": "Eos",
+        "definition": null,
+        "description": "文の区切り。文末に置き、文と文の区切りを示す。文と文の間では必須で、最後の文の後ろでは省略できる。"
+    },
     "du": {
         "original_spelling": null,
         "terminal_type": "PostArgumentPhraseModifier",
         "definition": null,
         "description": "項修飾句の前置詞。"
-    },
-    "eos": {
-        "original_spelling": null,
-        "terminal_type": "Eos",
-        "definition": null,
-        "description": "文末マーカー。文と文の区切りを示す。"
     },
     "go": {
         "original_spelling": null,

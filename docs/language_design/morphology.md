@@ -145,6 +145,17 @@ ze ta za ta zi hehezu hesa kagurita sa za si zi hesi kaho sa za si zi
 
 ## 機能語
 
+### 文の区切り
+
+- `do`
+
+文末に置き、文と文の区切りを示す。文と文の間では必須で、最後の文の後ろでは省略できる(1文だけの場合も省略できる)。
+
+```
+A do B do C
+A do B do C do
+```
+
 ### 疑問文マーカー
 
 - `ku`
@@ -411,11 +422,11 @@ ze (ta|to) za (ta|to) zi [平叙文]
 
 `he … ho`は節を述語の位置に置くための括弧で、単独では項にならない。`ra`/`ri`/`ru <格標識>`の後ろに置いた節では、節の中で省略した格(`ra`なら`sa`、`ri`なら`si`、`ru K`なら`K`)が空所となり、その項が抽出される。`re`の後ろに置いた節には空所が無く、節が表す事象そのものが抽出される。節の中ではテンス・アスペクト・モダリティや`homa`/`homi`/`homu`も使える。
 
-| 抽出詞 | 述語 | 節 |
-|---|---|---|
-| `ri` | `ri paheta` (食べる物) | `ri he paheta sa mi ho` (私が食べる物) |
+| 抽出詞    | 述語                          | 節                                                                        |
+| --------- | ----------------------------- | ------------------------------------------------------------------------- |
+| `ri`      | `ri paheta` (食べる物)        | `ri he paheta sa mi ho` (私が食べる物)                                    |
 | `ru suni` | `ru suni paheta` (食べる場所) | `ru suni he hita paheta sa mi si ri behapare ho` (私がりんごを食べた場所) |
-| `re` | `re paheta` (食べること) | `re he hita paheta sa mi si ri behapare ho` (私がりんごを食べたこと) |
+| `re`      | `re paheta` (食べること)      | `re he hita paheta sa mi si ri behapare ho` (私がりんごを食べたこと)      |
 
 `re`で抽出した項は抽象概念(`gV|mV|rV`)の型を持つので、`sute`/`suto`(原因格・目的格)にも置ける。他の抽出と同じく限定詞・数量詞も付けられる(`mo re he … ho`: このこと)。
 - `se` (型の上書き。格標識(`sa`/`si`/`su[CV]`)の直後・項句の直前に置く任意のトークンで、その項だけを述語の型検査から除外し、任意の型として扱わせる。比喩・見立て表現用。例:「parobe(x1はx2を愛す。x1,x2ともに生物`bV`を要求)sa se ri ditabare si ba」で、本来生物ではない項を主格に置ける)

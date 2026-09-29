@@ -646,7 +646,7 @@ mod tests {
 
     #[test]
     fn test_型検査が成功する() {
-        let source = "parobe sa ma si ba eos";
+        let source = "parobe sa ma si ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn test_第一項の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa ri didora si ba eos";
+        let source = "parobe sa ri didora si ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -664,7 +664,7 @@ mod tests {
 
     #[test]
     fn test_第二項の型が間違っている場合にerr型を返す() {
-        let source = "kahoraka sa mi si ba eos";
+        let source = "kahoraka sa mi si ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -673,7 +673,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの型検査が成功する() {
-        let source = "pisarepa sa mi eos";
+        let source = "pisarepa sa mi do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -682,7 +682,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateの第一項の型が間違っている場合にerr型を返す() {
-        let source = "pusatanada sa ra bahumana eos";
+        let source = "pusatanada sa ra bahumana do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -691,7 +691,7 @@ mod tests {
 
     #[test]
     fn test_unary_predicateで第二項の型が入力された場合にerr型を返す() {
-        let source = "pisarepa sa mi si ba eos";
+        let source = "pisarepa sa mi si ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -700,7 +700,7 @@ mod tests {
 
     #[test]
     fn test_項抽出の型検査が成功する() {
-        let source = "parobe sa ra bahumana si ri bidoga eos";
+        let source = "parobe sa ra bahumana si ri bidoga do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -715,47 +715,47 @@ mod tests {
 
     #[test]
     fn test_ruで抽出した付加詞の項は格の型を持つ() {
-        assert!(check("paheta sa mi si ri behapare suni ru suni paheta eos").is_ok());
-        assert!(check("paheta sa mi si ri behapare sudu ru sudu paheta du mi eos").is_ok());
+        assert!(check("paheta sa mi si ri behapare suni ru suni paheta do").is_ok());
+        assert!(check("paheta sa mi si ri behapare sudu ru sudu paheta du mi do").is_ok());
     }
 
     #[test]
     fn test_ruで抽出した項の型が合わない場合にerr型を返す() {
-        assert!(check("parobe sa mi si ru suni paheta eos").is_err());
+        assert!(check("parobe sa mi si ru suni paheta do").is_err());
     }
 
     #[test]
     fn test_節からの抽出の型検査が成功する() {
-        assert!(check("paheta sa mi si ri he paheta sa ba ho eos").is_ok());
-        assert!(check("paheta sa mi si ri behapare suni ru suni he paheta sa ba ho eos").is_ok());
-        assert!(check("parobe sa mi si ri he homa paheta sa mi parobe sa ba ho eos").is_ok());
+        assert!(check("paheta sa mi si ri he paheta sa ba ho do").is_ok());
+        assert!(check("paheta sa mi si ri behapare suni ru suni he paheta sa ba ho do").is_ok());
+        assert!(check("parobe sa mi si ri he homa paheta sa mi parobe sa ba ho do").is_ok());
     }
 
     #[test]
     fn test_節からの抽出で空所の格が埋まっている場合にerr型を返す() {
-        assert!(check("parobe sa mi si ri he paheta sa mi si ri behapare ho eos").is_err());
-        assert!(check("paheta sa mi suni ru suni he paheta suni me ho eos").is_err());
+        assert!(check("parobe sa mi si ri he paheta sa mi si ri behapare ho do").is_err());
+        assert!(check("paheta sa mi suni ru suni he paheta suni me ho do").is_err());
     }
 
     #[test]
     fn test_節からの抽出で単項述語の第二項を抽出するとerr型を返す() {
-        assert!(check("parobe sa mi si ri he pisarepa sa ba ho eos").is_err());
+        assert!(check("parobe sa mi si ri he pisarepa sa ba ho do").is_err());
     }
 
     #[test]
     fn test_節からの抽出で抽出した項の型が合わない場合にerr型を返す() {
-        assert!(check("parobe sa mi si ru suni he paheta sa ba ho eos").is_err());
+        assert!(check("parobe sa mi si ru suni he paheta sa ba ho do").is_err());
     }
 
     #[test]
     fn test_ru_sa_ru_siはerr型を返す() {
-        assert!(check("parobe sa mi si ru sa paheta eos").is_err());
-        assert!(check("paheta sa mi si ru si paheta eos").is_err());
+        assert!(check("parobe sa mi si ru sa paheta do").is_err());
+        assert!(check("paheta sa mi si ru si paheta do").is_err());
     }
 
     #[test]
     fn test_項転置したあと項抽出の型検査が成功する() {
-        let source = "parobe sa ra patirada si ri patirada eos";
+        let source = "parobe sa ra patirada si ri patirada do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -764,7 +764,7 @@ mod tests {
 
     #[test]
     fn test_生物系の格の型検査が成功する() {
-        let source = "pagibe sa mi si ri behapare subu gi sube mi subo ba eos";
+        let source = "pagibe sa mi si ri behapare subu gi sube mi subo ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -773,7 +773,7 @@ mod tests {
 
     #[test]
     fn test_随伴格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba subu ri didora eos";
+        let source = "parobe sa mi si ba subu ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -782,7 +782,7 @@ mod tests {
 
     #[test]
     fn test_奪格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba sube ri didora eos";
+        let source = "parobe sa mi si ba sube ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -791,7 +791,7 @@ mod tests {
 
     #[test]
     fn test_与格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba subo ri didora eos";
+        let source = "parobe sa mi si ba subo ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -800,7 +800,7 @@ mod tests {
 
     #[test]
     fn test_抽象系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba sute ri kahoraka suto ri kahoraka eos";
+        let source = "parobe sa mi si ba sute ri kahoraka suto ri kahoraka do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -809,7 +809,7 @@ mod tests {
 
     #[test]
     fn test_原因格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba sute ri didora eos";
+        let source = "parobe sa mi si ba sute ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -818,7 +818,7 @@ mod tests {
 
     #[test]
     fn test_目的格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba suto ri didora eos";
+        let source = "parobe sa mi si ba suto ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -828,8 +828,8 @@ mod tests {
     #[test]
     fn test_diで修飾する述語と項の型が重なれば型検査が成功する() {
         for source in [
-            "parobe sa mi si ri bidoga di bihemare eos",
-            "parobe di paherapa sa mi si ba eos",
+            "parobe sa mi si ri bidoga di bihemare do",
+            "parobe di paherapa sa mi si ba do",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
@@ -840,8 +840,8 @@ mod tests {
     #[test]
     fn test_diで修飾する述語と項の型が合わない場合にerr型を返す() {
         for source in [
-            "parobe sa mi si ri bidoga di rebaraka eos",
-            "parobe di rebaraka sa mi si ba eos",
+            "parobe sa mi si ri bidoga di rebaraka do",
+            "parobe di rebaraka sa mi si ba do",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
@@ -852,8 +852,8 @@ mod tests {
     #[test]
     fn test_等位接続した項の型が重なれば型検査が成功する() {
         for source in [
-            "paheta sa hoba mi me si ri behapare eos",
-            "ku paheta sa hoba mi ko si ri behapare eos",
+            "paheta sa hoba mi me si ri behapare do",
+            "ku paheta sa hoba mi ko si ri behapare do",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
@@ -864,7 +864,7 @@ mod tests {
     #[test]
     fn test_等位接続した項の型は両方の型の共通部分になる() {
         // hoba me miの型はmiの生物型だけになるので、抽象概念を取るkarobeのx2には置けない。
-        let source = "karobe sa mi si hoba me mi eos";
+        let source = "karobe sa mi si hoba me mi do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         assert!(type_check(&ast).is_err());
@@ -873,9 +873,9 @@ mod tests {
     #[test]
     fn test_等位接続や否定の中の項も型検査される() {
         for source in [
-            "parobe sa mi si hoba mi ri rumone eos",
-            "parobe sa mi si hoba ri bidoga di rebaraka ba eos",
-            "parobe sa mi si ne ri bidoga di rebaraka eos",
+            "parobe sa mi si hoba mi ri rumone do",
+            "parobe sa mi si hoba ri bidoga di rebaraka ba do",
+            "parobe sa mi si ne ri bidoga di rebaraka do",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
@@ -885,7 +885,7 @@ mod tests {
 
     #[test]
     fn test_道具系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba sudu ri didora eos";
+        let source = "parobe sa mi si ba sudu ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -894,7 +894,7 @@ mod tests {
 
     #[test]
     fn test_具格に人工物以外の物理的実体を置いた場合に型検査が成功する() {
-        let source = "parobe sa mi si ba sudu ri nihatera eos";
+        let source = "parobe sa mi si ba sudu ri nihatera do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -903,7 +903,7 @@ mod tests {
 
     #[test]
     fn test_具格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba sudu mi eos";
+        let source = "parobe sa mi si ba sudu mi do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -912,7 +912,7 @@ mod tests {
 
     #[test]
     fn test_空間系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba suni me sune be suno ge eos";
+        let source = "parobe sa mi si ba suni me sune be suno ge do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -921,7 +921,7 @@ mod tests {
 
     #[test]
     fn test_空間格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba suni mi eos";
+        let source = "parobe sa mi si ba suni mi do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -930,7 +930,7 @@ mod tests {
 
     #[test]
     fn test_同じ付加詞の格が複数回付与された場合にerr型を返す() {
-        let source = "parobe sa mi si ba suni me suni ge eos";
+        let source = "parobe sa mi si ba suni me suni ge do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -939,7 +939,7 @@ mod tests {
 
     #[test]
     fn test_同じsaが複数回付与された場合にerr型を返す() {
-        let source = "parobe sa mi sa ba si ge eos";
+        let source = "parobe sa mi sa ba si ge do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -948,7 +948,7 @@ mod tests {
 
     #[test]
     fn test_同じsiが複数回付与された場合にerr型を返す() {
-        let source = "parobe sa mi si ba si ge eos";
+        let source = "parobe sa mi si ba si ge do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -957,7 +957,7 @@ mod tests {
 
     #[test]
     fn test_時間系の格の型検査が成功する() {
-        let source = "parobe sa mi si ba sugi me suge be sugo ge eos";
+        let source = "parobe sa mi si ba sugi me suge be sugo ge do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -966,7 +966,7 @@ mod tests {
 
     #[test]
     fn test_時間格の型が間違っている場合にerr型を返す() {
-        let source = "parobe sa mi si ba sugi mi eos";
+        let source = "parobe sa mi si ba sugi mi do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -975,7 +975,7 @@ mod tests {
 
     #[test]
     fn test_固有名詞_hebaが生物系の格を直接満たす() {
-        let source = "parobe sa heba Kanye hoho si ba eos";
+        let source = "parobe sa heba Kanye hoho si ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -984,7 +984,7 @@ mod tests {
 
     #[test]
     fn test_固有名詞_hebaが人工物専用の格では失敗する() {
-        let source = "parobe sa mi si ba sudu heba Kanye hoho eos";
+        let source = "parobe sa mi si ba sudu heba Kanye hoho do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -994,7 +994,7 @@ mod tests {
     #[test]
     fn test_固有名詞_heda_hedi_heduが道具系の格を直接満たす() {
         for opener in ["heda", "hedi", "hedu"] {
-            let source = format!("parobe sa mi si ba sudu {opener} Ford hoho eos");
+            let source = format!("parobe sa mi si ba sudu {opener} Ford hoho do");
             let tokens = tokenizer::tokenize(&source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
             let type_checked = type_check(&ast);
@@ -1004,7 +1004,7 @@ mod tests {
 
     #[test]
     fn test_固有名詞_hezaがza系述語を経由せず空間格を直接満たす() {
-        let source = "parobe sa mi si ba suni heza Tokyo hoho eos";
+        let source = "parobe sa mi si ba suni heza Tokyo hoho do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1013,7 +1013,7 @@ mod tests {
 
     #[test]
     fn test_固有名詞_heziがzi系述語を経由せず時間格を直接満たす() {
-        let source = "parobe sa mi si ba sugi hezi Reiwa hoho eos";
+        let source = "parobe sa mi si ba sugi hezi Reiwa hoho do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1022,7 +1022,7 @@ mod tests {
 
     #[test]
     fn test_固有名詞_hezaは生物系の格では失敗する() {
-        let source = "parobe sa heza Tokyo hoho si ba eos";
+        let source = "parobe sa heza Tokyo hoho si ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1032,10 +1032,10 @@ mod tests {
     #[test]
     fn test_tで始まる固有名詞_母音ごとに対応する格を満たす() {
         for source in [
-            "parobe sa taro si ba eos",
-            "parobe sa mi si ba sudu tetitanika eos",
-            "parobe sa mi si ba suni tikanada eos",
-            "parobe sa mi si ba sute tonasa eos",
+            "parobe sa taro si ba do",
+            "parobe sa mi si ba sudu tetitanika do",
+            "parobe sa mi si ba suni tikanada do",
+            "parobe sa mi si ba sute tonasa do",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
@@ -1046,10 +1046,10 @@ mod tests {
     #[test]
     fn test_tで始まる固有名詞_型の合わない格では失敗する() {
         for source in [
-            "parobe sa tetitanika si ba eos",
-            "parobe sa mi si ba sudu taro eos",
-            "parobe sa mi si ba suni tonasa eos",
-            "parobe sa mi si ba sugi tikanada eos",
+            "parobe sa tetitanika si ba do",
+            "parobe sa mi si ba sudu taro do",
+            "parobe sa mi si ba suni tonasa do",
+            "parobe sa mi si ba sugi tikanada do",
         ] {
             let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
             let ast = parser::parse(tokens).unwrap();
@@ -1062,7 +1062,7 @@ mod tests {
 
     #[test]
     fn test_se付きで第一項の型不一致をバイパスできる() {
-        let source = "parobe sa se ri didora si ba eos";
+        let source = "parobe sa se ri didora si ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1071,7 +1071,7 @@ mod tests {
 
     #[test]
     fn test_se付きで第二項の型不一致をバイパスできる() {
-        let source = "kahoraka sa mi si se ba eos";
+        let source = "kahoraka sa mi si se ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1080,7 +1080,7 @@ mod tests {
 
     #[test]
     fn test_se付きで両方の項の型不一致をバイパスできる() {
-        let source = "parobe sa se ri didora si se ri didora eos";
+        let source = "parobe sa se ri didora si se ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1089,7 +1089,7 @@ mod tests {
 
     #[test]
     fn test_se付きで付加詞格の型不一致をバイパスできる() {
-        let source = "parobe sa mi si ba subu se ri didora eos";
+        let source = "parobe sa mi si ba subu se ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1098,7 +1098,7 @@ mod tests {
 
     #[test]
     fn test_se付きでもseがない別の格の型不一致は検出される() {
-        let source = "parobe sa se ri didora si ba subu ri didora eos";
+        let source = "parobe sa se ri didora si ba subu ri didora do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
@@ -1107,7 +1107,7 @@ mod tests {
 
     #[test]
     fn test_se付きでも単項述語の第二項のアリティ検査はバイパスされない() {
-        let source = "pisarepa sa mi si se ba eos";
+        let source = "pisarepa sa mi si se ba do";
         let tokens = tokenizer::tokenize(source).unwrap()[0].clone();
         let ast = parser::parse(tokens).unwrap();
         let type_checked = type_check(&ast);
