@@ -1824,21 +1824,24 @@ mod tests {
     }
 
     #[test]
-    fn test_数詞_アラビア数字は3桁ごとのアンダースコア区切りを受け付ける() {
-        assert_eq!(Number::new("1_000", 0, 0, 0, 0).get_value(), 1_000);
-        assert_eq!(Number::new("1_000_000", 0, 0, 0, 0).get_value(), 1_000_000);
-        assert_eq!(Number::new("12_345", 0, 0, 0, 0).get_value(), 12345);
+    fn test_数詞_アラビア数字は4桁ごとのアンダースコア区切りを受け付ける() {
+        assert_eq!(Number::new("1_0000", 0, 0, 0, 0).get_value(), 10_000);
+        assert_eq!(
+            Number::new("1_0000_0000", 0, 0, 0, 0).get_value(),
+            100_000_000
+        );
+        assert_eq!(Number::new("1_2345", 0, 0, 0, 0).get_value(), 12345);
         // アンダースコアが無くても任意の桁数を受け付ける。
         assert_eq!(Number::new("1000000", 0, 0, 0, 0).get_value(), 1_000_000);
     }
 
     #[test]
     fn test_数詞_不正なアラビア数字表記はis_matchで弾かれる() {
-        assert!(!Number::is_match("1_00")); // 3桁区切りになっていない
-        assert!(!Number::is_match("1_0000")); // 3桁区切りになっていない
-        assert!(!Number::is_match("_1000")); // 先頭がアンダースコア
-        assert!(!Number::is_match("1000_")); // 末尾がアンダースコア
-        assert!(!Number::is_match("1__000")); // アンダースコアが連続
+        assert!(!Number::is_match("1_000")); // 4桁区切りになっていない
+        assert!(!Number::is_match("1_00000")); // 4桁区切りになっていない
+        assert!(!Number::is_match("_10000")); // 先頭がアンダースコア
+        assert!(!Number::is_match("10000_")); // 末尾がアンダースコア
+        assert!(!Number::is_match("1__0000")); // アンダースコアが連続
         assert!(!Number::is_match("12a45")); // 数字以外の文字を含む
     }
 }

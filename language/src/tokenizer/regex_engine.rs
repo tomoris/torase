@@ -827,12 +827,12 @@ mod tests {
             r"^tu(?:ru)?(?:(?:[pkms][aeio][dgzn][aeio])+(?:[pkms][aeio])?|[pkms][aeio])$",
         )
         .unwrap();
-        assert!(re.is_match("tupa"));
-        assert!(re.is_match("tupede"));
-        assert!(re.is_match("turupedimidepi"));
+        assert!(re.is_match("tuso"));
+        assert!(re.is_match("tusada"));
+        assert!(re.is_match("turusademedase"));
         assert!(!re.is_match("tu"));
         assert!(!re.is_match("turu"));
-        assert!(!re.is_match("tude"));
+        assert!(!re.is_match("tuda"));
         assert!(!re.is_match("tup"));
         assert!(!re.is_match("tuba"));
         assert!(!re.is_match("tururu"));
@@ -841,16 +841,16 @@ mod tests {
 
     #[test]
     fn test_arabic_numeral_pattern() {
-        let re = Regex::new(r"^(?:[0-9]+|[0-9]{1,3}(?:_[0-9]{3})*)$").unwrap();
+        let re = Regex::new(r"^(?:[0-9]+|[0-9]{1,4}(?:_[0-9]{4})*)$").unwrap();
         assert!(re.is_match("12345"));
         assert!(re.is_match("0"));
-        assert!(re.is_match("1_000"));
-        assert!(re.is_match("12_345"));
-        assert!(!re.is_match("1_00"));
-        assert!(!re.is_match("1_0000"));
-        assert!(!re.is_match("_1000"));
-        assert!(!re.is_match("1000_"));
-        assert!(!re.is_match("1__000"));
+        assert!(re.is_match("1_0000"));
+        assert!(re.is_match("1_2345"));
+        assert!(!re.is_match("1_000"));
+        assert!(!re.is_match("1_00000"));
+        assert!(!re.is_match("_10000"));
+        assert!(!re.is_match("10000_"));
+        assert!(!re.is_match("1__0000"));
         assert!(!re.is_match("12a45"));
     }
 

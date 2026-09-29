@@ -43,10 +43,10 @@ impl Number {
         Self::parse_terms(rest).iter().all(|&(digit, _)| digit <= 9)
     }
     // アラビア数字表記(算用数字)。数詞の代替入力表記として1桁目〜任意桁の数字列、
-    // または"1_000"のように3桁ごとにアンダースコアで区切った数字列を受け付ける
+    // または"1_0000"のように4桁ごとにアンダースコアで区切った数字列を受け付ける
     // (常に10進数として解釈する)。
     fn is_arabic_numeral_match(string: &str) -> bool {
-        const RE_ARABIC: Regex = Regex::compile(r"^(?:[0-9]+|[0-9]{1,3}(?:_[0-9]{3})*)$");
+        const RE_ARABIC: Regex = Regex::compile(r"^(?:[0-9]+|[0-9]{1,4}(?:_[0-9]{4})*)$");
         if !RE_ARABIC.is_match(string) {
             return false;
         }
