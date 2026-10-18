@@ -1,6 +1,6 @@
 //! Resolution-based first-order logic contradiction checker.
 //!
-//! Given a slice of [`Formula`]s, [`is_contradictory`] checks whether their
+//! Given a slice of [`Formula`]s, [`check_contradiction`] checks whether their
 //! conjunction is unsatisfiable by:
 //!
 //! 1. Converting each formula to CNF via Skolemization (handles ∀/∃/¬/∧/∨/→).

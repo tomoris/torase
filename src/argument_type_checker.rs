@@ -1,5 +1,5 @@
 //! 格ラベルごとの選択制限(項の意味的な型)を検証する型チェッカー。
-//! `formal_semantics::type_checker` のモンタギュー流の型システムとは別の、格構造に基づく型システムを扱う。
+//! `formal_semantics`(論理式への変換・矛盾検査)とは独立に、格構造に基づく型システムを扱う。
 
 use std::collections::HashSet;
 use std::hash::Hash;
