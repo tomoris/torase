@@ -199,6 +199,11 @@ mod tests {
     }
 
     #[test]
+    fn test_桁位置が重複する数詞はpanicせずエラーになる() {
+        assert!(diagnose("parobe sa ta turupinipini si ba".to_string()).is_err());
+    }
+
+    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita peheta sa mi si ri nohapare".to_string();
         let result = diagnose(text);

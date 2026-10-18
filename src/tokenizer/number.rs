@@ -33,14 +33,25 @@ impl Number {
         if !RE_NUMBER.is_match(string) {
             return false;
         }
-        let rest = &string[2..];
-        let explicit_hex = rest.starts_with("ru");
-        if explicit_hex {
-            return true;
+        // 正準形(上位桁から順に、0の桁と1の位の桁位置は言わない)だけを受け付ける。
+        // ruなしで10〜15の桁を使う語や、桁位置が重複・逆順の語はここで弾かれる。
+        let (rest, is_hex) = Self::split_hex_flag(&string[2..]);
+        Self::compute_value(rest, is_hex)
+            .is_some_and(|value| Self::canonical_string(value, is_hex) == string)
+    }
+    fn split_hex_flag(rest: &str) -> (&str, bool) {
+        match rest.strip_prefix("ru") {
+            Some(digits) => (digits, true),
+            None => (rest, false),
         }
-        // ruが無ければ10進数として扱うので、桁の値はすべて0〜9でなければならない
-        // (10〜15を含む桁を言いたい場合は必ずruを付ける)。
-        Self::parse_terms(rest).iter().all(|&(digit, _)| digit <= 9)
+    }
+    fn compute_value(rest: &str, is_hex: bool) -> Option<u64> {
+        let base: u64 = if is_hex { 16 } else { 10 };
+        Self::parse_terms(rest)
+            .iter()
+            .try_fold(0u64, |sum, &(digit, exponent)| {
+                sum.checked_add(digit.checked_mul(base.checked_pow(exponent)?)?)
+            })
     }
     // アラビア数字表記(算用数字)。数詞の代替入力表記として1桁目〜任意桁の数字列、
     // または"1_0000"のように4桁ごとにアンダースコアで区切った数字列を受け付ける
@@ -110,18 +121,8 @@ impl Number {
             let digits_only: String = string.chars().filter(|&c| c != '_').collect();
             (digits_only.parse::<u64>().unwrap(), false)
         } else {
-            let mut rest = &string[2..]; // "tu"を読み飛ばす
-            let is_hex = rest.starts_with("ru");
-            if is_hex {
-                rest = &rest[2..];
-            }
-            let terms = Self::parse_terms(rest);
-            let base: u64 = if is_hex { 16 } else { 10 };
-            let value = terms
-                .iter()
-                .map(|(digit, exponent)| digit * base.pow(*exponent))
-                .sum();
-            (value, is_hex)
+            let (rest, is_hex) = Self::split_hex_flag(&string[2..]);
+            (Self::compute_value(rest, is_hex).unwrap(), is_hex)
         };
         Number {
             range: make_range(start_line, start_character, end_line, end_character),
@@ -136,12 +137,15 @@ impl Number {
         self.is_hex
     }
     pub fn get_string(&self) -> String {
-        let base: u64 = if self.is_hex { 16 } else { 10 };
+        Self::canonical_string(self.value, self.is_hex)
+    }
+    fn canonical_string(value: u64, is_hex: bool) -> String {
+        let base: u64 = if is_hex { 16 } else { 10 };
         let mut digits: Vec<u64> = Vec::new();
-        if self.value == 0 {
+        if value == 0 {
             digits.push(0);
         } else {
-            let mut v = self.value;
+            let mut v = value;
             while v > 0 {
                 digits.push(v % base);
                 v /= base;
@@ -150,7 +154,7 @@ impl Number {
         }
         let digit_count = digits.len();
         let mut result = String::from("tu");
-        if self.is_hex {
+        if is_hex {
             result.push_str("ru");
         }
         for (index, &digit) in digits.iter().enumerate() {

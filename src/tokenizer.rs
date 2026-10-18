@@ -1826,6 +1826,10 @@ mod tests {
         assert!(!Number::is_match("pa")); // マーカーが無い
         assert!(!Number::is_match("tupi")); // ruなしで10〜15の桁(pi=15)を使っている
         assert!(!Number::is_match("tusademedase")); // ruなしでme(=10)を使っている
+        assert!(!Number::is_match("turupinipini")); // 桁位置の重複(値もu64を超える)
+        assert!(!Number::is_match("tusodasoda")); // 0の桁を言っている
+        assert!(!Number::is_match("tusadasadi")); // 下位の桁から言っている
+        assert!(!Number::is_match("tukodo")); // 1の位に桁位置doを付けている
     }
 
     #[test]
