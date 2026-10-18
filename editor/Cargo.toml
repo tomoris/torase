@@ -1,7 +1,0 @@
-[package]
-name = "editor"
-edition.workspace = true
-
-[dependencies]
-language = { path = "../language" }
-iced = { version = "0.14", features = ["canvas", "advanced"] }
