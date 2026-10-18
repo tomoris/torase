@@ -400,17 +400,23 @@ impl BinaryPredicatePhrase {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
             BinaryPredicatePhrase::One(_binary_predicate) => Ok(()),
-            BinaryPredicatePhrase::Two(_negation, _binary_predicate) => Ok(()),
+            BinaryPredicatePhrase::Two(_negation, binary_predicate_phrase) => {
+                binary_predicate_phrase.type_check()
+            }
             BinaryPredicatePhrase::Three(
                 _binary_operator,
                 binary_predicate1,
                 binary_predicate2,
-            ) => check_shared_argument_types(
-                binary_predicate1.get_argument_types(),
-                binary_predicate2.get_argument_types(),
-                binary_predicate2.get_range().clone(),
-                "after binary operation",
-            ),
+            ) => {
+                binary_predicate1.type_check()?;
+                binary_predicate2.type_check()?;
+                check_shared_argument_types(
+                    binary_predicate1.get_argument_types(),
+                    binary_predicate2.get_argument_types(),
+                    binary_predicate2.get_range().clone(),
+                    "after binary operation",
+                )
+            }
         }
     }
     fn get_argument_types(&self) -> (Vec<ArgumentType>, Vec<ArgumentType>) {

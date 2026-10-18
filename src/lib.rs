@@ -219,6 +219,17 @@ mod tests {
     }
 
     #[test]
+    fn test_否定や入れ子の述語句の中の型不一致もエラーになる() {
+        for text in [
+            "ne hoba parobe kahoraka sa mi si ba",
+            "hoba hoba parobe kahoraka parobe sa mi si ba",
+            "hoba parobe hoba parobe kahoraka sa mi si ba",
+        ] {
+            assert!(diagnose(text.to_string()).is_err(), "{text}");
+        }
+    }
+
+    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita peheta sa mi si ri nohapare".to_string();
         let result = diagnose(text);
