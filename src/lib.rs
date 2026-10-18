@@ -7,7 +7,8 @@ pub mod types;
 
 use argument_type_checker::type_check as argument_type_check;
 use formal_semantics::{
-    ContradictionCheck, check_contradiction, free_variables, is_schema_variable_name, to_fol,
+    ContradictionCheck, Formula, check_contradiction, free_variables, is_schema_variable_name,
+    to_fol,
 };
 use parser::{Ast, S, parse};
 use tokenizer::{Range, TerminalType, add_eos_to_last_sentence, tokenize};
@@ -60,43 +61,64 @@ pub fn diagnose(text: String) -> Result<Diagnosed, Vec<Diagnostic>> {
 }
 
 pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Diagnosed, Vec<Diagnostic>> {
-    // parsing
+    let analysis = analyze_tokens(sentences);
+    let contradiction = check_contradictions(&analysis);
+    let mut diagnostics = analysis.diagnostics;
+    diagnostics.extend(contradiction);
+    finish(analysis.asts, diagnostics)
+}
+
+/// 矛盾検査を除く診断(構文解析・疑問詞の位置・項の型・スキーマ変数の束縛)の結果。
+/// 矛盾検査は重くなりうるため、[`check_contradictions`]で別に行う。
+#[derive(Debug, Clone)]
+pub struct Analysis {
+    pub asts: Vec<Ast>,
+    pub diagnostics: Vec<Diagnostic>,
+    /// 矛盾検査の前提にする文の論理式と範囲。疑問文は何も主張しないので含めない。
+    premises: Vec<(Formula, Range)>,
+}
+
+impl Analysis {
+    /// 矛盾検査を含まない診断結果を、[`diagnose_tokens`]と同じ形で返す。
+    pub fn diagnosed(&self) -> Result<Diagnosed, Vec<Diagnostic>> {
+        finish(self.asts.clone(), self.diagnostics.clone())
+    }
+}
+
+pub fn analyze_tokens(sentences: Vec<Vec<TerminalType>>) -> Analysis {
     let sentences = add_eos_to_last_sentence(sentences);
-    let mut ast_with_ranges: Vec<(Ast, Range)> = Vec::new();
+    let mut asts = Vec::new();
     let mut diagnostics = Vec::new();
+    let mut premises = Vec::new();
     for sentence in sentences {
         let sentence_range = Range::new(
             sentence[0].range().start(),
             sentence.last().unwrap().range().end(),
         );
-        let parse_result = parse(sentence.clone());
-        if let Err(e) = parse_result {
-            diagnostics.push(Diagnostic::error(
-                e.error_token.range(),
-                format!("parse error: {}", e.error_message),
-            ));
-        } else {
-            if !matches!(sentence.first(), Some(TerminalType::InterrogativeMarker(_))) {
-                for token in &sentence {
-                    if let TerminalType::Argument(arg) = token
-                        && arg.is_interrogative()
-                    {
-                        diagnostics.push(Diagnostic::error(
-                            token.range(),
-                            "interrogative ko can only be used in a question (start the sentence with ku)",
-                        ));
-                    }
+        let ast = match parse(sentence.clone()) {
+            Ok(ast) => ast,
+            Err(e) => {
+                diagnostics.push(Diagnostic::error(
+                    e.error_token.range(),
+                    format!("parse error: {}", e.error_message),
+                ));
+                continue;
+            }
+        };
+        if !matches!(sentence.first(), Some(TerminalType::InterrogativeMarker(_))) {
+            for token in &sentence {
+                if let TerminalType::Argument(arg) = token
+                    && arg.is_interrogative()
+                {
+                    diagnostics.push(Diagnostic::error(
+                        token.range(),
+                        "interrogative ko can only be used in a question (start the sentence with ku)",
+                    ));
                 }
             }
-            ast_with_ranges.push((parse_result.unwrap(), sentence_range));
         }
-    }
-    let asts: Vec<Ast> = ast_with_ranges.iter().map(|(a, _)| a.clone()).collect();
 
-    // argument type checking
-    for ast in &asts {
-        let argument_type_check_result = argument_type_check(ast);
-        if let Err(e) = argument_type_check_result {
+        if let Err(e) = argument_type_check(&ast) {
             diagnostics.push(Diagnostic::error(
                 e.range,
                 format!(
@@ -105,56 +127,49 @@ pub fn diagnose_tokens(sentences: Vec<Vec<TerminalType>>) -> Result<Diagnosed, V
                 ),
             ));
         }
-    }
 
-    // formula construction + unbound schema variable check
-    let formulas: Vec<_> = ast_with_ranges.iter().map(|(a, _)| to_fol(a)).collect();
-    for (formula, (_, range)) in formulas.iter().zip(ast_with_ranges.iter()) {
-        let free: Vec<_> = free_variables(formula)
+        let formula = to_fol(&ast);
+        let free: Vec<_> = free_variables(&formula)
             .into_iter()
             .filter(|name| is_schema_variable_name(name))
             .collect();
         if !free.is_empty() {
             diagnostics.push(Diagnostic::error(
-                range.clone(),
+                sentence_range.clone(),
                 format!(
                     "unbound schema variable(s) (use ze to quantify): {}",
                     free.join(", ")
                 ),
             ));
         }
-    }
 
-    // contradiction checking (a question asserts nothing, so it is not used as a premise)
-    let premise_indices: Vec<usize> = ast_with_ranges
-        .iter()
-        .enumerate()
-        .filter(|(_, (ast, _))| !matches!(ast.get_s(), S::Two(_)))
-        .map(|(i, _)| i)
-        .collect();
-    let premises: Vec<_> = premise_indices
-        .iter()
-        .map(|&i| formulas[i].clone())
-        .collect();
-    let sentence_range =
-        |premise_idx: usize| ast_with_ranges[premise_indices[premise_idx]].1.clone();
-    match check_contradiction(&premises) {
-        ContradictionCheck::Consistent => {}
-        ContradictionCheck::Contradiction(idx) => {
-            diagnostics.push(Diagnostic::error(
-                sentence_range(idx),
-                "contradiction error",
-            ));
+        if !matches!(ast.get_s(), S::Two(_)) {
+            premises.push((formula, sentence_range));
         }
-        ContradictionCheck::Unknown(idx) => {
-            diagnostics.push(Diagnostic::warning(
-                sentence_range(idx),
-                "contradiction check gave up: consistency from this sentence onward is not verified",
-            ));
-        }
+        asts.push(ast);
     }
+    Analysis {
+        asts,
+        diagnostics,
+        premises,
+    }
+}
 
-    finish(asts, diagnostics)
+/// 文を順に前提に加えていき、矛盾が生じた最初の文(または検査を打ち切った文)を診断として返す。
+pub fn check_contradictions(analysis: &Analysis) -> Option<Diagnostic> {
+    let formulas: Vec<Formula> = analysis.premises.iter().map(|(f, _)| f.clone()).collect();
+    let sentence_range = |idx: usize| analysis.premises[idx].1.clone();
+    match check_contradiction(&formulas) {
+        ContradictionCheck::Consistent => None,
+        ContradictionCheck::Contradiction(idx) => Some(Diagnostic::error(
+            sentence_range(idx),
+            "contradiction error",
+        )),
+        ContradictionCheck::Unknown(idx) => Some(Diagnostic::warning(
+            sentence_range(idx),
+            "contradiction check gave up: consistency from this sentence onward is not verified",
+        )),
+    }
 }
 
 fn finish(asts: Vec<Ast>, diagnostics: Vec<Diagnostic>) -> Result<Diagnosed, Vec<Diagnostic>> {
@@ -251,6 +266,16 @@ mod tests {
             "hudidi peheta sa ri paparatanera du mi si ri nohapare sugi ta ri zuda".to_string();
         let diagnosed = diagnose(text).unwrap();
         assert!(diagnosed.warnings.is_empty(), "{:?}", diagnosed.warnings);
+    }
+
+    #[test]
+    fn test_矛盾検査はanalyze_tokensとは別に行える() {
+        let text = "peheta sa mi si to ri nohapare do ne peheta sa mi si to ri nohapare";
+        let analysis = analyze_tokens(tokenize(text).unwrap());
+        assert!(analysis.diagnosed().is_ok());
+        let contradiction = check_contradictions(&analysis).unwrap();
+        assert_eq!(contradiction.severity, Severity::Error);
+        assert_eq!(contradiction.range.start().character(), 34);
     }
 
     #[test]
