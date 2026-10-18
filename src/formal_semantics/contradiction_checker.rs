@@ -707,7 +707,36 @@ fn refute(formulas: &[Formula], max_clauses: usize) -> Refutation {
         all_clauses.extend(clauses);
     }
 
-    resolution(all_clauses, &temporal_axioms(), max_clauses)
+    let axioms = temporal_axioms();
+    resolution(
+        eliminate_pure_literal_clauses(all_clauses, &axioms),
+        &axioms,
+        max_clauses,
+    )
+}
+
+/// Pure literal elimination: a clause containing a literal whose complement occurs in no
+/// clause (nor axiom) can never take part in deriving ⊥, so it is removed. This keeps
+/// resolution from endlessly nesting Skolem terms through clauses that are irrelevant to
+/// the refutation (e.g. the restriction `¬zuda(e)` of `ta ri zuda`).
+fn eliminate_pure_literal_clauses(mut clauses: Vec<Clause>, axioms: &[Clause]) -> Vec<Clause> {
+    loop {
+        let occurring: HashSet<(String, bool)> = clauses
+            .iter()
+            .chain(axioms)
+            .flatten()
+            .map(|lit| (lit.pred.clone(), lit.positive))
+            .collect();
+        let before = clauses.len();
+        clauses.retain(|clause| {
+            clause
+                .iter()
+                .all(|lit| occurring.contains(&(lit.pred.clone(), !lit.positive)))
+        });
+        if clauses.len() == before {
+            return clauses;
+        }
+    }
 }
 
 /// Result of [`check_contradiction`].
@@ -723,12 +752,16 @@ pub enum ContradictionCheck {
 }
 
 /// Checks the formulas in order and reports the first one whose addition makes the set
-/// contradictory, using prefix checking on `formulas[..i+1]`.
+/// contradictory. The whole set is checked first, and only if it is not shown consistent
+/// are the prefixes `formulas[..i+1]` checked to find that formula.
 pub fn check_contradiction(formulas: &[Formula]) -> ContradictionCheck {
     check_contradiction_with_limit(formulas, MAX_CLAUSES)
 }
 
 fn check_contradiction_with_limit(formulas: &[Formula], max_clauses: usize) -> ContradictionCheck {
+    if refute(formulas, max_clauses) == Refutation::Saturated {
+        return ContradictionCheck::Consistent;
+    }
     for i in 1..=formulas.len() {
         match refute(&formulas[..i], max_clauses) {
             Refutation::Refuted => return ContradictionCheck::Contradiction(i - 1),
@@ -803,9 +836,10 @@ mod tests {
             a_boy_loves_every_girl(),
             every_boy_does_not_love_every_girl(),
         ];
+        // 1文目だけなら純リテラル除去で節が残らず無矛盾と分かるので、打ち切りは2文目で起きる。
         assert_eq!(
             check_contradiction_with_limit(&formulas, 0),
-            ContradictionCheck::Unknown(0)
+            ContradictionCheck::Unknown(1)
         );
     }
 

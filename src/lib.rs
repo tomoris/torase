@@ -246,6 +246,14 @@ mod tests {
     }
 
     #[test]
+    fn test_毎日食べる文の矛盾検査が打ち切られない() {
+        let text =
+            "hudidi peheta sa ri paparatanera du mi si ri nohapare sugi ta ri zuda".to_string();
+        let diagnosed = diagnose(text).unwrap();
+        assert!(diagnosed.warnings.is_empty(), "{:?}", diagnosed.warnings);
+    }
+
+    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita peheta sa mi si ri nohapare".to_string();
         let result = diagnose(text);
