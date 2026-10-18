@@ -1044,8 +1044,10 @@ impl Negation {
 
 impl BinaryPredicate {
     fn is_match(string: &str) -> bool {
-        const RE_BINARY_PREDICATE: Regex =
-            Regex::compile(r"^(?:[bdgmnrpkz][aeiuo])(?:[ptkshbdgmnrz][aeiuo])+$");
+        // 先頭音節は`borrowing::PredicatePrefix`(morphology.mdの述語の分類)と一致させる。
+        const RE_BINARY_PREDICATE: Regex = Regex::compile(
+            r"^(?:b[aeiu]|d[aiu]|n[aeiou]|g[aeiu]|m[aiu]|r[aeiou]|z[aiue]|p[aeiou]|k[aiu])(?:[ptkshbdgmnrz][aeiuo])+$",
+        );
         RE_BINARY_PREDICATE.is_match(string)
     }
     fn new(
@@ -1063,7 +1065,7 @@ impl BinaryPredicate {
     pub(crate) fn get_argument_types(&self) -> (Vec<ArgumentType>, Vec<ArgumentType>) {
         let s = self.string.as_str();
         // 名詞的な命題 / 空間・時間に関する名詞的な命題 / 動詞的な命題。
-        // `BinaryPredicate::is_match`の正規表現により先頭子音は[bdgmnrpkz]に限られ、
+        // `BinaryPredicate::is_match`の正規表現により先頭音節は`PredicatePrefix`のいずれかに限られ、
         // z/p/kは2文字目の母音まで見て初めて曖昧さが解消するため、それぞれ2文字で判定する。
         if s.starts_with("b") {
             (
@@ -1163,7 +1165,7 @@ impl BinaryPredicate {
         } else if s.starts_with("ku") {
             (abstraction_family_types(), abstraction_family_types())
         } else {
-            panic!("Invalid binary predicate surface: {}", self.string);
+            unreachable!("`BinaryPredicate::is_match` guarantees a `PredicatePrefix`")
         }
     }
     pub fn get_string(&self) -> String {
@@ -1658,6 +1660,13 @@ mod tests {
                 "{word} should be a proper noun: {:?}",
                 sentences[0][0]
             );
+        }
+    }
+
+    #[test]
+    fn test_tokenize_未定義の先頭音節を持つ語は述語にならない() {
+        for word in ["koba", "keba", "zoba", "boba", "doba", "goba", "moba"] {
+            assert!(!BinaryPredicate::is_match(word), "{word}");
         }
     }
 

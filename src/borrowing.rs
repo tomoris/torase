@@ -358,6 +358,24 @@ mod tests {
     }
 
     #[test]
+    fn test_全ての先頭音節が述語として字句解析され項の型が決まる() {
+        use crate::tokenizer::{TerminalType, tokenize};
+        use PredicatePrefix::*;
+        let prefixes = [
+            Ba, Be, Bi, Bu, Da, Di, Du, Na, Ne, Ni, No, Nu, Ga, Ge, Gi, Gu, Ma, Mi, Mu, Ra, Re, Ri,
+            Ro, Ru, Za, Zi, Zu, Ze, Pa, Pe, Pi, Po, Pu, Ka, Ki, Ku,
+        ];
+        for prefix in prefixes {
+            let word = format!("{}ba", prefix.as_str());
+            let sentences = tokenize(&word).unwrap();
+            let TerminalType::BinaryPredicate(predicate) = &sentences[0][0] else {
+                panic!("{word} should be a binary predicate: {:?}", sentences[0][0]);
+            };
+            predicate.get_argument_types();
+        }
+    }
+
+    #[test]
     fn test_動詞述語_runは生物x1のみの自動詞としてpirunaになる() {
         // run: r, u, n。語末子音nを閉じるためaを追加してruna。borrowing.mdの用例と同じ結果になる。
         let result = borrow_predicate(PredicatePrefix::Pi, "run", &no_existing_words()).unwrap();

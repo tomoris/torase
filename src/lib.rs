@@ -192,6 +192,13 @@ mod tests {
     }
 
     #[test]
+    fn test_未定義の先頭音節を持つ語はpanicせずエラーになる() {
+        for text in ["koba sa mi si ba", "keba sa mi si ba", "zoba sa mi si ba"] {
+            assert!(diagnose(text.to_string()).is_err(), "{text}");
+        }
+    }
+
+    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita peheta sa mi si ri nohapare".to_string();
         let result = diagnose(text);
