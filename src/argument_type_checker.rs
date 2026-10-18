@@ -246,27 +246,25 @@ fn adjunct_case_type(kind: &CaseLabelKind) -> Option<(Vec<ArgumentType>, &'stati
         CaseLabelKind::Sa | CaseLabelKind::Si => None,
         CaseLabelKind::Subu | CaseLabelKind::Sube | CaseLabelKind::Subo => Some((
             vec![ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing)],
-            "Event type mismatch in a biological (生物系) case argument.",
+            "生物系の格の項の型が合いません",
         )),
         CaseLabelKind::Sute | CaseLabelKind::Suto => Some((
             vec![ArgumentType::Abstraction],
-            "Event type mismatch in an abstract (抽象系) case argument.",
+            "抽象系の格の項の型が合いません",
         )),
         CaseLabelKind::Sudu => Some((
             vec![
                 ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact),
                 ArgumentType::PhysicalEntity(PhysicalEntity::NOther),
             ],
-            "Event type mismatch in an instrumental (道具系) case argument.",
+            "道具系の格の項の型が合いません",
         )),
-        CaseLabelKind::Suni | CaseLabelKind::Sune | CaseLabelKind::Suno => Some((
-            vec![ArgumentType::Space],
-            "Event type mismatch in a spatial (空間系) case argument.",
-        )),
-        CaseLabelKind::Sugi | CaseLabelKind::Suge | CaseLabelKind::Sugo => Some((
-            vec![ArgumentType::Time],
-            "Event type mismatch in a temporal (時間系) case argument.",
-        )),
+        CaseLabelKind::Suni | CaseLabelKind::Sune | CaseLabelKind::Suno => {
+            Some((vec![ArgumentType::Space], "空間系の格の項の型が合いません"))
+        }
+        CaseLabelKind::Sugi | CaseLabelKind::Suge | CaseLabelKind::Sugo => {
+            Some((vec![ArgumentType::Time], "時間系の格の項の型が合いません"))
+        }
     }
 }
 
@@ -287,10 +285,7 @@ impl Event {
                     range: arg.get_range().clone(),
                     actual: vec![],
                     expected: vec![],
-                    message: format!(
-                        "Case label '{}' is applied more than once.",
-                        label.get_string()
-                    ),
+                    message: format!("格ラベル{}が重複しています", label.get_string()),
                 });
             }
             seen_case_kinds.push(kind);
@@ -301,18 +296,10 @@ impl Event {
             }
             match kind {
                 CaseLabelKind::Sa => {
-                    check_case_arg_type(
-                        arg,
-                        t1.clone(),
-                        "Event type mismatch in the first argument.",
-                    )?;
+                    check_case_arg_type(arg, t1.clone(), "第1項(sa)の型が述語と合いません")?;
                 }
                 CaseLabelKind::Si => {
-                    check_case_arg_type(
-                        arg,
-                        t2.clone(),
-                        "Event type mismatch in the second argument.",
-                    )?;
+                    check_case_arg_type(arg, t2.clone(), "第2項(si)の型が述語と合いません")?;
                 }
                 _ => {
                     if let Some((expected, message)) = adjunct_case_type(kind) {
@@ -341,7 +328,7 @@ impl PostModifiedBinaryPredicatePhrase {
                         binary_predicate_phrase.get_argument_types(),
                         modifier.get_argument_types(),
                         modifier.get_range().clone(),
-                        "of the predicate modifier (di)",
+                        "述語修飾(di)で結んだ述語どうしで",
                     )?;
                 }
                 Ok(())
@@ -382,7 +369,7 @@ fn check_shared_argument_types(
             range,
             actual: t21,
             expected: t11,
-            message: format!("Type mismatch in the first argument {context}."),
+            message: format!("{context}第1項の型が合いません"),
         });
     }
     if !has_intersection(&t12, &t22) {
@@ -390,7 +377,7 @@ fn check_shared_argument_types(
             range,
             actual: t22,
             expected: t12,
-            message: format!("Type mismatch in the second argument {context}."),
+            message: format!("{context}第2項の型が合いません"),
         });
     }
     Ok(())
@@ -414,7 +401,7 @@ impl BinaryPredicatePhrase {
                     binary_predicate1.get_argument_types(),
                     binary_predicate2.get_argument_types(),
                     binary_predicate2.get_range().clone(),
-                    "after binary operation",
+                    "演算子で結んだ述語どうしで",
                 )
             }
         }
@@ -447,9 +434,7 @@ impl ArgumentPhrase {
                         range: argument_phrase2.get_range().clone(),
                         actual: t2,
                         expected: t1,
-                        message:
-                            "Type mismatch between the two argument phrases after binary operation."
-                                .to_string(),
+                        message: "演算子で結んだ2つの項の型が合いません".to_string(),
                     });
                 }
                 Ok(())
@@ -522,7 +507,7 @@ impl RetrievedArgument {
                         actual: vec![],
                         expected: vec![],
                         message: format!(
-                            "'ru {}' is not allowed; use 'ra' or 'ri' to retrieve the first or second argument.",
+                            "ru {}は使えません。第1項・第2項の抽出にはra・riを使ってください",
                             case_label.get_string()
                         ),
                     });
@@ -576,7 +561,7 @@ impl ArgumentRetrievalBinaryPredicate {
                             actual: vec![],
                             expected: vec![],
                             message: format!(
-                                "Case label '{}' is the retrieved gap and must be omitted in the clause.",
+                                "格ラベル{}は抽出される項にあたるため、節の中では省略してください",
                                 label.get_string()
                             ),
                         });
@@ -587,8 +572,7 @@ impl ArgumentRetrievalBinaryPredicate {
                             range: event.get_range(),
                             actual: vec![],
                             expected: vec![],
-                            message: "Cannot retrieve the second argument of a unary predicate."
-                                .to_string(),
+                            message: "単項述語の第2項は抽出できません".to_string(),
                         });
                     }
                 }

@@ -12,6 +12,7 @@ use formal_semantics::{
 };
 use parser::{Ast, S, parse};
 use tokenizer::{Range, TerminalType, add_eos_to_last_sentence, tokenize};
+use types::ArgumentType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
@@ -56,7 +57,10 @@ pub fn diagnose(text: String) -> Result<Diagnosed, Vec<Diagnostic>> {
     let tokenize_result = tokenize(&text);
     match tokenize_result {
         Ok(sentences) => diagnose_tokens(sentences),
-        Err(e) => Err(vec![Diagnostic::error(e.range, "tokenize error")]),
+        Err(e) => Err(vec![Diagnostic::error(
+            e.range.clone(),
+            format!("字句エラー: {}", e.message()),
+        )]),
     }
 }
 
@@ -100,7 +104,7 @@ pub fn analyze_tokens(sentences: Vec<Vec<TerminalType>>) -> Analysis {
             Err(e) => {
                 diagnostics.push(Diagnostic::error(
                     e.error_token.range(),
-                    format!("parse error: {}", e.error_message),
+                    format!("構文エラー: {}", e.error_message),
                 ));
                 continue;
             }
@@ -112,20 +116,22 @@ pub fn analyze_tokens(sentences: Vec<Vec<TerminalType>>) -> Analysis {
                 {
                     diagnostics.push(Diagnostic::error(
                         token.range(),
-                        "interrogative ko can only be used in a question (start the sentence with ku)",
+                        "疑問詞koは疑問文(文頭にkuを置いた文)の中でのみ使えます",
                     ));
                 }
             }
         }
 
         if let Err(e) = argument_type_check(&ast) {
-            diagnostics.push(Diagnostic::error(
-                e.range,
-                format!(
-                    "argument type error: {} (expected: {:?}, actual: {:?})",
-                    e.message, e.expected, e.actual
-                ),
-            ));
+            let mut message = format!("型エラー: {}", e.message);
+            if !e.expected.is_empty() && !e.actual.is_empty() {
+                message.push_str(&format!(
+                    "(期待: {}、実際: {})",
+                    join_types(&e.expected),
+                    join_types(&e.actual)
+                ));
+            }
+            diagnostics.push(Diagnostic::error(e.range, message));
         }
 
         let formula = to_fol(&ast);
@@ -137,7 +143,7 @@ pub fn analyze_tokens(sentences: Vec<Vec<TerminalType>>) -> Analysis {
             diagnostics.push(Diagnostic::error(
                 sentence_range.clone(),
                 format!(
-                    "unbound schema variable(s) (use ze to quantify): {}",
+                    "zeで量化されていないスキーマ変数があります: {}",
                     free.join(", ")
                 ),
             ));
@@ -163,13 +169,23 @@ pub fn check_contradictions(analysis: &Analysis) -> Option<Diagnostic> {
         ContradictionCheck::Consistent => None,
         ContradictionCheck::Contradiction(idx) => Some(Diagnostic::error(
             sentence_range(idx),
-            "contradiction error",
+            CONTRADICTION_MESSAGE,
         )),
         ContradictionCheck::Unknown(idx) => Some(Diagnostic::warning(
             sentence_range(idx),
-            "contradiction check gave up: consistency from this sentence onward is not verified",
+            "矛盾検査を打ち切りました。この文以降の無矛盾性は検証されていません",
         )),
     }
+}
+
+const CONTRADICTION_MESSAGE: &str = "それまでの文と矛盾しています";
+
+fn join_types(types: &[ArgumentType]) -> String {
+    types
+        .iter()
+        .map(|t| t.to_string())
+        .collect::<Vec<_>>()
+        .join("・")
 }
 
 fn finish(asts: Vec<Ast>, diagnostics: Vec<Diagnostic>) -> Result<Diagnosed, Vec<Diagnostic>> {
@@ -199,9 +215,8 @@ mod tests {
         let text = "kahoraka sa mi si ba".to_string();
         let diagnostics = diagnose(text).unwrap_err();
         assert!(
-            diagnostics
-                .iter()
-                .any(|d| d.message.contains("expected") && d.message.contains("actual")),
+            diagnostics.iter().any(|d| d.message
+                == "型エラー: 第2項(si)の型が述語と合いません(期待: 抽象・空間・時間、実際: 生物)"),
             "diagnostics: {diagnostics:?}"
         );
     }
@@ -229,7 +244,7 @@ mod tests {
         );
         assert_eq!(
             diagnostics[0].message,
-            "parse error: unexpected 'ba' in DeterminedArgument"
+            "構文エラー: 'ba'はここに置けません(DeterminedArgumentが必要です)"
         );
     }
 
@@ -255,7 +270,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .any(|d| d.message == "contradiction error"),
+                .any(|d| d.message == CONTRADICTION_MESSAGE),
             "diagnostics: {diagnostics:?}"
         );
     }
@@ -276,6 +291,24 @@ mod tests {
         let contradiction = check_contradictions(&analysis).unwrap();
         assert_eq!(contradiction.severity, Severity::Error);
         assert_eq!(contradiction.range.start().character(), 34);
+    }
+
+    #[test]
+    fn test_未知の語は字句エラーとしてその語を示す() {
+        let diagnostics = diagnose("parobe sa mi si xyz".to_string()).unwrap_err();
+        assert_eq!(diagnostics[0].message, "字句エラー: 未知の語です: xyz");
+    }
+
+    #[test]
+    fn test_期待型か実際の型が空なら型エラーに型を表示しない() {
+        let text = "ze ta mi parobe sa za si ba".to_string();
+        let diagnostics = diagnose(text).unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.message == "型エラー: zeの量化子宣言で使える項はza/ziのみです"),
+            "diagnostics: {diagnostics:?}"
+        );
     }
 
     #[test]
@@ -309,7 +342,12 @@ mod tests {
     fn test_閉じマーカーの無い固有名詞はトークナイズエラーになる() {
         let text = "parobe sa heba Kanye si ba".to_string();
         let diagnostics = diagnose(text).unwrap_err();
-        assert!(diagnostics.iter().any(|d| d.message == "tokenize error"));
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.message == "字句エラー: 固有名詞の終わりを示すhohoがありません"),
+            "diagnostics: {diagnostics:?}"
+        );
     }
 
     #[test]
@@ -1284,7 +1322,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message == "contradiction error")
+                .all(|d| d.message == CONTRADICTION_MESSAGE)
         );
     }
 
@@ -1314,7 +1352,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message == "contradiction error")
+                .all(|d| d.message == CONTRADICTION_MESSAGE)
         );
     }
 
@@ -1327,7 +1365,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message == "contradiction error")
+                .all(|d| d.message == CONTRADICTION_MESSAGE)
         );
     }
 
@@ -1362,9 +1400,7 @@ mod tests {
     fn test_kuのない文で疑問詞koを使うとエラーになる() {
         let diagnostics = diagnose("peheta sa ko si ri nohapare".to_string()).unwrap_err();
         assert!(
-            diagnostics
-                .iter()
-                .any(|d| d.message.contains("interrogative ko")),
+            diagnostics.iter().any(|d| d.message.contains("疑問詞ko")),
             "diagnostics: {diagnostics:?}"
         );
     }
@@ -1390,7 +1426,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message == "contradiction error"
+                .all(|d| d.message == CONTRADICTION_MESSAGE
                     && d.range.start().character() == third_sentence_start),
             "diagnostics: {diagnostics:?}"
         );
@@ -1410,7 +1446,7 @@ mod tests {
         assert!(
             diagnostics
                 .iter()
-                .all(|d| d.message == "contradiction error"),
+                .all(|d| d.message == CONTRADICTION_MESSAGE),
             "diagnostics: {diagnostics:?}"
         );
     }
@@ -1437,7 +1473,7 @@ mod tests {
             assert!(
                 diagnostics
                     .iter()
-                    .all(|d| d.message == "contradiction error"),
+                    .all(|d| d.message == CONTRADICTION_MESSAGE),
                 "{text}: {diagnostics:?}"
             );
         }

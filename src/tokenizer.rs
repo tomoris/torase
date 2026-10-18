@@ -11,9 +11,26 @@ pub use number::Number;
 #[derive(Debug)]
 pub struct IncompleteToken {
     pub range: Range,
+    pub reason: IncompleteTokenReason,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IncompleteTokenReason {
+    /// どの品詞の語にも当てはまらない。
+    UnknownWord(String),
+    /// 固有名詞の開始マーカー(`he[CV]`)に対応する終了マーカー`hoho`が無い。
+    UnclosedProperNoun,
 }
 
 impl IncompleteToken {
+    pub fn message(&self) -> String {
+        match &self.reason {
+            IncompleteTokenReason::UnknownWord(word) => format!("未知の語です: {word}"),
+            IncompleteTokenReason::UnclosedProperNoun => {
+                "固有名詞の終わりを示すhohoがありません".to_string()
+            }
+        }
+    }
     pub fn start(&self) -> Position {
         self.range.start.clone()
     }
@@ -191,6 +208,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Vec<TerminalType>>, IncompleteToken> 
                         character: token.4,
                     },
                 },
+                reason: IncompleteTokenReason::UnknownWord(token.0.to_string()),
             });
         }
     }
@@ -357,6 +375,7 @@ fn split_with_utf8_ranges(input: &str) -> Result<Vec<WordSpan<'_>>, IncompleteTo
     if let QuoteState::InQuote(_, quote_row, quote_col) = quote_state {
         return Err(IncompleteToken {
             range: make_range(quote_row, quote_col, row, col),
+            reason: IncompleteTokenReason::UnclosedProperNoun,
         });
     }
     if matches!(quote_state, QuoteState::AfterOpener) {
@@ -364,6 +383,7 @@ fn split_with_utf8_ranges(input: &str) -> Result<Vec<WordSpan<'_>>, IncompleteTo
         if let Some(last) = result.last() {
             return Err(IncompleteToken {
                 range: make_range(last.1, last.2, last.3, last.4),
+                reason: IncompleteTokenReason::UnclosedProperNoun,
             });
         }
     }

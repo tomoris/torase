@@ -17,3 +17,18 @@ pub enum PhysicalEntity {
     DArtifact,
     NOther,
 }
+
+impl std::fmt::Display for ArgumentType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            ArgumentType::PhysicalEntity(PhysicalEntity::BLivingThing) => "生物",
+            ArgumentType::PhysicalEntity(PhysicalEntity::DArtifact) => "人工物",
+            ArgumentType::PhysicalEntity(PhysicalEntity::NOther) => "その他の物理的実体",
+            ArgumentType::Abstraction => "抽象",
+            ArgumentType::Space => "空間",
+            ArgumentType::Time => "時間",
+            ArgumentType::Epsilon => "項なし",
+        };
+        f.write_str(name)
+    }
+}

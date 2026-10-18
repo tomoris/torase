@@ -25,23 +25,22 @@ pub fn parse(tokens: Vec<TerminalType>) -> Result<Ast, IncompleteAst> {
                 Err(IncompleteAst {
                     error_token: TerminalType::Eos(inner_eos),
                     error_top: ErrorTop::SymbolType(SymbolType::NonTerminal(NonTerminalType::S(s))),
-                    error_message: format!(
-                        "Expected end of stream, but stack is not empty or current token index is not at the end: stack: {stack:?}, current_token_index: {current_token_index:}",
-                    ),
+                    error_message: "内部エラー: 文末の後に解析されていない記号が残っています"
+                        .to_string(),
                 })
             }
         } else {
             Err(IncompleteAst {
                 error_token: TerminalType::Eos(Eos::new_omitted_token()),
                 error_top: ErrorTop::SymbolType(SymbolType::NonTerminal(NonTerminalType::S(s))),
-                error_message: format!("Expected Eos as the last token, found: {eos:?}"),
+                error_message: "内部エラー: 文末を読めませんでした".to_string(),
             })
         }
     } else {
         Err(IncompleteAst {
             error_token: TerminalType::Eos(Eos::new_omitted_token()),
             error_top: ErrorTop::SymbolType(top.clone()),
-            error_message: format!("Expected S as the root non-terminal, found: {top:?}"),
+            error_message: "内部エラー: 文として解析できませんでした".to_string(),
         })
     }
 }
@@ -62,12 +61,14 @@ fn parse_node(
             error_top: ErrorTop::DummySymbolType(DummySymbolType::DummyTerminal(
                 DummyTerminalType::Eos,
             )),
-            error_message: "Internal parser error: symbol stack unexpectedly empty".to_string(),
+            error_message: "内部エラー: 構文解析のスタックが空です".to_string(),
         });
     };
     let Some(current_token) = tokens.get(*current_token_index) else {
-        let error_message =
-            format!("Unexpected end of token stream while expecting: {top_symbol:?}");
+        let error_message = format!(
+            "文が途中で終わっています({}が必要です)",
+            describe_symbol(&top_symbol)
+        );
         return Err(IncompleteAst {
             error_token: TerminalType::Eos(Eos::new_omitted_token()),
             error_top: ErrorTop::DummySymbolType(top_symbol),
@@ -88,8 +89,8 @@ fn parse_node(
                         error_token: current_token.clone(),
                         error_top: ErrorTop::DummySymbolType(top_symbol),
                         error_message: format!(
-                            "expected end of sentence, found {}",
-                            describe_token(current_token)
+                            "ここで文が終わる必要がありますが、'{}'が続いています",
+                            current_token.get_string()
                         ),
                     })
                 }
@@ -104,9 +105,9 @@ fn parse_node(
                     Err(IncompleteAst {
                         error_token: current_token.clone(),
                         error_top: ErrorTop::DummySymbolType(top_symbol.clone()),
-                        error_message: format!(
-                            "expected {terminal:?}, found {}",
-                            describe_token(current_token)
+                        error_message: unexpected_token_message(
+                            current_token,
+                            &format!("{terminal:?}"),
                         ),
                     })
                 }
@@ -122,9 +123,9 @@ fn parse_node(
                 error_top: ErrorTop::DummySymbolType(DummySymbolType::DummyNonTerminal(
                     dummy_non_terminal.clone(),
                 )),
-                error_message: format!(
-                    "unexpected {} in {dummy_non_terminal:?}",
-                    describe_token(current_token)
+                error_message: unexpected_token_message(
+                    current_token,
+                    &format!("{dummy_non_terminal:?}"),
                 ),
             })?;
             match dummy_rhs {
@@ -150,10 +151,20 @@ fn parse_node(
     }
 }
 
-fn describe_token(token: &TerminalType) -> String {
-    match token {
-        TerminalType::Eos(_) => "end of sentence".to_string(),
-        _ => format!("'{}'", token.get_string()),
+fn unexpected_token_message(found: &TerminalType, expected: &str) -> String {
+    match found {
+        TerminalType::Eos(_) => format!("文が途中で終わっています({expected}が必要です)"),
+        _ => format!(
+            "'{}'はここに置けません({expected}が必要です)",
+            found.get_string()
+        ),
+    }
+}
+
+fn describe_symbol(symbol: &DummySymbolType) -> String {
+    match symbol {
+        DummySymbolType::DummyTerminal(terminal) => format!("{terminal:?}"),
+        DummySymbolType::DummyNonTerminal(non_terminal) => format!("{non_terminal:?}"),
     }
 }
 
