@@ -87,7 +87,10 @@ fn parse_node(
                     Err(IncompleteAst {
                         error_token: current_token.clone(),
                         error_top: ErrorTop::DummySymbolType(top_symbol),
-                        error_message: "Expected end of stream".to_string(),
+                        error_message: format!(
+                            "expected end of sentence, found {}",
+                            describe_token(current_token)
+                        ),
                     })
                 }
             }
@@ -102,18 +105,26 @@ fn parse_node(
                         error_token: current_token.clone(),
                         error_top: ErrorTop::DummySymbolType(top_symbol.clone()),
                         error_message: format!(
-                            "Expected token: {terminal:?}, found: {current_token:?}"
+                            "expected {terminal:?}, found {}",
+                            describe_token(current_token)
                         ),
                     })
                 }
             }
         },
         DummySymbolType::DummyNonTerminal(dummy_non_terminal) => {
-            let dummy_rhs = parse_table(dummy_non_terminal.clone(), get_dummy_terminal_type(current_token.clone())).map_err(|_| IncompleteAst {
+            let dummy_rhs = parse_table(
+                dummy_non_terminal.clone(),
+                get_dummy_terminal_type(current_token.clone()),
+            )
+            .map_err(|_| IncompleteAst {
                 error_token: current_token.clone(),
-                error_top: ErrorTop::DummySymbolType(DummySymbolType::DummyNonTerminal(dummy_non_terminal.clone())),
+                error_top: ErrorTop::DummySymbolType(DummySymbolType::DummyNonTerminal(
+                    dummy_non_terminal.clone(),
+                )),
                 error_message: format!(
-                    "No production rule for non-terminal: {dummy_non_terminal:?} with token: {current_token:?}"
+                    "unexpected {} in {dummy_non_terminal:?}",
+                    describe_token(current_token)
                 ),
             })?;
             match dummy_rhs {
@@ -123,20 +134,7 @@ fn parse_node(
                     }
                     let mut child_nodes = Vec::new();
                     for _ in symbols.iter() {
-                        match parse_node(stack, tokens, current_token_index) {
-                            Ok(child_node) => {
-                                child_nodes.push(child_node);
-                            }
-                            Err(e) => {
-                                return Err(IncompleteAst {
-                                    error_token: current_token.clone(),
-                                    error_top: ErrorTop::DummySymbolType(
-                                        DummySymbolType::DummyNonTerminal(dummy_non_terminal),
-                                    ),
-                                    error_message: format!("Failed to parse child node: {e:?}"),
-                                });
-                            }
-                        }
+                        child_nodes.push(parse_node(stack, tokens, current_token_index)?);
                     }
                     Ok(SymbolType::NonTerminal(new_non_terminal(
                         &dummy_non_terminal,
@@ -149,6 +147,13 @@ fn parse_node(
                 ))),
             }
         }
+    }
+}
+
+fn describe_token(token: &TerminalType) -> String {
+    match token {
+        TerminalType::Eos(_) => "end of sentence".to_string(),
+        _ => format!("'{}'", token.get_string()),
     }
 }
 

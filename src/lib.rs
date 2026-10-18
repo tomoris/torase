@@ -204,6 +204,21 @@ mod tests {
     }
 
     #[test]
+    fn test_パースエラーは原因のトークンを指し簡潔なメッセージになる() {
+        let diagnostics = diagnose("parobe sa ta ba si ba".to_string()).unwrap_err();
+        assert_eq!(diagnostics.len(), 1, "diagnostics: {diagnostics:?}");
+        let range = &diagnostics[0].range;
+        assert_eq!(
+            (range.start().character(), range.end().character()),
+            (13, 15)
+        );
+        assert_eq!(
+            diagnostics[0].message,
+            "parse error: unexpected 'ba' in DeterminedArgument"
+        );
+    }
+
+    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita peheta sa mi si ri nohapare".to_string();
         let result = diagnose(text);

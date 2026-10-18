@@ -487,10 +487,16 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
     }
 }
 
-/// 内部の`get_range()`に委譲する`start`/`end`/`range`を型名リストから一括生成する。
+/// 内部の`get_range()`/`get_string()`に委譲する`start`/`end`/`range`/`get_string`を
+/// 型名リストから一括生成する。
 macro_rules! impl_terminal_range {
     ($($ty:ident),+ $(,)?) => {
         impl TerminalType {
+            pub fn get_string(&self) -> String {
+                match self {
+                    $(TerminalType::$ty(inner) => inner.get_string(),)+
+                }
+            }
             pub fn start(&self) -> Position {
                 match self {
                     $(TerminalType::$ty(inner) => inner.get_range().start(),)+
