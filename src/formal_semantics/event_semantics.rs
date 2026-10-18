@@ -6,9 +6,10 @@ use crate::parser::{
     AEvent, ArgumentPhrase, ArgumentRetrievalBinaryPredicate, ArgumentRetrievalWithArgumentPhrase,
     AspectExpression, Ast, BinaryPredicatePhrase, DeclarativeSentence, DeterminedArgument,
     DeterminerModifier, Event, InterrogativeSentence, ModalityExpression, ModifiedAspect,
-    ModifiedModality, ModifiedTense, MtaEvent, PostBinaryPredicatePhraseExpression,
-    PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent, QuantifiedArgument,
-    QuantifierModifier, RetrievedArgument, RoleArg, S, TaEvent, TenseExpression, UniversalSentence,
+    ModifiedModality, ModifiedTense, MtaEvent, NumericalExpression,
+    PostBinaryPredicatePhraseExpression, PostModifiedBinaryPredicatePhrase, PostModifiedMtaEvent,
+    QuantifiedArgument, QuantifierModifier, RetrievedArgument, RoleArg, S, TaEvent,
+    TenseExpression, UniversalSentence,
 };
 use crate::tokenizer::{
     AspectKind, CaseLabelKind, ConnectiveHeadKind, ModalityBaseKind, NegationKind, OperatorKind,
@@ -343,7 +344,7 @@ enum QuantKind {
     Existential, // epsilon / to  少なくとも1つは存在する
     Many,        // te  多くの
     Half,        // ti  半分の
-    Count,       // number
+    Count(u64),  // number
 }
 
 impl ArgCtx {
@@ -385,7 +386,11 @@ impl ArgCtx {
                     var,
                     Box::new(Formula::And(Box::new(restriction), Box::new(body))),
                 ),
-                QuantKind::Count => Formula::GenQ(
+                QuantKind::Count(0) => Formula::Not(Box::new(Formula::Exists(
+                    var,
+                    Box::new(Formula::And(Box::new(restriction), Box::new(body))),
+                ))),
+                QuantKind::Count(_) => Formula::GenQ(
                     GenQKind::Count,
                     var,
                     Box::new(Formula::And(Box::new(restriction), Box::new(body))),
@@ -1233,7 +1238,9 @@ fn extract_quant_kind(qm: &QuantifierModifier) -> QuantKind {
             "to" => QuantKind::Existential,
             _ => QuantKind::Existential,
         },
-        QuantifierModifier::Two(_number) => QuantKind::Count,
+        QuantifierModifier::Two(NumericalExpression::One(number)) => {
+            QuantKind::Count(number.get_value())
+        }
         QuantifierModifier::Epsilon => QuantKind::Existential,
     }
 }

@@ -230,6 +230,22 @@ mod tests {
     }
 
     #[test]
+    fn test_0個の項は存在を含意しない() {
+        let consistent =
+            "peheta sa mi si tuso ri nohapare do ne peheta sa mi si to ri nohapare".to_string();
+        assert!(diagnose(consistent).is_ok());
+        let contradictory =
+            "peheta sa mi si tuso ri nohapare do peheta sa mi si to ri nohapare".to_string();
+        let diagnostics = diagnose(contradictory).unwrap_err();
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.message == "contradiction error"),
+            "diagnostics: {diagnostics:?}"
+        );
+    }
+
+    #[test]
     fn test_私はりんごを食べた() {
         let text = "hita peheta sa mi si ri nohapare".to_string();
         let result = diagnose(text);
