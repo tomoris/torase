@@ -1,5 +1,6 @@
 pub mod argument_type_checker;
 pub mod borrowing;
+pub mod dictionary;
 pub mod formal_semantics;
 pub mod parser;
 pub mod tokenizer;

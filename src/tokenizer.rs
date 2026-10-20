@@ -507,6 +507,44 @@ pub fn get_dummy_terminal_type(terminal: TerminalType) -> DummyTerminalType {
     }
 }
 
+impl TerminalType {
+    /// 品詞の日本語名。エディタのツールチップや辞書の表示に使う。
+    pub fn part_of_speech(&self) -> &'static str {
+        match self {
+            TerminalType::BinaryPredicate(_) => "述語",
+            TerminalType::Argument(_) => "項",
+            TerminalType::CaseLabel(_) => "格標識",
+            TerminalType::ArgumentRetriever(_) => "項抽出",
+            TerminalType::AdjunctArgumentRetriever(_) => "付加詞の項抽出",
+            TerminalType::Quantifier(_) => "量化詞",
+            TerminalType::Determiner(_) => "限定詞",
+            TerminalType::Number(_) => "数詞",
+            TerminalType::Tense(_) => "テンス",
+            TerminalType::Aspect(_) => "アスペクト",
+            TerminalType::ModalityBase(_) => "モダリティ",
+            TerminalType::Negation(_) => "否定",
+            TerminalType::TenseNegation(_) => "テンスの否定",
+            TerminalType::AspectNegation(_) => "アスペクトの否定",
+            TerminalType::ModalityNegation(_) => "モダリティの否定",
+            TerminalType::PhraseOperator(_) => "述語・項の演算子",
+            TerminalType::MtaEventOperator(_) => "命題の演算子",
+            TerminalType::PostBinaryPredicatePhraseModifier(_) => "述語修飾句の前置詞",
+            TerminalType::PostArgumentPhraseModifier(_) => "項修飾句の前置詞",
+            TerminalType::MtaEventToArgumentPhraseConverter(_) => "節の開始マーカー",
+            TerminalType::MtaEventToArgumentPhraseConverterEnd(_) => "節の終了マーカー",
+            TerminalType::ConnectiveHead(_) => "接続詞",
+            TerminalType::RoleLabel(_) => "節の役割標識",
+            TerminalType::TypeOverride(_) => "型の上書き",
+            TerminalType::InterrogativeMarker(_) => "疑問文マーカー",
+            TerminalType::UniversalMarker(_) => "全称量化マーカー",
+            TerminalType::ProperNoun(_) | TerminalType::ProperNounBody(_) => "固有名詞",
+            TerminalType::ProperNounOpener(_) => "固有名詞の開始",
+            TerminalType::ProperNounCloser(_) => "固有名詞の終了",
+            TerminalType::Eos(_) => "文の区切り",
+        }
+    }
+}
+
 /// 内部の`get_range()`/`get_string()`に委譲する`start`/`end`/`range`/`get_string`を
 /// 型名リストから一括生成する。
 macro_rules! impl_terminal_range {
