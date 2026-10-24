@@ -2,6 +2,7 @@
 name = "torase"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 # 辞書(docs/dictionary.json)の読み込み用
