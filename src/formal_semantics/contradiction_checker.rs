@@ -11,6 +11,9 @@
 //! extra world argument, `□_b φ` at `w` becomes `∀v.(R_b(w, v) ⇒ φ@v)` and
 //! `◇_b φ` becomes `∃v.(R_b(w, v) ∧ φ@v)`, evaluated from the actual world `w0`.
 //! The accessibility relations get the frame conditions in [`frame_axioms`].
+//!
+//! `=` is identity of individuals, so its atoms get no world argument (identity does not
+//! vary between worlds) and it gets the axioms in [`equality_axioms`].
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -276,7 +279,9 @@ impl CnfBuilder {
                     .iter()
                     .map(|t| self.convert_fol_term(t, env))
                     .collect();
-                args.push(world.clone());
+                if pred != EQ {
+                    args.push(world.clone());
+                }
                 vec![vec![Literal {
                     pred: pred.clone(),
                     args,
@@ -420,6 +425,9 @@ fn accessibility(base: ModalBase, from: &Term, to: &Term, positive: bool) -> Lit
 
 const ACTUAL_WORLD: &str = "w0";
 
+/// Identity of individuals (`event_semantics` uses it for `zo` and for distinct events).
+const EQ: &str = "=";
+
 /// Frame conditions on the accessibility relations:
 /// - epistemic / circumstantial: reflexive (T) — the actual world is compatible with what
 ///   the speaker knows and with the actual circumstances.
@@ -508,6 +516,83 @@ fn temporal_axioms() -> Vec<Clause> {
             lit(le, &f("τ_end", e.clone()), &f("max", t.clone()), true),
         ],
     ]
+}
+
+/// Reflexivity and symmetry of `=`, for clause sets that mention it.
+///
+/// Like [`temporal_axioms`], the axioms on `=` are used only for unit-resulting resolution.
+fn equality_axioms(clauses: &[Clause]) -> Vec<Clause> {
+    if !clauses.iter().flatten().any(|lit| lit.pred == EQ) {
+        return Vec::new();
+    }
+    let (x, y) = (eq_var("x"), eq_var("y"));
+    vec![
+        vec![eq_literal(&x, &x, true)],
+        vec![eq_literal(&x, &y, false), eq_literal(&y, &x, true)],
+    ]
+}
+
+/// Substitution of equals: `x = y ∧ P(…x…) ⇒ P(…y…)` for every individual argument position
+/// of every predicate in `clauses` (with `=` itself this gives transitivity). Generated only
+/// if some clause can assert an identity. Arguments of function terms are not covered, so
+/// identities do not reach time terms such as `τ(e)`; this makes the check weaker, not unsound.
+fn substitution_axioms(clauses: &[Clause]) -> Vec<Clause> {
+    let literals = || clauses.iter().flatten();
+    if !literals().any(|lit| lit.pred == EQ && lit.positive) {
+        return Vec::new();
+    }
+    // (predicate, number of arguments, number of individual arguments): every predicate but
+    // `=` ends with a world argument, and accessibility and time relations take no individuals.
+    let predicates: HashSet<(String, usize, usize)> = literals()
+        .filter(|lit| {
+            !lit.pred.starts_with("R_") && !matches!(lit.pred.as_str(), "<" | "≤" | "*" | "⊆")
+        })
+        .map(|lit| {
+            let individuals = if lit.pred == EQ {
+                lit.args.len()
+            } else {
+                lit.args.len() - 1
+            };
+            (lit.pred.clone(), lit.args.len(), individuals)
+        })
+        .collect();
+    let mut predicates: Vec<_> = predicates.into_iter().collect();
+    predicates.sort();
+
+    let (x, y) = (eq_var("x"), eq_var("y"));
+    let mut axioms = Vec::new();
+    for (pred, arity, individuals) in predicates {
+        let args: Vec<Term> = (0..arity).map(|i| eq_var(&format!("a{i}"))).collect();
+        for position in 0..individuals {
+            let with = |term: &Term, positive: bool| {
+                let mut args = args.clone();
+                args[position] = term.clone();
+                Literal {
+                    pred: pred.clone(),
+                    args,
+                    positive,
+                }
+            };
+            axioms.push(vec![
+                eq_literal(&x, &y, false),
+                with(&x, false),
+                with(&y, true),
+            ]);
+        }
+    }
+    axioms
+}
+
+fn eq_var(name: &str) -> Term {
+    Term::Var(format!("eq_{name}"))
+}
+
+fn eq_literal(a: &Term, b: &Term, positive: bool) -> Literal {
+    Literal {
+        pred: EQ.to_string(),
+        args: vec![a.clone(), b.clone()],
+        positive,
+    }
 }
 
 /// Cross-product of two clause sets: each pair is merged into one clause.
@@ -707,12 +792,13 @@ fn refute(formulas: &[Formula], max_clauses: usize) -> Refutation {
         all_clauses.extend(clauses);
     }
 
-    let axioms = temporal_axioms();
-    resolution(
-        eliminate_pure_literal_clauses(all_clauses, &axioms),
-        &axioms,
-        max_clauses,
-    )
+    // Substitution axioms contain both signs of every predicate but only rewrite the
+    // arguments of a literal, so pure literals are found with the other axioms alone.
+    let mut axioms = temporal_axioms();
+    axioms.extend(equality_axioms(&all_clauses));
+    let clauses = eliminate_pure_literal_clauses(all_clauses, &axioms);
+    axioms.extend(substitution_axioms(&clauses));
+    resolution(clauses, &axioms, max_clauses)
 }
 
 /// Pure literal elimination: a clause containing a literal whose complement occurs in no
@@ -828,6 +914,42 @@ mod tests {
         let lt = atom("<", vec![konst("a"), konst("b")]);
         let overlap = atom("*", vec![konst("b"), konst("a")]);
         assert!(is_contradictory(&[lt, overlap]));
+    }
+
+    #[test]
+    fn test_等号は反射的で対称的である() {
+        let eq = |a: &str, b: &str| atom("=", vec![konst(a), konst(b)]);
+        let not = |f: Formula| Formula::Not(Box::new(f));
+        assert!(is_contradictory(&[not(eq("a", "a"))]));
+        assert!(is_contradictory(&[eq("a", "b"), not(eq("b", "a"))]));
+        assert!(!is_contradictory(&[not(eq("a", "b"))]));
+    }
+
+    #[test]
+    fn test_等しいものは同じ性質を持ち推移的である() {
+        let eq = |a: &str, b: &str| atom("=", vec![konst(a), konst(b)]);
+        let not = |f: Formula| Formula::Not(Box::new(f));
+        let p = |a: &str| atom("P", vec![konst(a)]);
+        assert!(is_contradictory(&[eq("a", "b"), p("a"), not(p("b"))]));
+        assert!(is_contradictory(&[
+            eq("a", "b"),
+            eq("b", "c"),
+            not(eq("a", "c"))
+        ]));
+        assert!(!is_contradictory(&[eq("a", "b"), p("a"), not(p("c"))]));
+    }
+
+    #[test]
+    fn test_等号は可能世界によらない() {
+        // ◇(a = b) ∧ P(a) ∧ ¬P(b): a = bがある世界で成り立てば、現実世界でも成り立つ
+        let eq = atom("=", vec![konst("a"), konst("b")]);
+        let possibly = Formula::Modal(ModalForce::Possibility, ModalBase::Epistemic, Box::new(eq));
+        let p = |a: &str| atom("P", vec![konst(a)]);
+        assert!(is_contradictory(&[
+            possibly,
+            p("a"),
+            Formula::Not(Box::new(p("b")))
+        ]));
     }
 
     #[test]

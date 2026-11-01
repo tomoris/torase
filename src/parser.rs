@@ -2137,6 +2137,32 @@ impl MtaEvent {
     }
 }
 
+impl BinaryPredicatePhrase {
+    /// 述語句の表層の語列を空白区切りで返す(例: `ne nohapare`、`hoba nohapare behapara`)。
+    pub fn get_string(&self) -> String {
+        match self {
+            BinaryPredicatePhrase::One(binary_predicate) => binary_predicate.get_string(),
+            BinaryPredicatePhrase::Two(negation, inner) => {
+                format!("{} {}", negation.get_string(), inner.get_string())
+            }
+            BinaryPredicatePhrase::Three(phrase_operator, left, right) => format!(
+                "{} {} {}",
+                phrase_operator.get_string(),
+                left.get_string(),
+                right.get_string()
+            ),
+        }
+    }
+}
+
+impl RetrievedArgument {
+    pub fn get_body(&self) -> &ArgumentRetrievalBinaryPredicate {
+        match self {
+            RetrievedArgument::One(_, body) | RetrievedArgument::Two(_, _, body) => body,
+        }
+    }
+}
+
 impl Event {
     pub(crate) fn get_range(&self) -> Range {
         match self {

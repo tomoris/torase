@@ -1,6 +1,6 @@
 //! 型チェック済みASTをネオ・デイヴィドソン流の一階述語論理式(`Formula`)へ変換する。
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::parser::{
     AEvent, ArgumentPhrase, ArgumentRetrievalBinaryPredicate, ArgumentRetrievalWithArgumentPhrase,
@@ -13,7 +13,7 @@ use crate::parser::{
 };
 use crate::tokenizer::{
     AspectKind, CaseLabelKind, ConnectiveHeadKind, ModalityBaseKind, NegationKind, OperatorKind,
-    QuantifierKind, TenseKind,
+    QuantifierKind, Range, TenseKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -86,7 +86,7 @@ impl ModalBase {
     }
 }
 
-/// 中置表示する時間関係の述語名。
+/// 中置表示する述語名(時間関係と、個体の同一性`=`)。
 const LT: &str = "<";
 const LE: &str = "≤";
 const OVERLAP: &str = "*";
@@ -179,16 +179,19 @@ struct VarGen {
     occasion: usize,
     /// 疑問詞`ko`に割り当てた変数。`InterrogativeSentence::to_fol`が文頭で`?x`として束縛する。
     question_vars: Vec<String>,
+    /// `zo`(照応)の解決に使う、文をまたぐ状態。
+    anaphora: AnaphoraState,
 }
 
 impl VarGen {
-    fn new() -> Self {
+    fn new(anaphora: AnaphoraState) -> Self {
         VarGen {
             obj: 0,
             evt: 0,
             ref_time: 0,
             occasion: 0,
             question_vars: Vec::new(),
+            anaphora,
         }
     }
 
@@ -231,6 +234,42 @@ impl VarGen {
         } else {
             format!("e{n}")
         }
+    }
+}
+
+/// 1文を変換する間の`zo`(照応)の状態。前の文の先行詞を受け取り、この文の結果を[`Discourse`]に返す。
+#[derive(Default)]
+struct AnaphoraState {
+    /// 前の文までに導入された先行詞の`(照応のキー, 談話定数)`。古いものから順に並ぶ。
+    antecedents: Vec<(String, String)>,
+    /// この文で存在量化された項のうち、後の文の`zo`から指せる可能性があるもの。
+    candidates: Vec<ReferentCandidate>,
+    /// この文の項のうち、項の否定`ne`の内側にあるため後の文の`zo`から指せないもののキー。
+    negated_keys: Vec<String>,
+    /// この文の`zo`が参照した談話定数。
+    referred_constants: Vec<String>,
+    /// この文の`zo`のうち、先行詞が見つからなかったもの。
+    unresolved: Vec<UnresolvedAnaphor>,
+    /// この文の`zo`の項の制約(述語と`di`/`du`の情報)を談話定数について述べた式。
+    /// 否定・条件などの内側に現れても前提として扱い、文の最上位で主張する。
+    presuppositions: Vec<Formula>,
+}
+
+impl AnaphoraState {
+    fn new(antecedents: Vec<(String, String)>) -> Self {
+        AnaphoraState {
+            antecedents,
+            ..Self::default()
+        }
+    }
+
+    /// 照応のキーが同じ先行詞のうち直近のものの談話定数。
+    fn resolve(&self, key: &str) -> Option<String> {
+        self.antecedents
+            .iter()
+            .rev()
+            .find(|(k, _)| k == key)
+            .map(|(_, constant)| constant.clone())
     }
 }
 
@@ -319,7 +358,7 @@ enum ArgCtx {
         kind: QuantKind,
         restriction: Formula,
     },
-    /// Individual constant (pronoun).
+    /// Individual constant (pronoun, or a discourse constant `dN` referred to by `zo`).
     Const(String),
     /// Fresh existential variable with no restriction (from epsilon arg2).
     /// `scope()` wraps with ∃var.body.
@@ -328,8 +367,6 @@ enum ArgCtx {
     /// `scope()` is a no-op (unlike `ExistOnly`): the variable is left free here and is
     /// closed only by an enclosing `ze`(全称量化マーカー) via `UniversalSentence::to_fol`.
     FreeVar(String),
-    /// Negated argument phrase.
-    Neg(Box<ArgCtx>),
     /// Coordinated argument phrases (distributed in `build_event_inner`).
     Coord {
         op: OperatorKind,
@@ -355,7 +392,6 @@ impl ArgCtx {
                 Term::Var(var.clone())
             }
             ArgCtx::Const(s) => Term::Const(s.clone()),
-            ArgCtx::Neg(inner) => inner.term(),
             ArgCtx::Coord { left, .. } => left.term(), // distribution is handled externally
         }
     }
@@ -399,11 +435,6 @@ impl ArgCtx {
             ArgCtx::Const(_) => body,
             ArgCtx::ExistOnly(var) => Formula::Exists(var, Box::new(body)),
             ArgCtx::FreeVar(_) => body,
-            ArgCtx::Neg(inner) => {
-                // Negate the restriction of the inner quantifier.
-                let ctx = negate_restriction(*inner);
-                ctx.scope(body)
-            }
             ArgCtx::Coord {
                 op: _,
                 left,
@@ -417,8 +448,10 @@ impl ArgCtx {
     }
 }
 
-/// Push negation into the restriction of an ArgCtx (for `ne arg` NPs).
-fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
+/// Apply `ne` to an argument: negate the restriction of a quantified argument, and turn a
+/// constant `c` into "something other than c" (∃x.(¬(x = c) ∧ …)). Applied eagerly so that a
+/// negated coordination stays a `Coord` and is distributed in `build_event_inner`.
+fn negate_argument(ctx: ArgCtx, vg: &mut VarGen) -> ArgCtx {
     match ctx {
         ArgCtx::Quant {
             var,
@@ -429,7 +462,18 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
             kind,
             restriction: Formula::Not(Box::new(restriction)),
         },
-        ArgCtx::Neg(inner) => *inner, // ¬¬ = identity
+        ArgCtx::Const(constant) => {
+            let var = vg.next();
+            let restriction = Formula::Not(Box::new(Formula::Atom(
+                EQ.to_string(),
+                vec![Term::Var(var.clone()), Term::Const(constant)],
+            )));
+            ArgCtx::Quant {
+                var,
+                kind: QuantKind::Existential,
+                restriction,
+            }
+        }
         // De Morgan: ¬(A∧B)=¬A∨¬B, ¬(A∨B)=¬A∧¬B (flip the connective, negate both sides).
         ArgCtx::Coord {
             op: OperatorKind::And,
@@ -437,8 +481,8 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
             right,
         } => ArgCtx::Coord {
             op: OperatorKind::Or,
-            left: Box::new(negate_restriction(*left)),
-            right: Box::new(negate_restriction(*right)),
+            left: Box::new(negate_argument(*left, vg)),
+            right: Box::new(negate_argument(*right, vg)),
         },
         ArgCtx::Coord {
             op: OperatorKind::Or,
@@ -446,8 +490,8 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
             right,
         } => ArgCtx::Coord {
             op: OperatorKind::And,
-            left: Box::new(negate_restriction(*left)),
-            right: Box::new(negate_restriction(*right)),
+            left: Box::new(negate_argument(*left, vg)),
+            right: Box::new(negate_argument(*right, vg)),
         },
         // ¬(A⊕B) ≡ (¬A)⊕B: the connective stays Xor, only one side is negated.
         ArgCtx::Coord {
@@ -456,10 +500,10 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
             right,
         } => ArgCtx::Coord {
             op: OperatorKind::Xor,
-            left: Box::new(negate_restriction(*left)),
+            left: Box::new(negate_argument(*left, vg)),
             right,
         },
-        other => other, // Const / ExistOnly / FreeVar: cannot negate meaningfully
+        other => other, // ExistOnly / FreeVar: cannot negate meaningfully
     }
 }
 
@@ -468,9 +512,259 @@ fn negate_restriction(ctx: ArgCtx) -> ArgCtx {
 // ---------------------------------------------------------------------------
 
 /// Translate an `Ast` to a first-order logic `Formula`.
+///
+/// 文を単独で変換するので、`zo`(照応)は先行詞を持たず、ふつうの存在量化として扱う。
+/// 前の文を踏まえて変換するには[`Discourse`]を使う。
 pub fn to_fol(ast: &Ast) -> Formula {
-    let mut vg = VarGen::new();
+    let mut vg = VarGen::new(AnaphoraState::default());
     ast.get_s().to_fol(&mut vg)
+}
+
+// ---------------------------------------------------------------------------
+// Discourse (文をまたぐ照応)
+// ---------------------------------------------------------------------------
+
+/// 先行詞が見つからなかった`zo`(照応)。
+#[derive(Debug, Clone)]
+pub struct UnresolvedAnaphor {
+    /// `zo`を含む項の範囲。
+    pub range: Range,
+    /// 照応のキー(抽出詞と述語句。例: `ri nohapare`)。
+    pub key: String,
+    pub reason: UnresolvedReason,
+}
+
+/// `zo`の先行詞が見つからなかった理由。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnresolvedReason {
+    /// 前の文に、同じ抽出詞と述語句で導入された項が無い。
+    NotIntroduced,
+    /// 前の文に同じキーの項はあるが、否定・全称・条件・選言・様相・一般量化子・等位接続の
+    /// 内側か、疑問文の中にあるため指せない。
+    Inaccessible,
+}
+
+/// 文の中で存在量化された項のうち、`zo`の先行詞になりうるもの。
+#[derive(Debug, Clone)]
+struct ReferentCandidate {
+    key: String,
+    var: String,
+    range: Range,
+}
+
+/// 談話に導入された先行詞。
+#[derive(Debug, Clone)]
+struct Referent {
+    key: String,
+    /// 先行詞を導入した文(`Discourse::formulas`の添字)。
+    sentence: usize,
+    /// その文の中での変数名。
+    var: String,
+    /// 後の文から参照するときの談話定数。
+    constant: String,
+    /// 一度でも参照され、導入した文の`∃var`を談話定数に置き換え済みか。
+    instantiated: bool,
+}
+
+/// 文の並び(談話)を順に論理式へ変換する。
+///
+/// 文の最上位で(否定・全称・条件・選言・様相・一般量化子の内側ではなく)存在量化された
+/// `ri P`・`ra P`・`re P`・`ru K P`の項は先行詞として記録され、後の文の`zo ri P`のように
+/// 抽出詞と述語句(`di`による修飾と`du`の項を除く)が同じ`zo`の項から参照できる。
+/// 同じキーの先行詞が複数あれば直近のものを指す。
+///
+/// `zo`の項の制約(述語と`di`/`du`の情報)は前提として扱い、`zo`が否定・条件などの内側に
+/// あっても、文の最上位で談話定数について主張する。
+///
+/// 参照された先行詞は、導入した文の`∃x.φ(x)`を談話定数`dN`による`φ(dN)`に置き換え、
+/// 参照する側の文も同じ`dN`を使う。最上位の存在量化子を定数に置き換えても充足可能性は
+/// 変わらないため、各文を独立した前提として矛盾検査する仕組みはそのまま使える。
+#[derive(Debug, Clone, Default)]
+pub struct Discourse {
+    formulas: Vec<Formula>,
+    referents: Vec<Referent>,
+    /// 前の文に現れたが`zo`から指せない項のキー。先行詞が無いときの理由を示すのに使う。
+    inaccessible_keys: HashSet<String>,
+}
+
+impl Discourse {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// 文を論理式に変換して談話に加え、その文の添字と先行詞が見つからなかった`zo`を返す。
+    /// 疑問文は何も主張しないので先行詞を導入しない(疑問文の中の`zo`は前の文を参照できる)。
+    pub fn push(&mut self, ast: &Ast) -> (usize, Vec<UnresolvedAnaphor>) {
+        let antecedents = self
+            .referents
+            .iter()
+            .map(|r| (r.key.clone(), r.constant.clone()))
+            .collect();
+        let mut vg = VarGen::new(AnaphoraState::new(antecedents));
+        let formula = ast.get_s().to_fol(&mut vg);
+        let index = self.formulas.len();
+        let anaphora = vg.anaphora;
+
+        for constant in &anaphora.referred_constants {
+            let referent = self
+                .referents
+                .iter_mut()
+                .find(|r| &r.constant == constant)
+                .expect("参照した談話定数は登録済みの先行詞のもの");
+            if !referent.instantiated {
+                let f = &mut self.formulas[referent.sentence];
+                *f = instantiate_exists(f.clone(), &referent.var, &referent.constant);
+                referent.instantiated = true;
+            }
+        }
+
+        // 先行詞が無い理由は前の文だけから決める(この文の項は同じ文の`zo`から指せない)。
+        let unresolved = anaphora
+            .unresolved
+            .into_iter()
+            .map(|anaphor| UnresolvedAnaphor {
+                reason: if self.inaccessible_keys.contains(&anaphor.key) {
+                    UnresolvedReason::Inaccessible
+                } else {
+                    UnresolvedReason::NotIntroduced
+                },
+                ..anaphor
+            })
+            .collect();
+
+        let (mut candidates, inaccessible): (Vec<_>, Vec<_>) = if matches!(ast.get_s(), S::Two(_)) {
+            (Vec::new(), anaphora.candidates)
+        } else {
+            let accessible = accessible_existentials(&formula);
+            anaphora
+                .candidates
+                .into_iter()
+                .partition(|c| accessible.contains(&c.var))
+        };
+        self.inaccessible_keys.extend(anaphora.negated_keys);
+        self.inaccessible_keys
+            .extend(inaccessible.into_iter().map(|c| c.key));
+        // 変換の順序(第二項が先)ではなく、文中に現れた順に並べて「直近」を決める。
+        candidates.sort_by_key(|c| (c.range.start().line(), c.range.start().character()));
+        for candidate in candidates {
+            let constant = format!("d{}", self.referents.len() + 1);
+            self.referents.push(Referent {
+                key: candidate.key,
+                sentence: index,
+                var: candidate.var,
+                constant,
+                instantiated: false,
+            });
+        }
+
+        self.formulas.push(formula);
+        (index, unresolved)
+    }
+
+    /// `push`が返した添字の文の論理式。後の文から参照されると、先行詞の`∃x`が談話定数に置き換わる。
+    pub fn formula(&self, index: usize) -> &Formula {
+        &self.formulas[index]
+    }
+}
+
+/// 文の最上位(`∧`と`∃`だけをたどって届く位置)で、ちょうど1回だけ存在量化された変数。
+/// 等位接続(`hoba`)で項が複製され同じ変数が複数回束縛される場合は、どれを指すか決まらないので除く。
+fn accessible_existentials(formula: &Formula) -> Vec<String> {
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    let mut stack = vec![formula];
+    while let Some(f) = stack.pop() {
+        match f {
+            Formula::And(l, r) => {
+                stack.push(l);
+                stack.push(r);
+            }
+            Formula::Exists(x, body) => {
+                *counts.entry(x).or_default() += 1;
+                stack.push(body);
+            }
+            _ => {}
+        }
+    }
+    counts
+        .into_iter()
+        .filter(|&(_, n)| n == 1)
+        .map(|(x, _)| x.to_string())
+        .collect()
+}
+
+/// 最上位の`∃var.φ`を`φ[var := constant]`に置き換える。
+fn instantiate_exists(formula: Formula, var: &str, constant: &str) -> Formula {
+    match formula {
+        Formula::And(l, r) => Formula::And(
+            Box::new(instantiate_exists(*l, var, constant)),
+            Box::new(instantiate_exists(*r, var, constant)),
+        ),
+        Formula::Exists(x, body) if x == var => {
+            substitute(*body, var, &Term::Const(constant.to_string()))
+        }
+        Formula::Exists(x, body) => {
+            Formula::Exists(x, Box::new(instantiate_exists(*body, var, constant)))
+        }
+        other => other,
+    }
+}
+
+/// `formula`の中の自由な`var`を`term`に置き換える。
+fn substitute(formula: Formula, var: &str, term: &Term) -> Formula {
+    let sub = |f: Box<Formula>| Box::new(substitute(*f, var, term));
+    match formula {
+        Formula::Atom(p, args) => Formula::Atom(
+            p,
+            args.into_iter()
+                .map(|t| substitute_term(t, var, term))
+                .collect(),
+        ),
+        Formula::Not(phi) => Formula::Not(sub(phi)),
+        Formula::And(l, r) => Formula::And(sub(l), sub(r)),
+        Formula::Or(l, r) => Formula::Or(sub(l), sub(r)),
+        Formula::Implies(l, r) => Formula::Implies(sub(l), sub(r)),
+        Formula::Modal(force, base, phi) => Formula::Modal(force, base, sub(phi)),
+        // 同じ名前を束縛し直す量化子の内側では、varは自由ではない。
+        Formula::Forall(x, phi) if x == var => Formula::Forall(x, phi),
+        Formula::Exists(x, phi) if x == var => Formula::Exists(x, phi),
+        Formula::GenQ(k, x, phi) if x == var => Formula::GenQ(k, x, phi),
+        Formula::Question(x, phi) if x == var => Formula::Question(x, phi),
+        Formula::Forall(x, phi) => Formula::Forall(x, sub(phi)),
+        Formula::Exists(x, phi) => Formula::Exists(x, sub(phi)),
+        Formula::GenQ(k, x, phi) => Formula::GenQ(k, x, sub(phi)),
+        Formula::Question(x, phi) => Formula::Question(x, sub(phi)),
+    }
+}
+
+fn substitute_term(t: Term, var: &str, term: &Term) -> Term {
+    match t {
+        Term::Var(v) if v == var => term.clone(),
+        Term::Func(name, args) => Term::Func(
+            name,
+            args.into_iter()
+                .map(|a| substitute_term(a, var, term))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+/// `zo`の先行詞を探すキー(抽出詞と、`di`による修飾を除いた述語句)。例: `ri nohapare`、`ru suni peheta`。
+/// 述語句を持たない節(`he … ho`)からの抽出は`None`。
+fn anaphora_key(retrieved: &RetrievedArgument) -> Option<String> {
+    let retriever = match retrieved {
+        RetrievedArgument::One(retriever, _) => retriever.get_string(),
+        RetrievedArgument::Two(ru, label, _) => {
+            format!("{} {}", ru.get_string(), label.get_string())
+        }
+    };
+    match retrieved.get_body() {
+        ArgumentRetrievalBinaryPredicate::One(
+            PostModifiedBinaryPredicatePhrase::One(head, _),
+            _,
+        ) => Some(format!("{retriever} {}", head.get_string())),
+        ArgumentRetrievalBinaryPredicate::Two(..) => None,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -490,7 +784,10 @@ impl S {
 impl DeclarativeSentence {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
-            DeclarativeSentence::One(pm) => pm.to_fol(vg),
+            DeclarativeSentence::One(pm) => {
+                let body = pm.to_fol(vg);
+                with_presuppositions(body, vg)
+            }
         }
     }
 }
@@ -499,7 +796,9 @@ impl InterrogativeSentence {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
             InterrogativeSentence::One(_, pm) => {
+                // 前提は`?x`の内側に置く(`zo`の項の`du`に`ko`が現れうるため)。
                 let body = pm.to_fol(vg);
+                let body = with_presuppositions(body, vg);
                 std::mem::take(&mut vg.question_vars)
                     .into_iter()
                     .rev()
@@ -518,7 +817,9 @@ impl UniversalSentence {
     fn to_fol(&self, vg: &mut VarGen) -> Formula {
         match self {
             UniversalSentence::One(_, quantified_variable_list, pm) => {
+                // 前提は`ze`の量化子の内側に置く(`zo`の項の`du`に`za`/`zi`が現れうるため)。
                 let body = pm.to_fol(vg);
+                let body = with_presuppositions(body, vg);
                 quantified_variable_list.variables().into_iter().rev().fold(
                     body,
                     |acc, (force, arg)| {
@@ -532,6 +833,14 @@ impl UniversalSentence {
             }
         }
     }
+}
+
+/// 文中の`zo`の項の制約(前提)を、出現順に`body`の前へ連言で加える。
+fn with_presuppositions(body: Formula, vg: &mut VarGen) -> Formula {
+    std::mem::take(&mut vg.anaphora.presuppositions)
+        .into_iter()
+        .rev()
+        .fold(body, |acc, p| Formula::And(Box::new(p), Box::new(acc)))
 }
 
 /// `za`/`zi`(定義文用のスキーマ変数)を指す名前かどうか。`free_variables`の結果から
@@ -1188,8 +1497,16 @@ impl ArgumentPhrase {
             }
             ArgumentPhrase::One(arg) => ArgCtx::Const(arg.get_string()),
 
-            // Negated argument phrase.
-            ArgumentPhrase::Two(_neg, inner) => ArgCtx::Neg(Box::new(inner.to_fol(vg))),
+            // Negated argument phrase. `ne ri P`はPでないものなので、`zo ri P`の先行詞にしない。
+            ArgumentPhrase::Two(_neg, inner) => {
+                let candidates = vg.anaphora.candidates.len();
+                let ctx = inner.to_fol(vg);
+                let negated = vg.anaphora.candidates.split_off(candidates);
+                vg.anaphora
+                    .negated_keys
+                    .extend(negated.into_iter().map(|c| c.key));
+                negate_argument(ctx, vg)
+            }
 
             // Coordinated argument phrases (hoba/hobi/hobu arg1 arg2).
             ArgumentPhrase::Three(op, left, right) => ArgCtx::Coord {
@@ -1219,6 +1536,37 @@ impl QuantifiedArgument {
                 let kind = extract_quant_kind(quant_mod);
                 let var = vg.next();
                 let restriction = det_arg.to_fol(&var, vg);
+                let DeterminedArgument::One(det_mod, retrieved) = det_arg;
+                let anaphoric =
+                    matches!(det_mod, DeterminerModifier::One(det) if det.is_anaphoric());
+                if let Some(key) = anaphora_key(retrieved) {
+                    if anaphoric {
+                        // zo: 前の文の項を指す。量化詞は型検査でエラーになるので無視する。
+                        // 制約は前提として文の最上位で主張するので、ここでは談話定数だけを返す。
+                        if let Some(constant) = vg.anaphora.resolve(&key) {
+                            let restriction =
+                                substitute(restriction, &var, &Term::Const(constant.clone()));
+                            vg.anaphora.presuppositions.push(restriction);
+                            vg.anaphora.referred_constants.push(constant.clone());
+                            return ArgCtx::Const(constant);
+                        }
+                        // 先行詞が無ければ診断を残し、ふつうの存在量化として扱う。理由は
+                        // `Discourse::push`が前の文と照らして決める。
+                        vg.anaphora.unresolved.push(UnresolvedAnaphor {
+                            range: self.get_range(),
+                            key: key.clone(),
+                            reason: UnresolvedReason::NotIntroduced,
+                        });
+                    }
+                    // 先行詞が無い`zo`も、後の文の`zo`の先行詞にしてエラーの連鎖を防ぐ。
+                    if kind == QuantKind::Existential {
+                        vg.anaphora.candidates.push(ReferentCandidate {
+                            key,
+                            var: var.clone(),
+                            range: self.get_range(),
+                        });
+                    }
+                }
                 ArgCtx::Quant {
                     var,
                     kind,
@@ -1251,6 +1599,8 @@ impl DeterminedArgument {
             DeterminedArgument::One(det_mod, ret_arg) => {
                 let base = ret_arg.to_fol(var, vg);
                 match det_mod {
+                    // zo(照応)は述語を足さず、QuantifiedArgument::to_folで先行詞に結びつける。
+                    DeterminerModifier::One(det) if det.is_anaphoric() => base,
                     // Determiner mo/bo/go adds a property predicate: mo(x), bo(x), go(x).
                     DeterminerModifier::One(det) => Formula::And(
                         Box::new(Formula::Atom(
@@ -1960,5 +2310,133 @@ mod tests {
     #[test]
     fn test_事象名詞化_reなしのhe_hoは項にならない() {
         assert!(to_fol_string("kasa sa ba si he peheta sa mi ho").is_err());
+    }
+
+    /// `text`の各文を談話として順に変換し、全文を読み終えた時点の論理式を返す。
+    fn discourse_strings(text: &str) -> Vec<String> {
+        let asts = diagnose(text.to_string()).unwrap().asts;
+        let mut discourse = Discourse::new();
+        let indices: Vec<_> = asts.iter().map(|ast| discourse.push(ast).0).collect();
+        indices
+            .into_iter()
+            .map(|i| discourse.formula(i).to_string())
+            .collect()
+    }
+
+    #[test]
+    fn test_照応_zoは前の文の項を談話定数で指す() {
+        assert_eq!(
+            discourse_strings("peheta sa mi si ri nohapare do hita peheta sa ba si zo ri nohapare"),
+            [
+                "(∃e.(nohapare(e) ∧ Patient(e, d1)) ∧ ∃e1.(peheta(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, d1))))",
+                "(∃e.(nohapare(e) ∧ Patient(e, d1)) ∧ ∃e1.((peheta(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, d1))) ∧ τ(e1) < t0))",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_照応_参照されない先行詞は存在量化のまま() {
+        assert_eq!(
+            discourse_strings("peheta sa mi si ri nohapare do parobe sa mi si ba"),
+            [
+                "∃x.(∃e.(nohapare(e) ∧ Patient(e, x)) ∧ ∃e1.(peheta(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, x))))",
+                "∃e.(parobe(e) ∧ (Agent(e, mi) ∧ Patient(e, ba)))",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_照応_同じキーの先行詞が複数あれば直近のものを指す() {
+        let formulas = discourse_strings(
+            "peheta sa mi si ri nohapare do peheta sa ba si ri nohapare do pekarena sa mi si zo ri nohapare",
+        );
+        assert!(formulas[0].starts_with("∃x."), "{formulas:?}");
+        assert!(formulas[1].contains("Patient(e, d2)"), "{formulas:?}");
+        assert!(formulas[2].contains("Patient(e1, d2)"), "{formulas:?}");
+    }
+
+    #[test]
+    fn test_照応_抽出詞と述語の組で先行詞を区別する() {
+        let formulas = discourse_strings(
+            "peheta sa ra bahumana si ri nohapare do parobe sa zo ra bahumana si ba do peheta sa ba si zo ri nohapare",
+        );
+        assert_eq!(
+            formulas[0],
+            "(∃e1.(bahumana(e1) ∧ Agent(e1, d1)) ∧ (∃e.(nohapare(e) ∧ Patient(e, d2)) ∧ ∃e2.(peheta(e2) ∧ (Agent(e2, d1) ∧ Patient(e2, d2)))))"
+        );
+        assert!(formulas[1].contains("Agent(e1, d1)"), "{formulas:?}");
+        assert!(formulas[2].contains("Patient(e1, d2)"), "{formulas:?}");
+    }
+
+    #[test]
+    fn test_照応_diで修飾した先行詞も主要部の述語で指せる() {
+        let formulas = discourse_strings(
+            "peheta sa mi si ri nohapare di pekarena do peheta sa ba si zo ri nohapare",
+        );
+        assert!(
+            formulas[0].contains("pekarena(e1) ∧ Patient(e1, d1)"),
+            "{formulas:?}"
+        );
+        assert!(formulas[1].contains("Patient(e1, d1)"), "{formulas:?}");
+    }
+
+    #[test]
+    fn test_照応_zoの制約は否定や条件の内側でも文の最上位で主張する() {
+        assert_eq!(
+            discourse_strings(
+                "peheta sa mi si ri nohapare do ne peheta sa ba si zo ri nohapare di pekarena"
+            )[1],
+            "((∃e.(nohapare(e) ∧ Patient(e, d1)) ∧ ∃e1.(pekarena(e1) ∧ Patient(e1, d1))) ∧ ¬∃e2.(peheta(e2) ∧ (Agent(e2, ba) ∧ Patient(e2, d1))))"
+        );
+        assert_eq!(
+            discourse_strings(
+                "peheta sa mi si ri nohapare do hehito hesa peheta sa ba si zo ri nohapare di pekarena hesi pigo sa mi"
+            )[1],
+            "((∃e.(nohapare(e) ∧ Patient(e, d1)) ∧ ∃e1.(pekarena(e1) ∧ Patient(e1, d1))) ∧ (∃e2.(peheta(e2) ∧ (Agent(e2, ba) ∧ Patient(e2, d1))) ⇒ ∃y.∃e3.(pigo(e3) ∧ (Agent(e3, mi) ∧ Patient(e3, y)))))"
+        );
+    }
+
+    #[test]
+    fn test_代名詞の否定はその代名詞以外のものを表す() {
+        assert_eq!(
+            to_fol_string("parobe sa mi si ne ba").unwrap(),
+            "∃x.(¬(x = ba) ∧ ∃e.(parobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x))))"
+        );
+    }
+
+    #[test]
+    fn test_等位接続した項の否定はド・モルガンの法則で分配する() {
+        assert_eq!(
+            to_fol_string("parobe sa mi si ne hoba ba gi").unwrap(),
+            "(∃x.(¬(x = ba) ∧ ∃e.(parobe(e) ∧ (Agent(e, mi) ∧ Patient(e, x)))) ∨ ∃y.(¬(y = gi) ∧ ∃e1.(parobe(e1) ∧ (Agent(e1, mi) ∧ Patient(e1, y)))))"
+        );
+    }
+
+    #[test]
+    fn test_照応_ne_zoは前述の項以外のものを表す() {
+        assert_eq!(
+            discourse_strings("peheta sa mi si ri nohapare do peheta sa ba si ne zo ri nohapare")
+                [1],
+            "(∃e.(nohapare(e) ∧ Patient(e, d1)) ∧ ∃y.(¬(y = d1) ∧ ∃e1.(peheta(e1) ∧ (Agent(e1, ba) ∧ Patient(e1, y)))))"
+        );
+    }
+
+    #[test]
+    fn test_照応_疑問文ではzoの制約を疑問の変数の内側に置く() {
+        assert_eq!(
+            discourse_strings(
+                "peheta sa mi si ri nohapare do ku ne peheta sa ko si zo ri nohapare"
+            )[1],
+            "?y.(∃e.(nohapare(e) ∧ Patient(e, d1)) ∧ ¬∃e1.(peheta(e1) ∧ (Agent(e1, y) ∧ Patient(e1, d1))))"
+        );
+    }
+
+    #[test]
+    fn test_照応_疑問文の中のzoも前の文を指す() {
+        assert_eq!(
+            discourse_strings("peheta sa mi si ri nohapare do ku peheta sa ko si zo ri nohapare")
+                [1],
+            "?y.(∃e.(nohapare(e) ∧ Patient(e, d1)) ∧ ∃e1.(peheta(e1) ∧ (Agent(e1, y) ∧ Patient(e1, d1))))"
+        );
     }
 }

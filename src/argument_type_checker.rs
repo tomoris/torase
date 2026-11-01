@@ -462,7 +462,8 @@ impl ArgumentPhrase {
 impl QuantifiedArgument {
     fn type_check(&self) -> TypeMismatchResult {
         match self {
-            QuantifiedArgument::One(_quantified_modifier, determined_argument) => {
+            QuantifiedArgument::One(quantifier_modifier, determined_argument) => {
+                check_anaphoric_determiner(quantifier_modifier, determined_argument)?;
                 determined_argument.type_check()
             }
         }
@@ -474,6 +475,40 @@ impl QuantifiedArgument {
             }
         }
     }
+}
+
+/// 照応の限定詞`zo`は前述の1つの項を指すので、量化詞・数詞を付けられない。
+/// 先行詞は抽出詞と述語で探すため、述語を持たない節(`he … ho`)からの抽出にも付けられない。
+fn check_anaphoric_determiner(
+    quantifier_modifier: &QuantifierModifier,
+    determined_argument: &DeterminedArgument,
+) -> TypeMismatchResult {
+    let DeterminedArgument::One(DeterminerModifier::One(determiner), retrieved_argument) =
+        determined_argument
+    else {
+        return Ok(());
+    };
+    if !determiner.is_anaphoric() {
+        return Ok(());
+    }
+    let error = |message: &str| {
+        Err(TypeMismatch {
+            range: determiner.get_range(),
+            actual: vec![],
+            expected: vec![],
+            message: message.to_string(),
+        })
+    };
+    if !matches!(quantifier_modifier, QuantifierModifier::Epsilon) {
+        return error("zoには量化詞・数詞を付けられません");
+    }
+    if matches!(
+        retrieved_argument.get_body(),
+        ArgumentRetrievalBinaryPredicate::Two(..)
+    ) {
+        return error("zoは節(he … ho)からの項抽出には付けられません");
+    }
+    Ok(())
 }
 
 impl DeterminedArgument {

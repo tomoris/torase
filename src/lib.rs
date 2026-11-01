@@ -8,8 +8,8 @@ pub mod types;
 
 use argument_type_checker::type_check as argument_type_check;
 use formal_semantics::{
-    ContradictionCheck, Formula, check_contradiction, free_variables, is_schema_variable_name,
-    to_fol,
+    ContradictionCheck, Discourse, Formula, UnresolvedReason, check_contradiction, free_variables,
+    is_schema_variable_name,
 };
 use parser::{Ast, S, parse};
 use tokenizer::{Range, TerminalType, add_eos_to_last_sentence, tokenize};
@@ -94,7 +94,10 @@ pub fn analyze_tokens(sentences: Vec<Vec<TerminalType>>) -> Analysis {
     let sentences = add_eos_to_last_sentence(sentences);
     let mut asts = Vec::new();
     let mut diagnostics = Vec::new();
-    let mut premises = Vec::new();
+    let mut discourse = Discourse::new();
+    // (談話の中の文の添字, 文の範囲)。後の文の`zo`が先行詞を参照すると前の文の論理式が
+    // 書き換わるため、論理式は全文を読み終えてから取り出す。
+    let mut premise_sentences = Vec::new();
     for sentence in sentences {
         let sentence_range = Range::new(
             sentence[0].range().start(),
@@ -135,8 +138,13 @@ pub fn analyze_tokens(sentences: Vec<Vec<TerminalType>>) -> Analysis {
             diagnostics.push(Diagnostic::error(e.range, message));
         }
 
-        let formula = to_fol(&ast);
-        let free: Vec<_> = free_variables(&formula)
+        let (index, unresolved) = discourse.push(&ast);
+        for anaphor in unresolved {
+            let message = unresolved_anaphor_message(&anaphor.key, anaphor.reason);
+            diagnostics.push(Diagnostic::error(anaphor.range, message));
+        }
+        let formula = discourse.formula(index);
+        let free: Vec<_> = free_variables(formula)
             .into_iter()
             .filter(|name| is_schema_variable_name(name))
             .collect();
@@ -151,14 +159,30 @@ pub fn analyze_tokens(sentences: Vec<Vec<TerminalType>>) -> Analysis {
         }
 
         if !matches!(ast.get_s(), S::Two(_)) {
-            premises.push((formula, sentence_range));
+            premise_sentences.push((index, sentence_range));
         }
         asts.push(ast);
     }
+    let premises = premise_sentences
+        .into_iter()
+        .map(|(index, range)| (discourse.formula(index).clone(), range))
+        .collect();
     Analysis {
         asts,
         diagnostics,
         premises,
+    }
+}
+
+/// 先行詞が見つからなかった`zo`の診断メッセージ。
+fn unresolved_anaphor_message(key: &str, reason: UnresolvedReason) -> String {
+    match reason {
+        UnresolvedReason::NotIntroduced => {
+            format!("zo {key}が指す項がありません(前の文に{key}で導入された項がありません)")
+        }
+        UnresolvedReason::Inaccessible => format!(
+            "zo {key}が指す項がありません(前の文の{key}は、否定・全称・条件・選言・様相・数量・等位接続の内側か、疑問文の中にあるため指せません)"
+        ),
     }
 }
 
@@ -1498,5 +1522,191 @@ mod tests {
             .to_string();
         let result = diagnose(text);
         assert!(result.is_ok());
+    }
+
+    fn has_message(text: &str, message: &str) -> bool {
+        diagnose(text.to_string()).is_err_and(|ds| ds.iter().any(|d| d.message == message))
+    }
+
+    fn unresolved_messages(text: &str) -> Vec<String> {
+        match diagnose(text.to_string()) {
+            Ok(_) => Vec::new(),
+            Err(ds) => ds
+                .into_iter()
+                .map(|d| d.message)
+                .filter(|m| m.starts_with("zo ") && m.contains("が指す項がありません"))
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn test_照応_zoで指した項について前の文と矛盾すると検出できる() {
+        // りんごを食べた。そのりんごは食べていない → 矛盾
+        assert!(has_message(
+            "peheta sa mi si ri nohapare do ne peheta sa mi si zo ri nohapare",
+            CONTRADICTION_MESSAGE
+        ));
+        // りんごを食べた。あなたはそのりんごを食べていない → 矛盾しない
+        assert!(
+            diagnose(
+                "peheta sa mi si ri nohapare do ne peheta sa ba si zo ri nohapare".to_string()
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn test_照応_否定の文でzoに足した情報も主張され矛盾を検出できる() {
+        // あなたはそのりんご(pekarenaされた)を食べなかった。私はそのりんご(pekarenaされていない)を食べた → 矛盾
+        assert!(has_message(
+            "peheta sa mi si ri nohapare do ne peheta sa ba si zo ri nohapare di pekarena do peheta sa mi si zo ri nohapare di ne pekarena",
+            CONTRADICTION_MESSAGE
+        ));
+    }
+
+    #[test]
+    fn test_照応_ne_zoは前述の項以外のものを指す() {
+        // あなたはそのりんごを食べなかった。あなたはそのりんご以外のものを食べた → 矛盾しない
+        assert!(
+            diagnose(
+                "peheta sa mi si ri nohapare do ne peheta sa ba si zo ri nohapare do peheta sa ba si ne zo ri nohapare"
+                    .to_string()
+            )
+            .is_ok()
+        );
+        // あなたはそのりんご以外のものを食べた。あなたはそのりんご以外のものを食べなかった → 矛盾
+        assert!(has_message(
+            "peheta sa mi si ri nohapare do peheta sa ba si ne zo ri nohapare do ne peheta sa ba si ne zo ri nohapare",
+            CONTRADICTION_MESSAGE
+        ));
+    }
+
+    #[test]
+    fn test_照応_ne_zoから導いた同一性で矛盾を検出できる() {
+        // あなたはそのりんご以外を食べなかった。あなたはpekarenaされたものを食べた(→ それはそのりんご)。
+        // 私はそのりんご(pekarenaされていない)を食べた → 矛盾
+        assert!(has_message(
+            "peheta sa mi si ri nohapare do ne peheta sa ba si ne zo ri nohapare do peheta sa ba si ri pekarena do peheta sa mi si zo ri nohapare di ne pekarena",
+            CONTRADICTION_MESSAGE
+        ));
+    }
+
+    #[test]
+    fn test_代名詞の否定はその代名詞以外を表す() {
+        // 私はあなたを愛していない。私はあなた以外の誰かを愛している → 矛盾しない
+        assert!(diagnose("ne parobe sa mi si ba do parobe sa mi si ne ba".to_string()).is_ok());
+        // 私はあなた以外の誰かを愛している。私はあなた以外の誰も愛していない → 矛盾
+        assert!(has_message(
+            "parobe sa mi si ne ba do ne parobe sa mi si ne ba",
+            CONTRADICTION_MESSAGE
+        ));
+    }
+
+    #[test]
+    fn test_照応_前の文に同じキーの項が無いzoはエラーになる() {
+        for (text, key) in [
+            // 前の文が無い
+            ("peheta sa mi si zo ri nohapare", "ri nohapare"),
+            // 述語が違う
+            (
+                "peheta sa mi si ri nohapare do peheta sa ba si zo ri dabara",
+                "ri dabara",
+            ),
+            // 抽出詞が違う
+            (
+                "peheta sa mi si ri nohapare do peheta sa ba si zo ra nohapare",
+                "ra nohapare",
+            ),
+            // 同じ文の項は指せない
+            (
+                "peheta sa mi si hoba ri nohapare zo ri nohapare",
+                "ri nohapare",
+            ),
+        ] {
+            assert_eq!(
+                unresolved_messages(text),
+                [unresolved_anaphor_message(
+                    key,
+                    UnresolvedReason::NotIntroduced
+                )],
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_照応_指せない位置の項を指すzoは理由付きのエラーになる() {
+        for text in [
+            // 否定の内側
+            "ne peheta sa mi si ri nohapare do peheta sa ba si zo ri nohapare",
+            // 全称の内側
+            "peheta sa ta ra bahumana si ri nohapare do peheta sa ba si zo ri nohapare",
+            // 条件の内側
+            "hehito hesa peheta sa mi si ri nohapare hesi pigo sa mi do peheta sa ba si zo ri nohapare",
+            // 様相の内側
+            "hapu to peheta sa mi si ri nohapare do peheta sa ba si zo ri nohapare",
+            // 項の否定(りんごでないもの)
+            "peheta sa mi si ne ri nohapare do peheta sa ba si zo ri nohapare",
+            // 疑問文は先行詞を導入しない
+            "ku peheta sa mi si ri nohapare do peheta sa ba si zo ri nohapare",
+            // 等位接続で文が複製され、どのりんごを指すか決まらない
+            "peheta sa hoba mi ba si ri nohapare do peheta sa ba si zo ri nohapare",
+        ] {
+            assert_eq!(
+                unresolved_messages(text),
+                [unresolved_anaphor_message(
+                    "ri nohapare",
+                    UnresolvedReason::Inaccessible
+                )],
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_照応_先行詞が無いzoのエラーは後の文に連鎖しない() {
+        // 1文目のzoだけがエラーになり、2文目のzoは1文目の項を指す
+        assert_eq!(
+            unresolved_messages("peheta sa mi si zo ri nohapare do peheta sa ba si zo ri nohapare"),
+            [unresolved_anaphor_message(
+                "ri nohapare",
+                UnresolvedReason::NotIntroduced
+            )]
+        );
+    }
+
+    #[test]
+    fn test_照応_先行詞があるzoは診断を通る() {
+        for text in [
+            "peheta sa mi si ri nohapare do hita peheta sa ba si zo ri nohapare",
+            "peheta sa mi si to ri nohapare do peheta sa ba si zo ri nohapare",
+            "hehoma hesa peheta sa mi si ri nohapare hesi pigo sa mi do peheta sa ba si zo ri nohapare",
+            "hita hude peheta sa mi si ri nohapare do peheta sa ba si zo ri nohapare",
+            "peheta sa mi si ri nohapare du ba do peheta sa ba si zo ri nohapare",
+        ] {
+            let result = diagnose(text.to_string());
+            assert!(result.is_ok(), "{text}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn test_照応_zoに量化詞や数詞は付けられない() {
+        for text in [
+            "peheta sa mi si ri nohapare do peheta sa ba si ta zo ri nohapare",
+            "peheta sa mi si ri nohapare do peheta sa ba si tusa zo ri nohapare",
+        ] {
+            assert!(
+                has_message(text, "型エラー: zoには量化詞・数詞を付けられません"),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_照応_zoは節からの抽出に付けられない() {
+        assert!(has_message(
+            "peheta sa mi si ri nohapare do kasa sa ba si zo re he peheta sa mi ho",
+            "型エラー: zoは節(he … ho)からの項抽出には付けられません"
+        ));
     }
 }

@@ -29,6 +29,12 @@
         "definition": null,
         "description": "限定詞:あの。"
     },
+    "zo": {
+        "original_spelling": null,
+        "terminal_type": "Determiner",
+        "definition": null,
+        "description": "限定詞:前述の。前の文で同じ抽出詞と述語によって導入された、直近の項を指す。"
+    },
     "hane": {
         "original_spelling": null,
         "terminal_type": "ModalityNegation",

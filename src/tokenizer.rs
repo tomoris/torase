@@ -835,6 +835,7 @@ enum DeterminerKind {
     Mo, // この
     Bo, // その
     Go, // あの
+    Zo, // 前述の(照応)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1428,7 +1429,15 @@ define_surface_token!(Determiner, DeterminerKind, "determiner", {
     Mo: "mo",
     Bo: "bo",
     Go: "go",
+    Zo: "zo",
 });
+
+impl Determiner {
+    /// 照応の限定詞`zo`(前述の)。前の文で導入された項を指す。
+    pub(crate) fn is_anaphoric(&self) -> bool {
+        matches!(self.kind, DeterminerKind::Zo)
+    }
+}
 
 define_fixed_token!(
     MtaEventToArgumentPhraseConverter,
